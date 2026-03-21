@@ -15,7 +15,7 @@ function FuelStrip({ fuel }: { fuel: number }) {
   const low = fuel < 10
   return (
     <div style={{display:'flex',alignItems:'center',gap:'10px',padding:'7px 10px',background:low?'var(--burn-dim)':'var(--surface)',border:`1px solid ${low?'rgba(255,58,92,0.2)':'var(--border)'}`,borderRadius:'var(--radius)',marginBottom:'12px'}}>
-      <FuelBar fuel={fuel} maxDisplay={100} width={80}/>
+      <FuelBar value={fuel} max={100} width={80}/>
       <span style={{fontFamily:'var(--font-mono)',fontSize:'9px',color:low?'var(--burn)':'var(--text-off)',marginLeft:'auto'}}>
         {low ? 'low fuel — draw from Harbor' : 'vessel fuel · $0.001 to sound'}
       </span>
@@ -103,9 +103,9 @@ export function CastPanel({ onClose }: { onClose: () => void }) {
 
       {vessel && (
         <div style={{display:'flex',alignItems:'center',gap:'6px',padding:'5px 9px',background:'var(--surface)',border:'1px solid var(--border)',borderRadius:'var(--radius)',marginBottom:'12px'}}>
-          <span style={{fontFamily:'var(--font-mono)',fontSize:'13px'}}>{vessel.tier==='ghost'?'◌':vessel.tier==='shadow'?'◑':'●'}</span>
+          <span style={{fontFamily:'var(--font-mono)',fontSize:'13px'}}>{vessel.class === 'daemon' ? '⚙' : '◌'}</span>
           <span style={{fontFamily:'var(--font-mono)',fontSize:'10px',color:'var(--text-dim)'}}>
-            casting as <span style={{color:'var(--teal)'}}>{vessel.tier}</span>
+            casting as <span style={{color:'var(--teal)'}}>vessel</span>
           </span>
         </div>
       )}

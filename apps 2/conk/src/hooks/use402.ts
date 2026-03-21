@@ -5,10 +5,10 @@
  * In STEP 6 (testnet), this calls the Sui protocol contracts.
  * For now, it simulates the flow with a short delay.
  *
- * The Relay sits between Vessel and Cast — this hook mirrors that:
- *   1. Vessel draws fuel from Harbor
- *   2. Relay takes the fuel, issues a receipt (fee + vessel tier + timestamp — NO identity link)
- *   3. Receipt passes to the Cast layer — Harbor never sees what was cast
+ * The Relay sits between Harbor and Cast — this hook mirrors that:
+ *   1. Deduct $0.001 from Harbor (via Relay)
+ *   2. Get a receipt (fee + vessel tier + timestamp — NO identity link)
+ *   3. Pass receipt to the Cast layer to unlock content
  */
 
 import { useState, useCallback } from 'react'
@@ -44,8 +44,8 @@ export function use402(options: Use402Options = {}) {
       return null
     }
 
-    // harbor.balance is in cents. amount is microUSDC where 1000 = $0.001 = 0.1 cents
-    if (harbor.balance < 0.1) {
+    // Check minimum balance
+    if (harbor.balance < amount / 1000) {
       setStatus('insufficient')
       onError?.('Insufficient Harbor balance')
       return null
@@ -90,10 +90,8 @@ export function use402(options: Use402Options = {}) {
 
 export function useSoundCast() {
   const [status, setStatus] = useState<PaymentStatus>('idle')
-  const addCast      = useStore((s) => s.addCast)
-  const vessel       = useStore((s) => s.vessel)
-  const debitHarbor  = useStore((s) => s.debitHarbor)
-  const debitVessel  = useStore((s) => s.debitVessel)
+  const addCast = useStore((s) => s.addCast)
+  const vessel = useStore((s) => s.vessel)
 
   const sound = useCallback(
     async (payload: {
@@ -101,19 +99,20 @@ export function useSoundCast() {
       body: string
       mode: string
       duration: string
-      securityQuestion?: string
-      securityAnswer?: string
-      keywords?: string[]
-      unlocksAt?: number
+      mediaUrl?: string
     }): Promise<boolean> => {
       if (!vessel) return false
       setStatus('pending')
 
       try {
+        // TODO (STEP 6): Call cast.move::sound_cast on Sui
         await new Promise((r) => setTimeout(r, 700))
 
         const durationMs: Record<string, number> = {
-          '24h': 86400000, '48h': 172800000, '72h': 259200000, '7d': 604800000,
+          '24h': 86400000,
+          '48h': 172800000,
+          '72h': 259200000,
+          '7d':  604800000,
         }
 
         addCast({
@@ -124,23 +123,10 @@ export function useSoundCast() {
           duration: payload.duration as any,
           expiresAt: Date.now() + (durationMs[payload.duration] ?? 86400000),
           createdAt: Date.now(),
-          lastInteractionAt: Date.now(),
           tideCount: 0,
-          tideReads: [0, 0, 0],
           vesselTier: vessel.tier,
-          vesselId: vessel.id,
-          securityQuestion: payload.securityQuestion,
-          securityAnswer:   payload.securityAnswer,
-          keywords:         payload.keywords,
-          unlocksAt:        payload.unlocksAt,
+          mediaUrl: payload.mediaUrl,
         })
-
-        // Debit fuel: vessel fuel first if drawing, else Harbor directly
-        if (vessel.fuelDrawing && vessel.fuel >= 0.1) {
-          debitVessel(0.1)
-        } else {
-          debitHarbor(0.1)
-        }
 
         setStatus('success')
         return true
@@ -149,7 +135,7 @@ export function useSoundCast() {
         return false
       }
     },
-    [vessel, addCast, debitHarbor, debitVessel]
+    [vessel, addCast]
   )
 
   return { sound, status }

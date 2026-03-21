@@ -18,7 +18,7 @@ export type PaymentStatus = 'idle' | 'pending' | 'success' | 'error' | 'insuffic
 
 export interface PaymentReceipt {
   feeAmount: number      // 1000 = $0.001 in microUSDC
-  vesselTier: string     // 'ghost' | 'shadow' | 'open'
+  vesselClass: string
   timestamp: number
   // NOTE: never contains which Harbor, which Vessel, or which Cast
   // The link is never made. This is not encryption. This is architecture.
@@ -63,7 +63,7 @@ export function use402(options: Use402Options = {}) {
 
       const r: PaymentReceipt = {
         feeAmount: amount,
-        vesselTier: vessel.tier,
+        vesselClass: vessel.class,
         timestamp: Date.now(),
       }
 
@@ -127,7 +127,7 @@ export function useSoundCast() {
           lastInteractionAt: Date.now(),
           tideCount: 0,
           tideReads: [0, 0, 0],
-          vesselTier: vessel.tier,
+          vesselClass: vessel.class,
           vesselId: vessel.id,
           securityQuestion: payload.securityQuestion,
           securityAnswer:   payload.securityAnswer,

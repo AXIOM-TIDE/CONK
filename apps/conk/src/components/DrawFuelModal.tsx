@@ -19,7 +19,7 @@ export function DrawFuelModal({ onClose }: Props) {
   const bal       = harbor ? harbor.balance : 0
   const fuel      = vessel.fuel
   const isDry     = fuel <= 0
-  const tierIcon  = vessel.tier==='ghost'?'◌':vessel.tier==='shadow'?'◑':'●'
+  const tierIcon = vessel.class === 'daemon' ? '⚙' : '◌'
 
   const AMOUNTS = [10, 25, 50, 100] // cents
 
@@ -88,7 +88,7 @@ export function DrawFuelModal({ onClose }: Props) {
             </div>
             <div style={{flex:1}}>
               <div style={{fontFamily:'var(--font-mono)',fontSize:'11px',color:'var(--teal)',fontWeight:600,marginBottom:'4px'}}>
-                {vessel.tier} vessel
+                vessel
                 {isDry && <span style={{color:'var(--burn)',marginLeft:'8px',fontSize:'9px',border:'1px solid var(--burn-line)',borderRadius:'100px',padding:'1px 6px'}}>dry</span>}
               </div>
               <FuelBar value={done && selected ? Math.min(fuel + selected, 100) : fuel} max={100} width={140} showLabel animate/>
@@ -143,7 +143,7 @@ export function DrawFuelModal({ onClose }: Props) {
             color:'rgba(255,45,85,0.5)',
             letterSpacing:'0.04em',lineHeight:1.7,
           }}>
-            Fuel routes to the vessel. No refunds. No transfer to other vessels. Sink into the void.
+            Fuel routes to the vessel. No refunds. No transfer.
           </div>
 
           {done ? (

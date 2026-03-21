@@ -234,7 +234,8 @@ function CastRow({ cast, index }: { cast: Cast; index: number }) {
   }
 
   const doReveal = () => {
-    markCastRead(cast.id, cast.body ?? cast.hook)
+    // Pass empty string so store uses SEED_BODIES[id] fallback for seed casts
+    markCastRead(cast.id, cast.body ?? '')
     useStore.getState().addChartEntry({ type:'cast', id:cast.id, name:cast.hook, visitedAt:now })
     setStep('unlocked')
     if (isBurn) startCountdown()
@@ -371,7 +372,7 @@ function CastRow({ cast, index }: { cast: Cast; index: number }) {
                 <div style={{fontFamily:'var(--font-mono)',fontSize:'10px',color:mapError?'var(--burn)':'var(--eyes)',marginBottom:'6px'}}>
                   {mapError?'Vessel not mapped to this Dock':'Enter your Dock map to unlock'}
                 </div>
-                {mapError&&<div style={{fontFamily:'var(--font-mono)',fontSize:'9px',color:'var(--burn)',padding:'6px 8px',background:'var(--burn-dim)',borderRadius:'var(--radius)',marginBottom:'8px',lineHeight:1.6}}>Your vessel is not mapped. No refund. Sink into the void.</div>}
+                {mapError&&<div style={{fontFamily:'var(--font-mono)',fontSize:'9px',color:'var(--burn)',padding:'6px 8px',background:'var(--burn-dim)',borderRadius:'var(--radius)',marginBottom:'8px',lineHeight:1.6}}>Your vessel is not mapped. Fuel debited. No refund.</div>}
                 <input style={{width:'100%',background:'var(--surface2)',border:`1px solid ${mapError?'var(--burn-line)':'var(--border2)'}`,borderRadius:'var(--radius)',color:'var(--text)',fontFamily:'var(--font-mono)',fontSize:'12px',padding:'8px 10px',outline:'none',marginBottom:'8px'}}
                   placeholder="Dock ID or map address..." value={mapVal}
                   onChange={e=>{setMapVal(e.target.value);setMapError(false)}}

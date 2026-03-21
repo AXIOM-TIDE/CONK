@@ -134,9 +134,9 @@ const MOCK_HOOKS = [
 ]
 
 export function generateMockCasts(count = 12): Cast[] {
-  const modes: Cast['mode'][] = ['open', 'open', 'open', 'sealed', 'eyes_only', 'ghost']
+  const modes: Cast['mode'][] = ['open', 'open', 'open', 'sealed', 'eyes_only', 'burn']
   const durations: Cast['duration'][] = ['24h', '48h', '72h', '7d']
-  const tiers: Cast['vesselTier'][] = ['ghost', 'ghost', 'shadow', 'open']
+  const tiers: Cast['vesselClass'][] = ['vessel', 'vessel', 'vessel', 'daemon']
 
   return Array.from({ length: count }, (_, i) => {
     const mode = modes[Math.floor(Math.random() * modes.length)]
@@ -152,8 +152,10 @@ export function generateMockCasts(count = 12): Cast[] {
       duration: dur,
       expiresAt: created + castDurationMs(dur),
       createdAt: created,
+      lastInteractionAt: created,
       tideCount: tide,
-      vesselTier: tiers[Math.floor(Math.random() * tiers.length)],
+      tideReads: [tide, 0, 0],
+      vesselClass: tiers[Math.floor(Math.random() * tiers.length)],
     }
   })
 }

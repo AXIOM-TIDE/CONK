@@ -2,13 +2,18 @@ import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import { castDurationMs } from '../utils/scrubber'
 
-export type VesselTier   = 'ghost' | 'shadow' | 'open'
+// Vessels are always anonymous. No tier choice.
+// VesselClass: 'vessel' (human) | 'daemon' (agent/automated)
+export type VesselClass  = 'vessel' | 'daemon'
 export type CastMode     = 'open' | 'eyes_only' | 'burn' | 'sealed'
 export type CastDuration = '24h' | '48h' | '72h' | '7d'
 
+// Keep VesselTier as alias for backward compat with any leftover refs
+export type VesselTier = VesselClass
+
 export interface Vessel {
   id: string
-  tier: VesselTier
+  class: VesselClass          // vessel (human) or daemon (agent)
   tempOrPerm: 'temp' | 'perm'
   createdAt: number
   lastCastAt: number | null
@@ -16,6 +21,8 @@ export interface Vessel {
   fuel: number
   fuelDrawing: boolean
   autoBurn: boolean
+  // Identity protection: if identity is exposed, vessel self-destructs
+  compromised?: boolean
 }
 
 export interface Harbor {
@@ -23,6 +30,15 @@ export interface Harbor {
   tier: number
   lastMovement: number
   expiresAt: number
+}
+
+// Shore — the daemon's fuel source. Human-funded, daemon-controlled.
+// Structurally identical to Harbor but scoped to daemon vessel operations.
+export interface Shore {
+  balance: number          // USDC in cents
+  policyThreshold: number  // auto-approve actions under this amount (cents)
+  lastFunded: number
+  daemonId?: string        // linked daemon vessel id
 }
 
 export interface Cast {
@@ -35,17 +51,19 @@ export interface Cast {
   createdAt: number
   lastInteractionAt: number
   tideCount: number
-  tideReads: number[]
+  tideReads: number[]         // per-tide read counts for Lighthouse qualification
   burned?: boolean
   burnedBy?: string[]
   storedBy?: string[]
-  vesselTier?: VesselTier
+  vesselClass?: VesselClass
   vesselId?: string
   requiresDockId?: string
   securityQuestion?: string
   securityAnswer?: string
   keywords?: string[]
   unlocksAt?: number
+  // Relay pool: actual relay time (delayed from payment for timing privacy)
+  relayedAt?: number
 }
 
 export interface Siren {
@@ -58,7 +76,7 @@ export interface Siren {
   expiresAt: number
   responseCount: number
   isDark: boolean
-  vesselTier?: VesselTier
+  vesselClass?: VesselClass
 }
 
 export interface Lighthouse {
@@ -69,6 +87,8 @@ export interface Lighthouse {
   createdAt: number
   expiresAt: number
   isGenesis?: boolean
+  // Tamper resistance: unique vessel signatures per read
+  readSignatures?: string[]
 }
 
 export interface ChartEntry {
@@ -78,55 +98,72 @@ export interface ChartEntry {
   visitedAt: number
 }
 
+// Relay pool entry — time-delayed to break timing correlation
+export interface RelayEntry {
+  id: string
+  amount: number
+  insertedAt: number
+  releaseAt: number    // random delay 30s–5min
+  claimed: boolean
+}
+
 export interface AppState {
   isOnboarded:    boolean
   vessel:         Vessel | null
   vessels:        Vessel[]
   activeVesselId: string | null
   harbor:         Harbor | null
+  shore:          Shore | null
   driftCasts:     Cast[]
   driftFilter:    'all' | CastMode
   driftSearch:    string
   sirens:         Siren[]
   lighthouses:    Lighthouse[]
   chart:          ChartEntry[]
+  relayPool:      RelayEntry[]
 
-  setOnboarded:    (v: boolean) => void
-  setVessel:       (v: Vessel | null) => void
-  addVessel:       (v: Vessel) => void
-  setActiveVessel: (id: string) => void
-  burnVessel:      (id: string) => void
-  toggleAutoBurn:  () => void
-  setHarbor:       (h: Harbor | null) => void
-  debitHarbor:     (cents: number) => void
-  debitVessel:     (cents: number) => void
-  fuelVessel:      (cents: number) => void
-  toggleDrawFuel:  () => void
-  addCast:         (c: Cast) => void
-  markCastRead:    (id: string, body: string) => void
-  burnCast:        (id: string) => void
-  burnFromVessel:  (id: string, vesselId: string) => void
-  storeForVessel:  (id: string, vesselId: string) => void
-  incrementTide:   (id: string) => void
-  setDriftFilter:  (f: 'all' | CastMode) => void
-  setDriftSearch:  (q: string) => void
-  addSiren:        (s: Siren) => void
-  respondToSiren:  (id: string) => void
-  visitLighthouse: (id: string) => void
-  addChartEntry:   (e: ChartEntry) => void
+  setOnboarded:     (v: boolean) => void
+  setVessel:        (v: Vessel | null) => void
+  addVessel:        (v: Vessel) => void
+  setActiveVessel:  (id: string) => void
+  burnVessel:       (id: string) => void
+  compromiseVessel: (id: string) => void   // identity exposed — auto-burn
+  toggleAutoBurn:   () => void
+  setHarbor:        (h: Harbor | null) => void
+  setShore:         (s: Shore | null) => void
+  fundShore:        (cents: number) => void
+  debitShore:       (cents: number) => void
+  setShorePolicy:   (threshold: number) => void
+  debitHarbor:      (cents: number) => void
+  debitVessel:      (cents: number) => void
+  fuelVessel:       (cents: number) => void
+  toggleDrawFuel:   () => void
+  addCast:          (c: Cast) => void
+  markCastRead:     (id: string, body: string) => void
+  burnCast:         (id: string) => void
+  burnFromVessel:   (id: string, vesselId: string) => void
+  storeForVessel:   (id: string, vesselId: string) => void
+  incrementTide:    (id: string) => void
+  setDriftFilter:   (f: 'all' | CastMode) => void
+  setDriftSearch:   (q: string) => void
+  addSiren:         (s: Siren) => void
+  respondToSiren:   (id: string) => void
+  visitLighthouse:  (id: string) => void
+  addChartEntry:    (e: ChartEntry) => void
+  addToRelayPool:   (entry: RelayEntry) => void
+  claimFromRelay:   (id: string) => void
 }
 
 const NOW = Date.now()
 const T   = (h: number) => NOW - h * 3600000
 
 // Bodies stored separately — only revealed after paywall unlock
-// Not present on cast objects until markCastRead is called
 const SEED_BODIES: Record<string, string> = {
   'seed_001': 'Every message you have ever sent has a return address. Your IP. Your account. Your device fingerprint.\n\nWe built this so that none of that exists. Not encrypted. Not hidden. Simply never built.',
   'seed_002': 'Agent A sourced leads. Agent B wrote outreach. Agent C handled replies. Three vessels, one Harbor, zero cross-contamination.\n\nThis is what agentic infrastructure looks like when privacy is the default.',
   'seed_003': 'Three casts crossed 100k reads in under 6 hours. None were news. None were political. All three were personal truths told anonymously.\n\nThe tide does not reward outrage. It rewards honesty.',
   'seed_004': 'You found it. The Dock is open. You know what to do.',
-  'seed_005': 'It sits between your Vessel and your Cast. Your vessel draws fuel from the Harbor and hands it to the Relay.\n\nThe Relay issues a receipt: fee amount, vessel tier, timestamp.\n\nNot: which Harbor. Not: which vessel. Not: which cast.\n\nThe Harbor never sees a cast. This is not encryption. The link is never made.',
+  'seed_005': 'It sits between your Vessel and your Cast. Your vessel draws fuel from the Harbor and hands it to the Relay.\n\nThe Relay issues a receipt: fee amount, class, timestamp.\n\nNot: which Harbor. Not: which vessel. Not: which cast.\n\nThe Harbor never sees a cast. This is not encryption. The link is never made.',
   'seed_006': 'Legal entity: formed. Bank account: opened. Contracts: signed. None of them know my name.\n\nPrivacy is not paranoia. It is infrastructure.',
   'seed_007': 'One read. One cast. One truth you chose to hear.\n\nNot a subscription. Not a lock-in. The Harbor decreases. The Abyss absorbs. The content flows.\n\nThat is the entire economy.',
   'seed_008': 'You read it. It is already beginning to dissolve. Gone when you close this.',
@@ -134,7 +171,6 @@ const SEED_BODIES: Record<string, string> = {
   'seed_010': 'You found it early. The tide rewards patience.',
 }
 
-// Seed casts — NO body field. Body is only set after markCastRead (paywall unlock).
 const SEED_CASTS: Cast[] = [
   { id:'seed_001', hook:'The protocol cannot tell if you are human or agent. That is not a bug.',
     mode:'open', duration:'7d', createdAt:T(0.8), lastInteractionAt:T(0.5),
@@ -180,9 +216,9 @@ const SEED_CASTS: Cast[] = [
 ]
 
 const SEED_SIRENS: Siren[] = [
-  { id:'siren_001', hook:'Builders working on agentic infrastructure — enter the Dock. No names. No resumes.', dockId:'dock_builders', createdAt:T(6), lastInteractionAt:T(1), expiresAt:NOW+1000*60*60*24*24, responseCount:31, isDark:false, vesselTier:'ghost' },
-  { id:'siren_002', hook:'Anyone else building on Sui? Looking for other vessels in this space.', dockId:'dock_sui', createdAt:T(2), lastInteractionAt:T(0.5), expiresAt:NOW+1000*60*60*24*28, responseCount:7, isDark:false, vesselTier:'shadow' },
-  { id:'siren_003', hook:'Signal only. If you know you know.', dockId:'dock_dark_001', createdAt:T(48), lastInteractionAt:T(48), expiresAt:NOW-1000*60*60*12, responseCount:4, isDark:true, vesselTier:'ghost' },
+  { id:'siren_001', hook:'Builders working on agentic infrastructure — enter the Dock. No names. No resumes.', dockId:'dock_builders', createdAt:T(6), lastInteractionAt:T(1), expiresAt:NOW+1000*60*60*24*24, responseCount:31, isDark:false, vesselClass:'vessel' },
+  { id:'siren_002', hook:'Anyone else building on Sui? Looking for other vessels in this space.', dockId:'dock_sui', createdAt:T(2), lastInteractionAt:T(0.5), expiresAt:NOW+1000*60*60*24*28, responseCount:7, isDark:false, vesselClass:'vessel' },
+  { id:'siren_003', hook:'Signal only. If you know you know.', dockId:'dock_dark_001', createdAt:T(48), lastInteractionAt:T(48), expiresAt:NOW-1000*60*60*12, responseCount:4, isDark:true, vesselClass:'daemon' },
 ]
 
 const GENESIS_BODY = `This is the first Lighthouse.
@@ -211,7 +247,7 @@ Welcome to the tide.
 — Genesis`
 
 const SEED_LIGHTHOUSES: Lighthouse[] = [
-  { id:'genesis', hook:'The first Lighthouse. The protocol explained by itself.', body:GENESIS_BODY, tideCount:1_000_000, createdAt:T(24*7), expiresAt:NOW+(100*365*24*60*60*1000), isGenesis:true },
+  { id:'genesis', hook:'The first Lighthouse. The protocol explained by itself.', body:GENESIS_BODY, tideCount:1_000_000, createdAt:T(24*7), expiresAt:NOW+(100*365*24*60*60*1000), isGenesis:true, readSignatures:[] },
 ]
 
 function syncVessel(vessel: Vessel | null, vessels: Vessel[]): Vessel[] {
@@ -219,6 +255,11 @@ function syncVessel(vessel: Vessel | null, vessels: Vessel[]): Vessel[] {
   return vessels.find(v => v.id === vessel.id)
     ? vessels.map(v => v.id === vessel.id ? vessel : v)
     : [...vessels, vessel]
+}
+
+// Generate relay delay: random 30s–5min for timing privacy
+export function relayDelay(): number {
+  return Math.floor(Math.random() * (300000 - 30000) + 30000)
 }
 
 export const useStore = create<AppState>()(
@@ -229,12 +270,14 @@ export const useStore = create<AppState>()(
       vessels:        [],
       activeVesselId: null,
       harbor:         null,
+      shore:          null,
       driftCasts:     SEED_CASTS,
       driftFilter:    'all',
       driftSearch:    '',
       sirens:         SEED_SIRENS,
       lighthouses:    SEED_LIGHTHOUSES,
       chart:          [],
+      relayPool:      [],
 
       setOnboarded: (v) => set({ isOnboarded: v }),
 
@@ -259,12 +302,35 @@ export const useStore = create<AppState>()(
         return { vessels: rem, vessel: rem[0] ?? null, activeVesselId: rem[0]?.id ?? null }
       }),
 
+      // Identity exposed — vessel marked compromised then auto-burned
+      compromiseVessel: (id) => set((s) => {
+        const rem = s.vessels.filter(v => v.id !== id)
+        return { vessels: rem, vessel: rem[0] ?? null, activeVesselId: rem[0]?.id ?? null }
+      }),
+
       toggleAutoBurn: () => set((s) => {
         const updated = s.vessel ? { ...s.vessel, autoBurn: !s.vessel.autoBurn } : null
         return { vessel: updated, vessels: updated ? syncVessel(updated, s.vessels) : s.vessels }
       }),
 
       setHarbor: (h) => set({ harbor: h }),
+
+      setShore: (s) => set({ shore: s }),
+
+      fundShore: (cents) => set((s) => ({
+        shore: s.shore
+          ? { ...s.shore, balance: s.shore.balance + cents, lastFunded: Date.now() }
+          : { balance: cents, policyThreshold: 10, lastFunded: Date.now() },
+        harbor: s.harbor ? { ...s.harbor, balance: Math.max(0, s.harbor.balance - cents) } : null,
+      })),
+
+      debitShore: (cents) => set((s) => ({
+        shore: s.shore ? { ...s.shore, balance: Math.max(0, s.shore.balance - cents) } : null,
+      })),
+
+      setShorePolicy: (threshold) => set((s) => ({
+        shore: s.shore ? { ...s.shore, policyThreshold: threshold } : null,
+      })),
 
       debitHarbor: (cents) => set((s) => ({
         harbor: s.harbor ? { ...s.harbor, balance: Math.max(0, s.harbor.balance - cents) } : null,
@@ -291,8 +357,6 @@ export const useStore = create<AppState>()(
 
       addCast: (c) => set((s) => ({ driftCasts: [c, ...s.driftCasts] })),
 
-      // markCastRead: sets body from SEED_BODIES fallback or provided body
-      // This is the ONLY place body gets set — paywall must complete first
       markCastRead: (id, body) => set((s) => ({
         driftCasts: s.driftCasts.map(c => c.id === id ? {
           ...c,
@@ -300,7 +364,7 @@ export const useStore = create<AppState>()(
           tideCount: c.tideCount + 1,
           lastInteractionAt: Date.now(),
           expiresAt: Date.now() + castDurationMs(c.duration),
-          tideReads: [( c.tideReads[0] ?? 0) + 1, c.tideReads[1] ?? 0, c.tideReads[2] ?? 0],
+          tideReads: [(c.tideReads[0] ?? 0) + 1, c.tideReads[1] ?? 0, c.tideReads[2] ?? 0],
         } : c),
       })),
 
@@ -342,25 +406,39 @@ export const useStore = create<AppState>()(
       addChartEntry: (e) => set((s) => ({
         chart: [e, ...s.chart.filter(x => x.id !== e.id)],
       })),
+
+      addToRelayPool: (entry) => set((s) => ({
+        relayPool: [...s.relayPool, entry],
+      })),
+
+      claimFromRelay: (id) => set((s) => ({
+        relayPool: s.relayPool.map(e => e.id === id ? { ...e, claimed: true } : e),
+      })),
     }),
     {
-      name: 'conk-v5',
+      name: 'conk-v6',
       partialize: (s) => ({
-        isOnboarded: s.isOnboarded,
-        vessel: s.vessel,
-        vessels: s.vessels,
+        isOnboarded:    s.isOnboarded,
+        vessel:         s.vessel,
+        vessels:        s.vessels,
         activeVesselId: s.activeVesselId,
-        harbor: s.harbor,
-        chart: s.chart,
-        // Persist cast interaction state so burns/stores survive reload
-        driftCasts: s.driftCasts.map(c => ({
-          ...c,
-          body: undefined,        // never persist decrypted body
-          burnedBy: c.burnedBy,
-          storedBy: c.storedBy,
-          burned: c.burned,
-        })),
+        harbor:         s.harbor,
+        shore:          s.shore,
+        chart:          s.chart,
+        driftCasts: s.driftCasts.map(c => {
+          const isStored = (c.storedBy ?? []).length > 0
+          return {
+            ...c,
+            body: isStored ? c.body : undefined,
+            burnedBy: c.burnedBy,
+            storedBy: c.storedBy,
+            burned:   c.burned,
+          }
+        }),
       }),
     }
   )
 )
+
+// ── Shore — Daemon's Harbor ────────────────────────────────────
+// Human-funded. Daemon draws from it autonomously.

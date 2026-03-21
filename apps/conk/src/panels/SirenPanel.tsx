@@ -8,7 +8,7 @@ function FuelStrip({ fuel }: { fuel: number }) {
   const low = fuel < 3
   return (
     <div style={{display:'flex',alignItems:'center',gap:'10px',padding:'7px 10px',background:low?'var(--burn-dim)':'var(--surface)',border:`1px solid ${low?'rgba(255,58,92,0.2)':'var(--border)'}`,borderRadius:'var(--radius)',marginBottom:'12px'}}>
-      <FuelBar fuel={fuel} maxDisplay={100} width={80}/>
+      <FuelBar value={fuel} max={100} width={80}/>
       <span style={{fontFamily:'var(--font-mono)',fontSize:'9px',color:low?'var(--burn)':'var(--text-off)',marginLeft:'auto'}}>
         {low ? 'low fuel — draw from Harbor' : 'vessel fuel · $0.03 to sound siren'}
       </span>
@@ -46,7 +46,7 @@ export function SirenPanel() {
     if (!hook.trim()) return
     setLoading(true)
     await new Promise(r => setTimeout(r, 700))
-    addSiren({ id:`s_${Date.now()}`, hook:hook.trim(), dockId:`d_${Date.now()}`, createdAt:Date.now(), expiresAt:Date.now()+30*24*60*60*1000, responseCount:0, isDark:false, vesselTier:vessel?.tier??'ghost' })
+    addSiren({ id:`s_${Date.now()}`, hook:hook.trim(), dockId:`d_${Date.now()}`, createdAt:Date.now(), lastInteractionAt:Date.now(), expiresAt:Date.now()+30*24*60*60*1000, responseCount:0, isDark:false, vesselClass:vessel?.class??'vessel' })
     setHook(''); setLoading(false); setCreating(false)
   }
 
@@ -89,7 +89,7 @@ export function SirenPanel() {
           ⬡ sealed · Axiom Tide cannot read this
         </div>
         <div style={{fontFamily:'var(--font-mono)',fontSize:'9px',color:'rgba(255,45,85,0.5)',marginBottom:'10px'}}>
-          No refunds. No recovery. Sink into the void.
+          Fees route to the CONK treasury. No refunds. No recovery.
         </div>
         <div style={{display:'flex',gap:'6px'}}>
           <button className="btn btn-ghost btn-sm" onClick={()=>setResponding(null)}>cancel</button>
@@ -115,7 +115,7 @@ export function SirenPanel() {
         <div className="summary-row" style={{borderBottom:'none'}}><span>Dock auto-opens</span><span className="summary-val">$0.50</span></div>
       </div>
       <div style={{fontFamily:'var(--font-mono)',fontSize:'9px',color:'rgba(255,45,85,0.5)',marginBottom:'10px',lineHeight:1.7}}>
-        No refunds. No recovery. Sink into the void.
+        Fees route to the CONK treasury. No refunds. No recovery.
       </div>
       <div style={{display:'flex',gap:'6px'}}>
         <button className="btn btn-ghost btn-sm" onClick={()=>setCreating(false)}>cancel</button>

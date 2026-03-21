@@ -61,7 +61,7 @@ export function VesselSelectModal({ onSelect, onLaunch, onCancel }: Props) {
               <div style={{display:'flex',flexDirection:'column',gap:'6px',marginBottom:'14px'}}>
                 {allVessels.map(v => {
                   const isActive  = vessel?.id === v.id
-                  const tierIcon  = v.tier==='ghost'?'◌':v.tier==='shadow'?'◑':'●'
+                  const tierIcon = v.class === 'daemon' ? '⚙' : '◌'
                   const fuelPct   = Math.min(100,(v.fuel/100)*100)
                   const fuelColor = fuelPct > 40 ? 'var(--teal)' : fuelPct > 15 ? '#FFB020' : 'var(--burn)'
                   const noFuel    = v.fuel < 0.1
@@ -88,7 +88,7 @@ export function VesselSelectModal({ onSelect, onLaunch, onCancel }: Props) {
                       <span style={{fontSize:'20px',color:'var(--teal)',flexShrink:0}}>{tierIcon}</span>
                       <div style={{flex:1,minWidth:0}}>
                         <div style={{display:'flex',alignItems:'center',gap:'6px',marginBottom:'4px'}}>
-                          <span style={{fontFamily:'var(--font-mono)',fontSize:'12px',fontWeight:600,color:'var(--teal)'}}>{v.tier}</span>
+                          <span style={{fontFamily:'var(--font-mono)',fontSize:'12px',fontWeight:600,color:'var(--teal)'}}>{v.class}</span>
                           {isActive && <span style={{fontFamily:'var(--font-mono)',fontSize:'8px',color:'var(--teal)',border:'1px solid rgba(0,184,230,0.3)',borderRadius:'100px',padding:'1px 5px'}}>active</span>}
                           {noFuel && <span style={{fontFamily:'var(--font-mono)',fontSize:'8px',color:'var(--burn)',border:'1px solid var(--burn-line)',borderRadius:'100px',padding:'1px 5px'}}>no fuel</span>}
                         </div>

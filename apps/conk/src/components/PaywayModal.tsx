@@ -16,7 +16,7 @@ interface Props {
 export function PaywayModal({ vessel, hookTitle, mode, hasSecurityQ, autofuel, onConfirm, onCancel, isPending }: Props) {
   const [step, setStep] = useState<'preview' | 'confirm'>('preview')
 
-  const tierIcon   = vessel.tier === 'ghost' ? '◌' : vessel.tier === 'shadow' ? '◑' : '●'
+  const tierIcon   = vessel.class === 'daemon' ? '⚙' : '◌'
   const fuelAfter  = Math.max(0, (vessel.fuel - 0.1) / 100)
   const fuelBefore = (vessel.fuel / 100).toFixed(2)
   const isBurn     = mode === 'burn'
@@ -62,7 +62,7 @@ export function PaywayModal({ vessel, hookTitle, mode, hasSecurityQ, autofuel, o
                 <div style={{display:'flex',alignItems:'center',gap:'10px'}}>
                   <div style={{width:'36px',height:'36px',borderRadius:'50%',background:'rgba(0,184,230,0.08)',border:'1px solid var(--border2)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:'16px',color:'var(--teal)',flexShrink:0}}>{tierIcon}</div>
                   <div style={{flex:1}}>
-                    <div data-testid="payway-vessel-name" style={{fontFamily:'var(--font-mono)',fontSize:'11px',color:'var(--teal)',fontWeight:600}}>{vessel.tier} vessel</div>
+                    <div data-testid="payway-vessel-name" style={{fontFamily:'var(--font-mono)',fontSize:'11px',color:'var(--teal)',fontWeight:600}}>vessel</div>
                     <FuelBar value={vessel.fuel} max={100} width={100} showLabel animate/>
                   </div>
                   <div style={{textAlign:'right',flexShrink:0}}>
@@ -107,13 +107,13 @@ export function PaywayModal({ vessel, hookTitle, mode, hasSecurityQ, autofuel, o
                 <div style={{fontSize:'32px',marginBottom:'12px',filter:'drop-shadow(0 0 8px rgba(0,184,230,0.4))'}}>{tierIcon}</div>
                 <div style={{fontFamily:'var(--font-display)',fontSize:'16px',fontWeight:600,color:'var(--text)',marginBottom:'8px',letterSpacing:'-0.01em'}}>Open Signal</div>
                 <div style={{fontFamily:'var(--font-mono)',fontSize:'11px',color:'var(--text-dim)',lineHeight:1.8}}>
-                  You are about to open this signal through your <span data-testid="payway-vessel-name" style={{color:'var(--teal)'}}>{vessel.tier} vessel</span>.<br/>
+                  You are about to open this signal through your <span data-testid="payway-vessel-name" style={{color:'var(--teal)'}}>vessel</span>.<br/>
                   Reading requires payment and will consume fuel.
                 </div>
               </div>
 
               <div data-testid="payway-fuel-summary" style={{padding:'12px',background:'var(--surface2)',border:'1px solid var(--border)',borderRadius:'var(--radius-lg)',marginBottom:'12px'}}>
-                {[['Signal', hookTitle.slice(0,40)+(hookTitle.length>40?'…':'')],['Vessel', tierIcon+' '+vessel.tier],['Fuel after', '$'+fuelBefore+' → $'+fuelAfter.toFixed(2)]].map(([k,v]) => (
+                {[['Signal', hookTitle.slice(0,40)+(hookTitle.length>40?'…':'')],['Vessel', tierIcon+' vessel'],['Fuel after', '$'+fuelBefore+' → $'+fuelAfter.toFixed(2)]].map(([k,v]) => (
                   <div key={k} style={{display:'flex',justifyContent:'space-between',marginBottom:'6px',fontFamily:'var(--font-mono)',fontSize:'10px'}}>
                     <span style={{color:'var(--text-dim)'}}>{k}</span>
                     <span style={{color:'var(--text)',maxWidth:'200px',textAlign:'right',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{v}</span>

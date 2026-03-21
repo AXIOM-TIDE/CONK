@@ -157,31 +157,3 @@ export function generateMockCasts(count = 12): Cast[] {
     }
   })
 }
-
-// ─── TIDE DECAY STATE ─────────────────────────────────────────
-// 3 tides = 3 × 24h = 72h total. After that → void.
-// Returns which tide the cast is in based on age.
-
-export type TideState = 'active' | 'tide1' | 'tide2' | 'final' | 'void'
-
-export function getTideState(createdAt: number, durationMs: number): TideState {
-  const age       = Date.now() - createdAt
-  const tideLen   = durationMs
-  const elapsed   = age / tideLen
-
-  if (elapsed < 1)   return 'active'
-  if (elapsed < 1.5) return 'tide1'
-  if (elapsed < 2)   return 'tide2'
-  if (elapsed < 3)   return 'final'
-  return 'void'
-}
-
-export function getTideLabel(state: TideState): string | null {
-  switch (state) {
-    case 'tide1': return 'tide 1 of 3'
-    case 'tide2': return 'tide 2 of 3'
-    case 'final': return 'final tide'
-    case 'void':  return 'void'
-    default:      return null
-  }
-}

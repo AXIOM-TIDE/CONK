@@ -47,7 +47,7 @@ export function HarborHome({ onEnterVessel }: Props) {
       <div style={{ display:'flex', alignItems:'center', padding:'0 16px', height:'52px', background:'rgba(3,12,20,0.9)', backdropFilter:'blur(20px)', borderBottom:'1px solid var(--border)', flexShrink:0, zIndex:20, position:'relative' }}>
         {/* Logo */}
         <div style={{ display:'flex', alignItems:'center', gap:'8px' }}>
-          <img src="/src/assets/conk-logo.png" alt="CONK"
+          <img src="/conk-logo.png" alt="CONK"
             style={{ width:'34px', height:'34px', objectFit:'contain', filter:'drop-shadow(0 0 8px rgba(0,184,230,0.8)) drop-shadow(0 0 20px rgba(0,80,200,0.3))' }}/>
           <span className="topbar-wordmark">CONK</span>
         </div>
@@ -87,9 +87,9 @@ export function HarborHome({ onEnterVessel }: Props) {
               >
                 <div style={{ display:'flex', alignItems:'center', gap:'8px', marginBottom:'6px' }}>
                   <span style={{ fontSize:'18px', color:'var(--teal)' }}>
-                    {vessel.tier === 'ghost' ? '◌' : vessel.tier === 'shadow' ? '◑' : '●'}
+                    {vessel.class === 'daemon' ? '⚙' : '◌'}
                   </span>
-                  <span style={{ fontFamily:'var(--font-mono)', fontSize:'12px', fontWeight:600, color:'var(--teal)' }}>{vessel.tier}</span>
+                  <span style={{ fontFamily:'var(--font-mono)', fontSize:'12px', fontWeight:600, color:'var(--teal)' }}>vessel</span>
                 </div>
                 <div style={{ fontFamily:'var(--font-mono)', fontSize:'9px', color:'var(--text-dim)', marginBottom:'8px' }}>
                   {vessel.id.slice(0, 12)}…

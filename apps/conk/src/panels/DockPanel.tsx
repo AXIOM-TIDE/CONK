@@ -112,7 +112,7 @@ export function DockPanel() {
               {isPending ? <><span className="spinner" style={{borderTopColor:'var(--text-inv)',borderColor:'rgba(0,0,0,0.2)'}}/>crossing...</> : 'Cross payway · $0.001'}
             </button>
             <div style={{fontFamily:'var(--font-mono)',fontSize:'9px',color:'rgba(255,45,85,0.4)',marginTop:'8px'}}>
-              No refunds. No recovery. Sink into the void.
+              Fees route to the CONK treasury. No refunds. No recovery.
             </div>
           </div>
         ) : (
@@ -195,11 +195,13 @@ export function DockPanel() {
             <div className="summary-row" style={{borderBottom:'none'}}><span>Each message inside</span><span className="summary-val">$0.001</span></div>
           </div>
           <div style={{fontFamily:'var(--font-mono)',fontSize:'9px',color:'rgba(255,45,85,0.5)',marginBottom:'10px',lineHeight:1.7}}>
-            No refunds. No recovery. Sink into the void.
+            Fees route to the CONK treasury. No refunds. No recovery.
           </div>
           <div style={{display:'flex',gap:'6px'}}>
             <button className="btn btn-ghost btn-sm" onClick={()=>setCreating(false)}>cancel</button>
-            <button className="btn btn-primary" style={{flex:1}} disabled>Open Dock — coming soon</button>
+            <button className="btn btn-primary" style={{flex:1}} onClick={()=>{if(name.trim()){setCreating(false);setName('')}}}>
+              {name.trim() ? `Open "${name}" · $0.50` : 'Enter a name first'}
+            </button>
           </div>
         </>
       ) : (

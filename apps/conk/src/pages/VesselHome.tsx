@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import React, { useState } from 'react'
 import { useStore } from '../store/store'
 import { DriftFeed } from '../components/DriftFeed'
 import { CastPanel } from '../panels/CastPanel'
@@ -7,12 +7,13 @@ import { SirenPanel } from '../panels/SirenPanel'
 import { LighthouseFeed } from '../components/LighthouseFeed'
 import { LighthouseReader } from '../components/LighthouseReader'
 import { FuelBar } from '../components/FuelMeter'
+import { DaemonPanel } from '../panels/DaemonPanel'
 import { TreasuryStrip } from '../components/TreasuryStrip'
 import { DrawFuelModal } from '../components/DrawFuelModal'
 import { BackButton } from '../components/BackButton'
 import { IconCast, IconDock, IconSiren, IconLighthouse, IconHarbor } from '../components/Icons'
 
-type VesselTab = 'drift' | 'cast' | 'dock' | 'siren' | 'lighthouse' | 'stored'
+type VesselTab = 'drift' | 'cast' | 'dock' | 'siren' | 'lighthouse' | 'stored' | 'daemon'
 
 export function VesselHome({ onBack }: { onBack: () => void }) {
   const vessel     = useStore((s) => s.vessel)
@@ -32,7 +33,7 @@ export function VesselHome({ onBack }: { onBack: () => void }) {
   const critFuel  = fuel > 0 && fuel < 5   // under $0.05
   const drawing    = vessel.fuelDrawing
   const autoBurn   = vessel.autoBurn ?? true
-  const tierIcon  = vessel.tier==='ghost'?'◌':vessel.tier==='shadow'?'◑':'●'
+  const tierIcon = vessel.class === 'daemon' ? '⚙' : '◌'
   const balLabel  = harbor ? `$${(harbor.balance/100).toFixed(2)}` : '$0.00'
   const fuelColor = noFuel ? 'var(--burn)' : critFuel ? 'var(--burn)' : lowFuel ? '#FFB020' : 'var(--teal)'
 
@@ -48,6 +49,7 @@ export function VesselHome({ onBack }: { onBack: () => void }) {
     { id:'siren',      icon:<IconSiren size={16} color="currentColor"/>,      label:'Siren',      locked:noFuel },
     { id:'lighthouse', icon:<IconLighthouse size={16} color="currentColor"/>, label:'Light',      locked:noFuel },
     { id:'stored',     icon:<span style={{fontSize:'13px'}}>⊕</span>,         label:'Stored',     locked:false  },
+    { id:'daemon',     icon:<span style={{fontSize:'13px'}}>⚙</span>,         label:'Daemon',     locked:false  },
   ]
 
   const handleTabClick = (t: typeof TABS[0]) => {
@@ -79,7 +81,7 @@ export function VesselHome({ onBack }: { onBack: () => void }) {
           borderRadius:'var(--radius-lg)', flexShrink:0,
         }}>
           <span style={{fontSize:'14px',color:'var(--teal)'}}>{tierIcon}</span>
-          <span style={{fontFamily:'var(--font-mono)',fontSize:'11px',color:'var(--teal)'}}>{vessel.tier}</span>
+          <span style={{fontFamily:'var(--font-mono)',fontSize:'11px',color:'var(--teal)'}}>{vessel.class}</span>
         </div>
 
         {/* Fuel module — clickable */}
@@ -210,6 +212,7 @@ export function VesselHome({ onBack }: { onBack: () => void }) {
           {tab==='siren'      && <FuelGate noFuel={noFuel} onDraw={()=>setShowDrawFuel(true)} onBack={()=>setTab('drift')}><SirenPanel/></FuelGate>}
           {tab==='lighthouse' && <FuelGate noFuel={noFuel} onDraw={()=>setShowDrawFuel(true)} onBack={()=>setTab('drift')}><LighthouseFeed onOpen={setLhId} onBack={()=>setTab('drift')}/></FuelGate>}
           {tab==='stored'     && <StoredPanel vesselId={vessel.id} onBack={()=>setTab('drift')}/>}
+          {tab==='daemon'     && <FuelGate noFuel={false} onDraw={()=>setShowDrawFuel(true)} onBack={()=>setTab('drift')}><DaemonPanel/></FuelGate>}
         </div>
       </div>
 
@@ -258,8 +261,11 @@ function FuelGate({ children, noFuel, onDraw, onBack }: {
 
 // ── Stored panel ──────────────────────────────────────────────
 function StoredPanel({ vesselId, onBack }: { vesselId: string; onBack: () => void }) {
-  const casts  = useStore((s) => s.driftCasts)
-  const stored = casts.filter(c => (c.storedBy ?? []).includes(vesselId) && !c.burned)
+  const casts          = useStore((s) => s.driftCasts)
+  const burnFromVessel = useStore((s) => s.burnFromVessel)
+  const [expanded, setExpanded] = useState<string|null>(null)
+
+  const stored = casts.filter(c => (c.storedBy ?? []).includes(vesselId) && !c.burned && !(c.burnedBy ?? []).includes(vesselId))
 
   return (
     <div data-testid="stored-panel" style={{flex:1,overflowY:'auto',padding:'16px',scrollbarWidth:'thin',scrollbarColor:'var(--border2) transparent'}}>
@@ -269,6 +275,7 @@ function StoredPanel({ vesselId, onBack }: { vesselId: string; onBack: () => voi
           Stored · {stored.length} signal{stored.length!==1?'s':''}
         </span>
       </div>
+
       {stored.length === 0 ? (
         <div style={{textAlign:'center',padding:'40px 20px'}}>
           <div style={{fontSize:'28px',marginBottom:'12px',opacity:0.3}}>⊕</div>
@@ -279,23 +286,67 @@ function StoredPanel({ vesselId, onBack }: { vesselId: string; onBack: () => voi
         </div>
       ) : (
         <div style={{display:'flex',flexDirection:'column',gap:'8px'}}>
-          {stored.map(c => (
-            <div key={c.id} data-testid="stored-item" style={{padding:'12px',background:'var(--surface)',border:'1px solid var(--border)',borderRadius:'var(--radius-lg)'}}>
-              <div style={{display:'flex',alignItems:'center',gap:'6px',marginBottom:'6px'}}>
-                <span style={{fontFamily:'var(--font-mono)',fontSize:'9px',color:'var(--teal)',border:'1px solid var(--border3)',borderRadius:'100px',padding:'1px 6px'}}>stored</span>
-                <span style={{fontFamily:'var(--font-mono)',fontSize:'9px',color:'var(--text-off)'}}>{c.mode}</span>
-                <span style={{marginLeft:'auto',fontFamily:'var(--font-mono)',fontSize:'9px',color:'var(--teal)'}}>{c.tideCount.toLocaleString()} reads</span>
-              </div>
-              <div style={{fontFamily:'var(--font-display)',fontSize:'13px',color:'var(--text)',lineHeight:1.5}}>{c.hook}</div>
-              {c.body&&(
-                <div style={{fontFamily:'var(--font-mono)',fontSize:'11px',color:'var(--text-dim)',marginTop:'8px',lineHeight:1.6}}>
-                  {c.body.slice(0,140)}{c.body.length>140?'…':''}
+          {stored.map(c => {
+            const isExpanded = expanded === c.id
+            const modeCls = c.mode === 'burn' ? 'burn' : c.mode === 'eyes_only' ? 'eyes' : 'open'
+            return (
+              <div key={c.id} data-testid="stored-item" style={{background:'var(--surface)',border:`1px solid ${isExpanded?'var(--border2)':'var(--border)'}`,borderRadius:'var(--radius-lg)',overflow:'hidden',transition:'border-color 0.15s'}}>
+
+                {/* Header — always visible, tap to expand */}
+                <div
+                  onClick={() => setExpanded(isExpanded ? null : c.id)}
+                  style={{display:'flex',alignItems:'center',gap:'10px',padding:'12px',cursor:'pointer',background:isExpanded?'rgba(0,184,230,0.03)':'transparent',transition:'background 0.15s'}}>
+                  <div className={`cast-mode-dot ${modeCls}`} style={{fontSize:'11px',flexShrink:0}}>
+                    {c.mode==='burn'?'🔥':c.mode==='eyes_only'?'👁':'◎'}
+                  </div>
+                  <div style={{flex:1,minWidth:0}}>
+                    <div style={{fontFamily:'var(--font-display)',fontSize:'13px',color:'var(--text)',lineHeight:1.4,marginBottom:'3px'}}>
+                      {c.hook}
+                    </div>
+                    <div style={{display:'flex',alignItems:'center',gap:'6px'}}>
+                      <span style={{fontFamily:'var(--font-mono)',fontSize:'9px',color:'var(--teal)',border:'1px solid var(--border3)',borderRadius:'100px',padding:'1px 6px'}}>stored</span>
+                      <span style={{fontFamily:'var(--font-mono)',fontSize:'9px',color:'var(--text-off)'}}>{c.tideCount.toLocaleString()} reads</span>
+                    </div>
+                  </div>
+                  <div style={{color:'var(--text-off)',transition:'transform 0.2s',transform:isExpanded?'rotate(90deg)':'rotate(0deg)',flexShrink:0}}>
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M9 18l6-6-6-6"/></svg>
+                  </div>
                 </div>
-              )}
-            </div>
-          ))}
+
+                {/* Expanded — full body + burn button */}
+                {isExpanded && (
+                  <div style={{padding:'0 12px 12px',borderTop:'1px solid var(--border)',animation:'revealBody 0.18s ease both'}}>
+                    {c.body ? (
+                      <div style={{fontFamily:'var(--font-mono)',fontSize:'11px',color:'var(--text)',lineHeight:1.7,padding:'12px 0',whiteSpace:'pre-line'}}>
+                        {c.body}
+                      </div>
+                    ) : (
+                      <div style={{fontFamily:'var(--font-mono)',fontSize:'11px',color:'var(--text-dim)',padding:'12px 0',fontStyle:'italic'}}>
+                        Signal content unavailable — body decrypts on read.
+                      </div>
+                    )}
+                    <div style={{display:'flex',gap:'8px',marginTop:'8px',paddingTop:'10px',borderTop:'1px solid var(--border)'}}>
+                      <button
+                        onClick={() => { burnFromVessel(c.id, vesselId); setExpanded(null) }}
+                        style={{display:'flex',alignItems:'center',gap:'5px',padding:'6px 12px',background:'var(--burn-dim)',border:'1px solid var(--burn-line)',borderRadius:'var(--radius)',color:'var(--burn)',fontFamily:'var(--font-mono)',fontSize:'10px',cursor:'pointer',letterSpacing:'0.04em'}}>
+                        🔥 burn · remove from vessel
+                      </button>
+                      <div style={{marginLeft:'auto',fontFamily:'var(--font-mono)',fontSize:'9px',color:'rgba(255,45,85,0.4)',alignSelf:'center'}}>
+                        free · no refund
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )
+          })}
         </div>
       )}
+
+      <div style={{marginTop:'16px',padding:'10px',background:'rgba(0,184,230,0.03)',border:'1px solid var(--border)',borderRadius:'var(--radius)',fontFamily:'var(--font-mono)',fontSize:'9px',color:'var(--text-off)',lineHeight:1.7,textAlign:'center'}}>
+        Stored signals survive until burned or globally wrecked.<br/>
+        They do not appear in Drift or auto-burn.
+      </div>
     </div>
   )
 }

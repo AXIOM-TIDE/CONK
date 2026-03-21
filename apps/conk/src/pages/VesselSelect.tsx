@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useStore, type VesselTier, type Vessel } from '../store/store'
+import { useStore, type VesselClass, type Vessel } from '../store/store'
 import { FuelBar } from '../components/FuelMeter'
 import { DecayBadge } from '../components/DecayBadge'
 import { WreckModal } from '../components/WreckModal'
@@ -27,7 +27,7 @@ export function VesselSelect({ onEnter, onBack }: Props) {
   const setActiveVessel= useStore((s) => s.setActiveVessel)
   const burnVessel     = useStore((s) => s.burnVessel)
   const [launching, setLaunching]     = useState(false)
-  const [tier, setTier]               = useState<VesselTier>('ghost')
+  const vesselClass: VesselClass = 'vessel'
   const [showNew, setShowNew]         = useState(false)
   const [burnId, setBurnId]           = useState<string|null>(null)
   const [fuelOpen, setFuelOpen]       = useState<string|null>(null)
@@ -44,7 +44,7 @@ export function VesselSelect({ onEnter, onBack }: Props) {
     const now = Date.now()
     const v: Vessel = {
       id: `v_${Math.random().toString(36).slice(2,10)}`,
-      tier, tempOrPerm: 'perm',
+      class: vesselClass, tempOrPerm: 'perm',
       createdAt: now, lastCastAt: null,
       expiresAt: now + 365*24*60*60*1000,
       fuel: 0, fuelDrawing: true, autoBurn: true,
@@ -68,7 +68,7 @@ export function VesselSelect({ onEnter, onBack }: Props) {
           <IconHarbor size={14} color="currentColor"/> Harbor
         </button>
         <div style={{display:'flex',alignItems:'center',gap:'8px',marginLeft:'auto'}}>
-          <img src="/src/assets/conk-logo.png" alt="CONK" style={{width:'28px',height:'28px',objectFit:'contain',filter:'drop-shadow(0 0 6px rgba(0,184,230,0.7))'}}/>
+          <img src="/conk-logo.png" alt="CONK" style={{width:'28px',height:'28px',objectFit:'contain',filter:'drop-shadow(0 0 6px rgba(0,184,230,0.7))'}}/>
           <span className="topbar-wordmark">CONK</span>
         </div>
         <div style={{display:'flex',alignItems:'center',gap:'6px',padding:'4px 10px',background:'rgba(0,184,230,0.05)',border:'1px solid var(--border2)',borderRadius:'var(--radius-lg)',marginLeft:'auto'}}>
@@ -118,25 +118,26 @@ export function VesselSelect({ onEnter, onBack }: Props) {
           <div style={{background:'var(--surface)',border:'1px solid var(--border2)',borderRadius:'var(--radius-xl)',padding:'16px',marginBottom:'16px',animation:'rowIn 0.2s ease both'}}>
             <div style={{fontFamily:'var(--font-display)',fontSize:'13px',color:'var(--text)',marginBottom:'4px'}}>Launch a new vessel</div>
             <div style={{fontFamily:'var(--font-mono)',fontSize:'10px',color:'var(--text-dim)',marginBottom:'14px',lineHeight:1.6}}>Tier cannot change after launch. Each vessel is a separate identity.</div>
-            <div className="mode-cards" style={{marginBottom:'14px'}}>
-              {([['ghost','◌','Ghost','Everything hidden. Maximum privacy.'],['shadow','◑','Shadow','You choose what others see.'],['open','●','Open','Cast record visible. Still anonymous.']] as const).map(([t,,name,desc])=>(
-                <button key={t} className={`mode-card ${tier===t?'active':''}`} onClick={()=>setTier(t)}>
-                  <span className="mode-card-icon" style={{fontSize:'18px'}}>{t==='ghost'?'◌':t==='shadow'?'◑':'●'}</span>
-                  <div><div className="mode-card-name">{name}</div><div className="mode-card-desc">{desc}</div></div>
-                </button>
-              ))}
+            <div style={{background:'var(--surface)',border:'1px solid var(--border2)',borderRadius:'var(--radius-lg)',padding:'14px',marginBottom:'14px'}}>
+              <div style={{display:'flex',alignItems:'center',gap:'12px'}}>
+                <span style={{fontSize:'24px',color:'var(--teal)'}}>◌</span>
+                <div>
+                  <div style={{fontFamily:'var(--font-mono)',fontSize:'12px',fontWeight:600,color:'var(--teal)',marginBottom:'2px'}}>Vessel</div>
+                  <div style={{fontFamily:'var(--font-mono)',fontSize:'9px',color:'var(--text-dim)',lineHeight:1.6}}>Anonymous by design. All vessels are identical on the network.</div>
+                </div>
+              </div>
             </div>
             <div className="summary" style={{marginBottom:'12px'}}>
               <div className="summary-row"><span>Cost</span><span className="summary-val">$0.01</span></div>
               <div className="summary-row" style={{borderBottom:'none'}}><span>Lifespan</span><span className="summary-val">1yr · resets on activity</span></div>
             </div>
             <div style={{fontFamily:'var(--font-mono)',fontSize:'9px',color:'rgba(255,45,85,0.5)',marginBottom:'10px',lineHeight:1.7}}>
-              No refunds. No recovery. Sink into the void.
+              Fees route to the CONK treasury. No refunds. No recovery.
             </div>
             <div style={{display:'flex',gap:'8px'}}>
               <button className="btn btn-ghost btn-sm" onClick={()=>setShowNew(false)}>cancel</button>
               <button className="btn btn-primary" style={{flex:1,height:'40px'}} onClick={launchVessel} disabled={launching}>
-                {launching?<><span className="spinner"/>Launching...</>:`Launch ${tier} vessel · $0.01`}
+                {launching?<><span className="spinner"/>Launching...</>:'Launch vessel · $0.01'}
               </button>
             </div>
           </div>
@@ -159,7 +160,7 @@ export function VesselSelect({ onEnter, onBack }: Props) {
           const isActive  = vessel?.id === v.id
           const fuelPct   = Math.min(100, (v.fuel/100)*100)
           const fuelColor = fuelPct > 40 ? 'var(--teal)' : fuelPct > 15 ? '#FFB020' : 'var(--burn)'
-          const tierIcon  = v.tier==='ghost'?'◌':v.tier==='shadow'?'◑':'●'
+          const tierIcon = v.class === 'daemon' ? '⚙' : '◌'
           const myChart   = chart.slice(0,4)
 
           return (
@@ -175,7 +176,7 @@ export function VesselSelect({ onEnter, onBack }: Props) {
                   </div>
                   <div style={{flex:1}}>
                     <div style={{display:'flex',alignItems:'center',gap:'8px',marginBottom:'3px'}}>
-                      <span style={{fontFamily:'var(--font-mono)',fontSize:'13px',fontWeight:600,color:'var(--teal)'}}>{v.tier}</span>
+                      <span style={{fontFamily:'var(--font-mono)',fontSize:'13px',fontWeight:600,color:'var(--teal)'}}>{v.class}</span>
                       {isActive && <span style={{fontFamily:'var(--font-mono)',fontSize:'8px',color:'var(--teal)',border:'1px solid rgba(0,184,230,0.3)',borderRadius:'100px',padding:'1px 6px',letterSpacing:'0.06em'}}>ACTIVE</span>}
                     </div>
                     <div style={{fontFamily:'var(--font-mono)',fontSize:'9px',color:'var(--text-off)'}}>{v.id}</div>
