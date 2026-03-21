@@ -1,0 +1,78 @@
+# Page snapshot
+
+```yaml
+- generic [ref=e3]:
+  - generic [ref=e4]:
+    - button "Harbor" [ref=e5] [cursor=pointer]:
+      - img [ref=e6]
+      - text: Harbor
+    - generic [ref=e9]:
+      - img "CONK" [ref=e10]
+      - generic [ref=e11] [cursor=pointer]: CONK
+    - generic [ref=e12]:
+      - generic [ref=e14]: $5.00
+      - generic [ref=e15]: USDC
+  - generic [ref=e16]:
+    - generic [ref=e17]:
+      - generic [ref=e18]:
+        - generic [ref=e19]: Vessels
+        - generic [ref=e20]: 1 / 30
+      - button "+ new vessel" [ref=e21] [cursor=pointer]
+    - generic [ref=e24]:
+      - generic [ref=e25]:
+        - generic [ref=e27]: ◌
+        - generic [ref=e29]:
+          - generic [ref=e30]:
+            - generic [ref=e31]: ghost
+            - generic [ref=e32]: ACTIVE
+          - generic [ref=e33]: v_fgp9cpe3
+          - generic [ref=e35]: 364d
+        - button "burn" [ref=e37] [cursor=pointer]
+      - generic [ref=e38]:
+        - generic [ref=e39]:
+          - generic [ref=e40]:
+            - img [ref=e41]
+            - generic [ref=e45]: Fuel
+          - generic [ref=e46]: $0.00
+        - generic [ref=e48]:
+          - generic [ref=e49]:
+            - generic [ref=e50]: Draw Fuel (Auto)
+            - generic [ref=e51]: On — drawing from Harbor
+          - button [ref=e52] [cursor=pointer]
+        - button "Refuel from Harbor" [ref=e54] [cursor=pointer]:
+          - img [ref=e55]
+          - text: Refuel from Harbor
+      - button "Enter Vessel →" [ref=e59] [cursor=pointer]
+    - generic [ref=e60]:
+      - generic [ref=e61]: Protocol Fees — Abyss
+      - generic [ref=e62]:
+        - generic [ref=e63]: Read a cast
+        - generic [ref=e64]: $0.001
+      - generic [ref=e65]:
+        - generic [ref=e66]: Sound a cast
+        - generic [ref=e67]: $0.001
+      - generic [ref=e68]:
+        - generic [ref=e69]: Return cast
+        - generic [ref=e70]: $0.001
+      - generic [ref=e71]:
+        - generic [ref=e72]: Open a Dock
+        - generic [ref=e73]: $0.50
+      - generic [ref=e74]:
+        - generic [ref=e75]: Sound a Siren
+        - generic [ref=e76]: $0.03
+      - generic [ref=e77]:
+        - generic [ref=e78]: Visit Lighthouse
+        - generic [ref=e79]: $0.001
+    - button "reset (dev)" [ref=e81] [cursor=pointer]
+  - generic [ref=e82]:
+    - generic [ref=e83]: Fees sink to the void.
+    - generic [ref=e84]:
+      - generic [ref=e85]: ·
+      - text: No refunds.
+    - generic [ref=e86]:
+      - generic [ref=e87]: ·
+      - text: No recovery.
+    - generic [ref=e88]:
+      - generic [ref=e89]: ·
+      - text: No customer service.
+```

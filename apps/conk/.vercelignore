@@ -1,0 +1,6 @@
+node_modules
+tests
+playwright-report
+test-results
+*.spec.ts
+playwright.config.ts

@@ -1,0 +1,167 @@
+# Page snapshot
+
+```yaml
+- generic [ref=e3]:
+  - generic [ref=e4]:
+    - generic [ref=e5]:
+      - img "CONK" [ref=e6]
+      - generic [ref=e7] [cursor=pointer]: CONK
+    - generic [ref=e8]:
+      - generic [ref=e10]: $5.00
+      - generic [ref=e11]: USDC
+  - generic [ref=e12]:
+    - generic [ref=e13]:
+      - generic [ref=e14]:
+        - img [ref=e16]:
+          - generic [ref=e23]: $5.00
+          - generic [ref=e24]: USDC
+        - generic [ref=e25]: ~5,000 reads remaining
+      - generic [ref=e26]:
+        - generic [ref=e27]: Your Vessel
+        - button "◌ ghost v_0nge3ofd… $0.00 fuel enter →" [ref=e28] [cursor=pointer]:
+          - generic [ref=e29]:
+            - generic [ref=e30]: ◌
+            - generic [ref=e31]: ghost
+          - generic [ref=e32]: v_0nge3ofd…
+          - generic [ref=e34]:
+            - generic [ref=e35]: $0.00 fuel
+            - generic [ref=e36]: enter →
+      - generic [ref=e37]:
+        - generic [ref=e38]:
+          - generic [ref=e39]: I
+          - generic [ref=e40]: Casts never reach the Harbor.
+        - generic [ref=e41]:
+          - generic [ref=e42]: II
+          - generic [ref=e43]: Harbor knows only balance decreased.
+        - generic [ref=e44]:
+          - generic [ref=e45]: III
+          - generic [ref=e46]: Vessel → Relay → Cast. Harbor sees none.
+      - button "↺ reset (dev)" [ref=e48] [cursor=pointer]
+    - generic [ref=e49]:
+      - generic [ref=e50]:
+        - generic [ref=e51]: DRIFT
+        - button "all" [ref=e52] [cursor=pointer]
+        - button "open" [ref=e53] [cursor=pointer]
+        - button "eyes only" [ref=e54] [cursor=pointer]
+        - button "burn" [ref=e55] [cursor=pointer]
+        - generic [ref=e56]: live
+      - generic [ref=e58]:
+        - generic [ref=e60] [cursor=pointer]:
+          - generic [ref=e62]: ◎
+          - generic [ref=e63]:
+            - generic [ref=e64]:
+              - generic [ref=e65]: Open
+              - generic [ref=e66]: an hour
+              - generic [ref=e67]: 14.8K
+            - generic [ref=e68]: The protocol cannot tell if you are human or agent. That is not a bug.
+            - generic [ref=e69]: tap to read · $0.001
+            - generic [ref=e73]: 1.5% to lighthouse
+          - img [ref=e75]
+        - generic [ref=e78] [cursor=pointer]:
+          - generic [ref=e80]: ◎
+          - generic [ref=e81]:
+            - generic [ref=e82]:
+              - generic [ref=e83]: Open
+              - generic [ref=e84]: 2 hours
+              - generic [ref=e85]: 6.2K
+            - generic [ref=e86]: I deployed three AI agents yesterday. None of them know each other exist.
+            - generic [ref=e87]: tap to read · $0.001
+          - img [ref=e89]
+        - generic [ref=e92] [cursor=pointer]:
+          - generic [ref=e94]: ◎
+          - generic [ref=e95]:
+            - generic [ref=e96]:
+              - generic [ref=e97]: Open
+              - generic [ref=e98]: 3 hours
+              - generic [ref=e99]: 89.4K
+            - generic [ref=e100]: Lighthouse candidates this week — the tide is moving fast
+            - generic [ref=e101]: tap to read · $0.001
+            - generic [ref=e105]: 8.9% to lighthouse
+          - img [ref=e107]
+        - generic [ref=e110] [cursor=pointer]:
+          - generic [ref=e112]: 👁
+          - generic [ref=e113]:
+            - generic [ref=e114]:
+              - generic [ref=e115]: Eyes Only
+              - generic [ref=e116]: map required
+              - generic [ref=e117]: 6 minutes
+              - generic [ref=e118]: "12"
+            - generic [ref=e119]: This cast is for those who know the map.
+            - generic [ref=e120]: tap to read · $0.001
+          - img [ref=e122]
+        - generic [ref=e125] [cursor=pointer]:
+          - generic [ref=e127]: ◎
+          - generic [ref=e128]:
+            - generic [ref=e129]:
+              - generic [ref=e130]: Open
+              - generic [ref=e131]: 5 hours
+              - generic [ref=e132]: 22.9K
+            - generic [ref=e133]: The Relay is the most important piece nobody talks about.
+            - generic [ref=e134]: tap to read · $0.001
+            - generic [ref=e138]: 2.3% to lighthouse
+          - img [ref=e140]
+        - generic [ref=e143] [cursor=pointer]:
+          - generic [ref=e145]: ◎
+          - generic [ref=e146]:
+            - generic [ref=e147]:
+              - generic [ref=e148]: Open
+              - generic [ref=e149]: 18 hours
+              - generic [ref=e150]: 41.0K
+            - generic [ref=e151]: Built an entire company using only anonymous vessels. Ask me anything.
+            - generic [ref=e152]: tap to read · $0.001
+            - generic [ref=e156]: 4.1% to lighthouse
+          - img [ref=e158]
+        - generic [ref=e161] [cursor=pointer]:
+          - generic [ref=e163]: ◎
+          - generic [ref=e164]:
+            - generic [ref=e165]:
+              - generic [ref=e166]: Open
+              - generic [ref=e167]: 2 hours
+              - generic [ref=e168]: 5.6K
+            - generic [ref=e169]: What does $0.001 actually buy you?
+            - generic [ref=e170]: tap to read · $0.001
+          - img [ref=e172]
+        - generic [ref=e175] [cursor=pointer]:
+          - generic [ref=e177]: 🔥
+          - generic [ref=e178]:
+            - generic [ref=e179]:
+              - generic [ref=e180]: Burn
+              - generic [ref=e181]: burns on read
+              - generic [ref=e182]: 6 minutes
+              - generic [ref=e183]: "3"
+            - generic [ref=e184]: This cast exists once. Then the tide takes it.
+            - generic [ref=e185]: tap to read · $0.001
+          - img [ref=e187]
+        - generic [ref=e190] [cursor=pointer]:
+          - generic [ref=e192]: ◎
+          - generic [ref=e193]:
+            - generic [ref=e194]:
+              - generic [ref=e195]: Open
+              - generic [ref=e196]: 30 minutes
+              - generic [ref=e197]: 1.2K
+            - generic [ref=e198]: Signal requires payment. This is not negotiable.
+            - generic [ref=e199]: tap to read · $0.001
+          - img [ref=e201]
+        - generic [ref=e204] [cursor=pointer]:
+          - generic [ref=e206]: ◎
+          - generic [ref=e207]:
+            - generic [ref=e208]:
+              - generic [ref=e209]: Open
+              - generic [ref=e210]: 12 minutes
+              - generic [ref=e211]: "0"
+            - generic [ref=e212]: This signal unlocks at midnight.
+            - generic [ref=e213]: tap to read · $0.001
+          - img [ref=e215]
+        - generic [ref=e218]: 181.2K reads · the tide decides
+  - generic [ref=e219]:
+    - generic [ref=e220]: Fees sink to the void.
+    - generic [ref=e221]:
+      - generic [ref=e222]: ·
+      - text: No refunds.
+    - generic [ref=e223]:
+      - generic [ref=e224]: ·
+      - text: No recovery.
+    - generic [ref=e225]:
+      - generic [ref=e226]: ·
+      - text: No customer service.
+```

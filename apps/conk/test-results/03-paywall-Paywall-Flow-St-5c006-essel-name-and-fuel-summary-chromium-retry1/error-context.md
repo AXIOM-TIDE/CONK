@@ -1,0 +1,201 @@
+# Page snapshot
+
+```yaml
+- generic [ref=e3]:
+  - generic [ref=e4]:
+    - button "Harbor" [ref=e5] [cursor=pointer]:
+      - img [ref=e6]
+      - text: Harbor
+    - generic [ref=e8]:
+      - generic [ref=e9]: ◌
+      - generic [ref=e10]: ghost
+    - generic [ref=e11] [cursor=pointer]:
+      - generic [ref=e15]: $0.25
+      - button [ref=e16]
+      - generic [ref=e18]: auto
+      - button [ref=e20]
+      - generic [ref=e22]: autoburn
+    - generic [ref=e23]: $4.75
+  - generic [ref=e25]:
+    - navigation [ref=e26]:
+      - button "Drift" [ref=e27] [cursor=pointer]:
+        - img [ref=e28]
+        - generic [ref=e31]: Drift
+      - button "Cast" [ref=e32] [cursor=pointer]:
+        - img [ref=e33]
+        - generic [ref=e36]: Cast
+      - button "Dock" [ref=e37] [cursor=pointer]:
+        - img [ref=e38]
+        - generic [ref=e41]: Dock
+      - button "Siren" [ref=e42] [cursor=pointer]:
+        - img [ref=e43]
+        - generic [ref=e47]: Siren
+      - button "Light" [ref=e48] [cursor=pointer]:
+        - img [ref=e49]
+        - generic [ref=e53]: Light
+      - button "⊕ Stored" [ref=e54] [cursor=pointer]:
+        - generic [ref=e55]: ⊕
+        - generic [ref=e56]: Stored
+    - generic [ref=e58]:
+      - generic [ref=e59]:
+        - generic [ref=e60]: DRIFT
+        - button "all" [ref=e61] [cursor=pointer]
+        - button "open" [ref=e62] [cursor=pointer]
+        - button "eyes only" [ref=e63] [cursor=pointer]
+        - button "burn" [ref=e64] [cursor=pointer]
+        - button "⌕" [ref=e65] [cursor=pointer]
+        - generic [ref=e66]: live
+      - generic [ref=e68]:
+        - generic [ref=e70]:
+          - generic [ref=e72]:
+            - generic [ref=e73]: Open Signal
+            - generic [ref=e74]: Confirm to proceed — no reversal
+          - generic [ref=e79]:
+            - generic [ref=e80]:
+              - generic [ref=e81]: ◌
+              - generic [ref=e82]: Open Signal
+              - generic [ref=e83]:
+                - text: You are about to open this signal through your
+                - generic [ref=e84]: ghost vessel
+                - text: .
+                - text: Reading requires payment and will consume fuel.
+            - generic [ref=e85]:
+              - generic [ref=e86]:
+                - generic [ref=e87]: Signal
+                - generic [ref=e88]: The protocol cannot tell if you are huma…
+              - generic [ref=e89]:
+                - generic [ref=e90]: Vessel
+                - generic [ref=e91]: ◌ ghost
+              - generic [ref=e92]:
+                - generic [ref=e93]: Fuel after
+                - generic [ref=e94]: $0.25 → $0.25
+            - generic [ref=e95]: Fuel will burn when this signal is opened. No refund. No reversal.
+            - generic [ref=e96]:
+              - button "← Back" [ref=e97] [cursor=pointer]
+              - button "Open Signal" [ref=e98] [cursor=pointer]
+        - generic [ref=e100] [cursor=pointer]:
+          - generic [ref=e102]: ◎
+          - generic [ref=e104]:
+            - generic [ref=e105]:
+              - generic [ref=e106]: Open
+              - generic [ref=e107]: an hour
+              - generic [ref=e108]: 6d
+              - generic [ref=e110]: 14.8K
+            - generic [ref=e111]: The protocol cannot tell if you are human or agent. That is not a bug.
+          - img [ref=e113]
+        - generic [ref=e117] [cursor=pointer]:
+          - generic [ref=e119]: ◎
+          - generic [ref=e120]:
+            - generic [ref=e121]:
+              - generic [ref=e122]: Open
+              - generic [ref=e123]: 2 hours
+              - generic [ref=e124]: 1d
+              - generic [ref=e126]: 6.2K
+            - generic [ref=e127]: I deployed three AI agents yesterday. None of them know each other exist.
+            - generic [ref=e128]: tap to open · $0.001 · auto-burns after read
+          - img [ref=e130]
+        - generic [ref=e133] [cursor=pointer]:
+          - generic [ref=e135]: ◎
+          - generic [ref=e136]:
+            - generic [ref=e137]:
+              - generic [ref=e138]: Open
+              - generic [ref=e139]: 3 hours
+              - generic [ref=e140]: 2d
+              - generic [ref=e142]: 89.4K
+            - generic [ref=e143]: Lighthouse candidates this week — the tide is moving fast
+            - generic [ref=e144]: tap to open · $0.001 · auto-burns after read
+          - img [ref=e146]
+        - generic [ref=e149] [cursor=pointer]:
+          - generic [ref=e151]: 👁
+          - generic [ref=e152]:
+            - generic [ref=e153]:
+              - generic [ref=e154]: Eyes Only
+              - generic [ref=e155]: map required
+              - generic [ref=e156]: 6 minutes
+              - generic [ref=e157]: 23h
+              - generic [ref=e159]: "12"
+            - generic [ref=e160]: This cast is for those who know the map.
+            - generic [ref=e161]: tap to open · $0.001 · auto-burns after read
+          - img [ref=e163]
+        - generic [ref=e166] [cursor=pointer]:
+          - generic [ref=e168]: ◎
+          - generic [ref=e169]:
+            - generic [ref=e170]:
+              - generic [ref=e171]: Open
+              - generic [ref=e172]: 5 hours
+              - generic [ref=e173]: 2d
+              - generic [ref=e175]: 22.9K
+            - generic [ref=e176]: The Relay is the most important piece nobody talks about.
+            - generic [ref=e177]: tap to open · $0.001 · auto-burns after read
+          - img [ref=e179]
+        - generic [ref=e182] [cursor=pointer]:
+          - generic [ref=e184]: ◎
+          - generic [ref=e185]:
+            - generic [ref=e186]:
+              - generic [ref=e187]: Open
+              - generic [ref=e188]: 18 hours
+              - generic [ref=e189]: 6d
+              - generic [ref=e191]: 41.0K
+            - generic [ref=e192]: Built an entire company using only anonymous vessels. Ask me anything.
+            - generic [ref=e193]: tap to open · $0.001 · auto-burns after read
+          - img [ref=e195]
+        - generic [ref=e198] [cursor=pointer]:
+          - generic [ref=e200]: ◎
+          - generic [ref=e201]:
+            - generic [ref=e202]:
+              - generic [ref=e203]: Open
+              - generic [ref=e204]: 2 hours
+              - generic [ref=e205]: 1d
+              - generic [ref=e207]: 5.6K
+            - generic [ref=e208]: What does $0.001 actually buy you?
+            - generic [ref=e209]: tap to open · $0.001 · auto-burns after read
+          - img [ref=e211]
+        - generic [ref=e214] [cursor=pointer]:
+          - generic [ref=e216]: 🔥
+          - generic [ref=e217]:
+            - generic [ref=e218]:
+              - generic [ref=e219]: Burn
+              - generic [ref=e220]: burns on read
+              - generic [ref=e221]: 6 minutes
+              - generic [ref=e222]: 23h
+              - generic [ref=e224]: "3"
+            - generic [ref=e225]: This cast exists once. Then the tide takes it.
+            - generic [ref=e226]: tap to open · $0.001 · auto-burns after read
+          - img [ref=e228]
+        - generic [ref=e231] [cursor=pointer]:
+          - generic [ref=e233]: ◎
+          - generic [ref=e234]:
+            - generic [ref=e235]:
+              - generic [ref=e236]: Open
+              - generic [ref=e237]: 🔐 gated
+              - generic [ref=e238]: 30 minutes
+              - generic [ref=e239]: 1d
+              - generic [ref=e241]: 1.2K
+            - generic [ref=e242]: Signal requires payment. This is not negotiable.
+            - generic [ref=e243]: tap to open · $0.001 · auto-burns after read
+          - img [ref=e245]
+        - generic [ref=e248]:
+          - generic [ref=e250]: 🔒
+          - generic [ref=e251]:
+            - generic [ref=e252]:
+              - generic [ref=e253]: Future Signal
+              - generic [ref=e254]: 12 minutes
+              - generic [ref=e255]: 1d
+              - generic [ref=e257]: "0"
+            - generic [ref=e258]: This signal unlocks at midnight.
+            - generic [ref=e259]: 🔒 Unlocks in 6h
+        - generic [ref=e260]:
+          - text: 181.2K reads · the tide decides
+          - text: Signals survive by interaction. Otherwise, they sink.
+  - generic [ref=e261]:
+    - generic [ref=e262]: Fees sink to the void.
+    - generic [ref=e263]:
+      - generic [ref=e264]: ·
+      - text: No refunds.
+    - generic [ref=e265]:
+      - generic [ref=e266]: ·
+      - text: No recovery.
+    - generic [ref=e267]:
+      - generic [ref=e268]: ·
+      - text: No customer service.
+```
