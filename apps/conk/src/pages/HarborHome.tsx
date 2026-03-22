@@ -184,7 +184,7 @@ export function HarborHome({ onEnterVessel }: Props) {
 
 // ── Public cast row — hooks only, beautiful, no interaction ──
 
-function PublicCastRow({ cast, index, onNudge }: { cast: any; index: number; onNudge: () => void }) {
+function PublicCastRow({ cast, index, onNudge }: { cast: any; index: number; onNudge: () => void; key?: string }) {
   const isBurn  = cast.mode === 'burn'
   const isEyes  = cast.mode === 'eyes_only'
   const expiry  = timeUntilExpiry(cast.expiresAt)

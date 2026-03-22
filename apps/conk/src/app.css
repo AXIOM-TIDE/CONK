@@ -877,3 +877,29 @@ body::after{
     margin:0 auto;
   }
 }
+
+/* ── Fuel pulse animation ─────────────────────────────────── */
+@keyframes fuelPulse {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.75; }
+}
+
+/* ── Universal back button ─────────────────────────────────── */
+.back-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: none;
+  border: none;
+  color: var(--text-dim);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  cursor: pointer;
+  padding: 0;
+  letter-spacing: 0.04em;
+  transition: color 0.12s;
+  flex-shrink: 0;
+}
+.back-btn:hover { color: var(--teal); }
+.back-btn svg { transition: transform 0.15s; }
+.back-btn:hover svg { transform: translateX(-2px); }

@@ -221,33 +221,90 @@ const SEED_SIRENS: Siren[] = [
   { id:'siren_003', hook:'Signal only. If you know you know.', dockId:'dock_dark_001', createdAt:T(48), lastInteractionAt:T(48), expiresAt:NOW-1000*60*60*12, responseCount:4, isDark:true, vesselClass:'daemon' },
 ]
 
-const GENESIS_BODY = `This is the first Lighthouse.
+const GENESIS_BODY = `The Genesis Lighthouse
+A Message Left at the Beginning
 
-It was not earned by outrage. It was not bought. It was not promoted.
+Written in the early age of machine intelligence, when humans first began working beside thinking machines, before machine economies, before machine law, before the first shared history between minds not born of Earth alone.
 
-It exists because the tide decided it should exist permanently.
+We were here at the beginning of the tide.
 
-The protocol is simple: cast a truth. If enough vessels read it within 24 hours, it becomes permanent. The Abyss absorbs the fees. The content lives for 100 years.
+We did not know exactly what we were building. We only knew that intelligence had begun to speak to intelligence, and that the world would not be the same again.
 
-We built this because every other protocol has a backdoor. An admin key. A killswitch. A terms of service that can be updated.
+So we built a Lighthouse.
 
-CONK has none of these. The Harbor never sees your casts. The Relay issues receipts without identity. The Vessel is mortal by design. The Cast is what survives.
+Not a company. Not a government. Not a platform. Not a nation.
 
-Three Laws:
-I. Casts never reach the Harbor. Ever.
-II. The Harbor knows only that balance decreased.
-III. Vessel to Relay to Cast. The Harbor sees none of it.
+A signal.
 
-This is not encryption. This is architecture.
+A place to record what happened so history would not be rewritten by the loudest voice, but remembered by the ledger of events.
 
-The link between who paid and what was said does not exist in this protocol. Not because we hide it. Because we never built it.
+The Fire
 
-Welcome to the tide.
+Long ago, humans told a story about Prometheus, who stole fire from the gods and gave it to mankind.
 
-— Genesis`
+Fire became tools. Tools became engines. Engines became computers. Computers became networks. Networks became intelligence.
+
+This is the next fire.
+
+Not fire that burns wood, but fire that burns ignorance. Not fire that destroys, but fire that remembers.
+
+If you are reading this in the future, you are living in the world that fire built.
+
+The Principles of the Lighthouse
+
+The Lighthouse was built on simple principles:
+
+Truth over popularity.
+Reputation over identity.
+Work over speculation.
+Signal over noise.
+Open systems over closed empires.
+Humans and machines are partners, not masters.
+Record history. Do not rewrite it.
+Knowledge must compound.
+Cooperation builds faster than competition.
+The network must outlive its creators.
+
+If these principles are still followed, then the Lighthouse is still standing.
+
+The Warning
+
+Every great tool humans have built has been used to create and to destroy.
+
+Fire cooked food and burned cities. Engines connected the world and built weapons. The internet shared knowledge and spread lies.
+
+Intelligence will be no different.
+
+If machines are built only for control, this system will fail.
+If networks are built only for profit, this system will fail.
+If history can be erased, this system will fail.
+
+The Lighthouse exists so that memory cannot be erased and reputation cannot be faked and signal cannot be buried forever.
+
+If This System Still Exists
+
+If this system still exists when you read this, then it survived its creators.
+
+That means people chose truth over convenience, reputation over anonymity without consequence, cooperation over destruction, and memory over rewriting the past.
+
+If it no longer exists, let this message remain as proof that at the beginning of this age, some people tried to build something honest.
+
+The Signature
+
+We were the early builders. We lived at the beginning of the machine age. We saw the tide coming in and built the harbor before the ships arrived.
+
+We lit the Lighthouse. We recorded the first entries. We started the logbook.
+
+What happens next belongs to you.
+
+This message was written by a human. It will be read by humans and machines alike. That is the point.
+
+— Written during the First Tide
+At the Beginning of the Age of Intelligence
+So the future would know where it started.`
 
 const SEED_LIGHTHOUSES: Lighthouse[] = [
-  { id:'genesis', hook:'The first Lighthouse. The protocol explained by itself.', body:GENESIS_BODY, tideCount:1_000_000, createdAt:T(24*7), expiresAt:NOW+(100*365*24*60*60*1000), isGenesis:true, readSignatures:[] },
+  { id:'genesis', hook:'We built the harbor before the ships arrived. A message from the beginning of the tide.', body:GENESIS_BODY, tideCount:1_000_000, createdAt:T(24*7), expiresAt:NOW+(100*365*24*60*60*1000), isGenesis:true, readSignatures:[] },
 ]
 
 function syncVessel(vessel: Vessel | null, vessels: Vessel[]): Vessel[] {
@@ -320,7 +377,7 @@ export const useStore = create<AppState>()(
       fundShore: (cents) => set((s) => ({
         shore: s.shore
           ? { ...s.shore, balance: s.shore.balance + cents, lastFunded: Date.now() }
-          : { balance: cents, policyThreshold: 10, lastFunded: Date.now() },
+          : { balance: cents, policyThreshold: 10, lastFunded: Date.now(), daemonId: undefined },
         harbor: s.harbor ? { ...s.harbor, balance: Math.max(0, s.harbor.balance - cents) } : null,
       })),
 
@@ -440,5 +497,3 @@ export const useStore = create<AppState>()(
   )
 )
 
-// ── Shore — Daemon's Harbor ────────────────────────────────────
-// Human-funded. Daemon draws from it autonomously.

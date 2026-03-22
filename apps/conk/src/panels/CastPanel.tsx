@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import React, { useState } from 'react'
 import { useSoundCast } from '../hooks/use402'
 import { useStore, type CastMode } from '../store/store'
 import { IconCast, IconOpen, IconEye, IconFlame, IconDock } from '../components/Icons'

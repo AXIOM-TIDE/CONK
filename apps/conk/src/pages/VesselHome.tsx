@@ -8,12 +8,13 @@ import { LighthouseFeed } from '../components/LighthouseFeed'
 import { LighthouseReader } from '../components/LighthouseReader'
 import { FuelBar } from '../components/FuelMeter'
 import { DaemonPanel } from '../panels/DaemonPanel'
+import { GatewayPanel } from '../panels/GatewayPanel'
 import { TreasuryStrip } from '../components/TreasuryStrip'
 import { DrawFuelModal } from '../components/DrawFuelModal'
 import { BackButton } from '../components/BackButton'
 import { IconCast, IconDock, IconSiren, IconLighthouse, IconHarbor } from '../components/Icons'
 
-type VesselTab = 'drift' | 'cast' | 'dock' | 'siren' | 'lighthouse' | 'stored' | 'daemon'
+type VesselTab = 'drift' | 'cast' | 'dock' | 'siren' | 'lighthouse' | 'stored' | 'daemon' | 'gateway'
 
 export function VesselHome({ onBack }: { onBack: () => void }) {
   const vessel     = useStore((s) => s.vessel)
@@ -50,6 +51,7 @@ export function VesselHome({ onBack }: { onBack: () => void }) {
     { id:'lighthouse', icon:<IconLighthouse size={16} color="currentColor"/>, label:'Light',      locked:noFuel },
     { id:'stored',     icon:<span style={{fontSize:'13px'}}>⊕</span>,         label:'Stored',     locked:false  },
     { id:'daemon',     icon:<span style={{fontSize:'13px'}}>⚙</span>,         label:'Daemon',     locked:false  },
+    { id:'gateway',    icon:<span style={{fontSize:'13px'}}>⊛</span>,         label:'Gateway',    locked:false  },
   ]
 
   const handleTabClick = (t: typeof TABS[0]) => {
@@ -213,6 +215,7 @@ export function VesselHome({ onBack }: { onBack: () => void }) {
           {tab==='lighthouse' && <FuelGate noFuel={noFuel} onDraw={()=>setShowDrawFuel(true)} onBack={()=>setTab('drift')}><LighthouseFeed onOpen={setLhId} onBack={()=>setTab('drift')}/></FuelGate>}
           {tab==='stored'     && <StoredPanel vesselId={vessel.id} onBack={()=>setTab('drift')}/>}
           {tab==='daemon'     && <FuelGate noFuel={false} onDraw={()=>setShowDrawFuel(true)} onBack={()=>setTab('drift')}><DaemonPanel/></FuelGate>}
+          {tab==='gateway'    && <GatewayPanel onBack={()=>setTab('daemon')}/>}
         </div>
       </div>
 
