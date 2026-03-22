@@ -9,12 +9,13 @@ import { LighthouseReader } from '../components/LighthouseReader'
 import { FuelBar } from '../components/FuelMeter'
 import { DaemonPanel } from '../panels/DaemonPanel'
 import { GatewayPanel } from '../panels/GatewayPanel'
+import { ChannelPanel } from '../panels/ChannelPanel'
 import { TreasuryStrip } from '../components/TreasuryStrip'
 import { DrawFuelModal } from '../components/DrawFuelModal'
 import { BackButton } from '../components/BackButton'
 import { IconCast, IconDock, IconSiren, IconLighthouse, IconHarbor } from '../components/Icons'
 
-type VesselTab = 'drift' | 'cast' | 'dock' | 'siren' | 'lighthouse' | 'stored' | 'daemon' | 'gateway'
+type VesselTab = 'drift' | 'cast' | 'dock' | 'siren' | 'lighthouse' | 'stored' | 'daemon' | 'gateway' | 'channel'
 
 export function VesselHome({ onBack }: { onBack: () => void }) {
   const vessel     = useStore((s) => s.vessel)
@@ -52,6 +53,7 @@ export function VesselHome({ onBack }: { onBack: () => void }) {
     { id:'stored',     icon:<span style={{fontSize:'13px'}}>⊕</span>,         label:'Stored',     locked:false  },
     { id:'daemon',     icon:<span style={{fontSize:'13px'}}>⚙</span>,         label:'Daemon',     locked:false  },
     { id:'gateway',    icon:<span style={{fontSize:'13px'}}>⊛</span>,         label:'Gateway',    locked:false  },
+    { id:'channel',    icon:<span style={{fontSize:'13px'}}>◌◌</span>,        label:'Channels',   locked:false  },
   ]
 
   const handleTabClick = (t: typeof TABS[0]) => {
@@ -216,6 +218,7 @@ export function VesselHome({ onBack }: { onBack: () => void }) {
           {tab==='stored'     && <StoredPanel vesselId={vessel.id} onBack={()=>setTab('drift')}/>}
           {tab==='daemon'     && <FuelGate noFuel={false} onDraw={()=>setShowDrawFuel(true)} onBack={()=>setTab('drift')}><DaemonPanel/></FuelGate>}
           {tab==='gateway'    && <GatewayPanel onBack={()=>setTab('daemon')}/>}
+          {tab==='channel'    && <ChannelPanel onBack={()=>setTab('drift')}/>}
         </div>
       </div>
 
