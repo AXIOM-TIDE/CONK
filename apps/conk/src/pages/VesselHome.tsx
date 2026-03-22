@@ -11,12 +11,13 @@ import { DaemonPanel } from '../panels/DaemonPanel'
 import { GatewayPanel } from '../panels/GatewayPanel'
 import { ChannelPanel } from '../panels/ChannelPanel'
 import { BountyPanel } from '../panels/BountyPanel'
+import { ProtocolPanel } from '../panels/ProtocolPanel'
 import { TreasuryStrip } from '../components/TreasuryStrip'
 import { DrawFuelModal } from '../components/DrawFuelModal'
 import { BackButton } from '../components/BackButton'
 import { IconCast, IconDock, IconSiren, IconLighthouse, IconHarbor } from '../components/Icons'
 
-type VesselTab = 'drift' | 'cast' | 'dock' | 'siren' | 'lighthouse' | 'stored' | 'daemon' | 'gateway' | 'channel' | 'bounty'
+type VesselTab = 'drift' | 'cast' | 'dock' | 'siren' | 'lighthouse' | 'stored' | 'daemon' | 'gateway' | 'channel' | 'bounty' | 'protocol'
 
 export function VesselHome({ onBack }: { onBack: () => void }) {
   const vessel     = useStore((s) => s.vessel)
@@ -56,6 +57,7 @@ export function VesselHome({ onBack }: { onBack: () => void }) {
     { id:'gateway',    icon:<span style={{fontSize:'13px'}}>⊛</span>,         label:'Gateway',    locked:false  },
     { id:'channel',    icon:<span style={{fontSize:'13px'}}>◌◌</span>,        label:'Channels',   locked:false  },
     { id:'bounty',     icon:<span style={{fontSize:'13px'}}>⊕</span>,         label:'Bounties',   locked:false  },
+    { id:'protocol',   icon:<span style={{fontSize:'13px'}}>⚡</span>,         label:'Protocol',   locked:false  },
   ]
 
   const handleTabClick = (t: typeof TABS[0]) => {
@@ -222,6 +224,7 @@ export function VesselHome({ onBack }: { onBack: () => void }) {
           {tab==='gateway'    && <GatewayPanel onBack={()=>setTab('daemon')}/>}
           {tab==='channel'    && <ChannelPanel onBack={()=>setTab('drift')}/>}
           {tab==='bounty'     && <BountyPanel onBack={()=>setTab('drift')}/>}
+          {tab==='protocol'   && <ProtocolPanel onBack={()=>setTab('drift')}/>}
         </div>
       </div>
 
