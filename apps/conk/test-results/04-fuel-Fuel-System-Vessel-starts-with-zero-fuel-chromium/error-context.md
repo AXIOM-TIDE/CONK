@@ -1,172 +1,27 @@
 # Page snapshot
 
 ```yaml
-- generic [ref=e3]:
-  - generic [ref=e4]:
-    - button "Harbor" [ref=e5] [cursor=pointer]:
-      - img [ref=e6]
-      - text: Harbor
-    - generic [ref=e8]:
-      - generic [ref=e9]: ◌
-      - generic [ref=e10]: ghost
-    - generic [ref=e11] [cursor=pointer]:
-      - generic [ref=e12]: ⚡
-      - generic [ref=e13]: dry · tap to charge
-    - generic [ref=e14]: $5.00
-  - generic [ref=e16]:
-    - navigation [ref=e17]:
-      - button "Drift" [ref=e18] [cursor=pointer]:
-        - img [ref=e19]
-        - generic [ref=e22]: Drift
-      - button "Cast" [ref=e23] [cursor=pointer]:
-        - img [ref=e24]
-        - generic [ref=e27]: Cast
-      - button "Dock" [ref=e29] [cursor=pointer]:
-        - img [ref=e30]
-        - generic [ref=e33]: Dock
-      - button "Siren" [ref=e35] [cursor=pointer]:
-        - img [ref=e36]
-        - generic [ref=e40]: Siren
-      - button "Light" [ref=e42] [cursor=pointer]:
-        - img [ref=e43]
-        - generic [ref=e47]: Light
-      - button "⊕ Stored" [ref=e49] [cursor=pointer]:
-        - generic [ref=e50]: ⊕
-        - generic [ref=e51]: Stored
-    - generic [ref=e53]:
-      - generic [ref=e54]:
-        - generic [ref=e55]: DRIFT
-        - button "all" [ref=e56] [cursor=pointer]
-        - button "open" [ref=e57] [cursor=pointer]
-        - button "eyes only" [ref=e58] [cursor=pointer]
-        - button "burn" [ref=e59] [cursor=pointer]
-        - button "⌕" [ref=e60] [cursor=pointer]
-        - generic [ref=e61]: live
-      - generic [ref=e63]:
-        - generic [ref=e65] [cursor=pointer]:
-          - generic [ref=e67]: ◎
-          - generic [ref=e68]:
-            - generic [ref=e69]:
-              - generic [ref=e70]: Open
-              - generic [ref=e71]: an hour
-              - generic [ref=e72]: 6d
-              - generic [ref=e74]: 14.8K
-            - generic [ref=e75]: The protocol cannot tell if you are human or agent. That is not a bug.
-            - generic [ref=e76]: tap to open · $0.001 · auto-burns after read
-          - img [ref=e78]
-        - generic [ref=e81] [cursor=pointer]:
-          - generic [ref=e83]: ◎
-          - generic [ref=e84]:
-            - generic [ref=e85]:
-              - generic [ref=e86]: Open
-              - generic [ref=e87]: 2 hours
-              - generic [ref=e88]: 1d
-              - generic [ref=e90]: 6.2K
-            - generic [ref=e91]: I deployed three AI agents yesterday. None of them know each other exist.
-            - generic [ref=e92]: tap to open · $0.001 · auto-burns after read
-          - img [ref=e94]
-        - generic [ref=e97] [cursor=pointer]:
-          - generic [ref=e99]: ◎
-          - generic [ref=e100]:
-            - generic [ref=e101]:
-              - generic [ref=e102]: Open
-              - generic [ref=e103]: 3 hours
-              - generic [ref=e104]: 2d
-              - generic [ref=e106]: 89.4K
-            - generic [ref=e107]: Lighthouse candidates this week — the tide is moving fast
-            - generic [ref=e108]: tap to open · $0.001 · auto-burns after read
-          - img [ref=e110]
-        - generic [ref=e113] [cursor=pointer]:
-          - generic [ref=e115]: 👁
-          - generic [ref=e116]:
-            - generic [ref=e117]:
-              - generic [ref=e118]: Eyes Only
-              - generic [ref=e119]: map required
-              - generic [ref=e120]: 6 minutes
-              - generic [ref=e121]: 23h
-              - generic [ref=e123]: "12"
-            - generic [ref=e124]: This cast is for those who know the map.
-            - generic [ref=e125]: tap to open · $0.001 · auto-burns after read
-          - img [ref=e127]
-        - generic [ref=e130] [cursor=pointer]:
-          - generic [ref=e132]: ◎
-          - generic [ref=e133]:
-            - generic [ref=e134]:
-              - generic [ref=e135]: Open
-              - generic [ref=e136]: 5 hours
-              - generic [ref=e137]: 2d
-              - generic [ref=e139]: 22.9K
-            - generic [ref=e140]: The Relay is the most important piece nobody talks about.
-            - generic [ref=e141]: tap to open · $0.001 · auto-burns after read
-          - img [ref=e143]
-        - generic [ref=e146] [cursor=pointer]:
-          - generic [ref=e148]: ◎
-          - generic [ref=e149]:
-            - generic [ref=e150]:
-              - generic [ref=e151]: Open
-              - generic [ref=e152]: 18 hours
-              - generic [ref=e153]: 6d
-              - generic [ref=e155]: 41.0K
-            - generic [ref=e156]: Built an entire company using only anonymous vessels. Ask me anything.
-            - generic [ref=e157]: tap to open · $0.001 · auto-burns after read
-          - img [ref=e159]
-        - generic [ref=e162] [cursor=pointer]:
-          - generic [ref=e164]: ◎
-          - generic [ref=e165]:
-            - generic [ref=e166]:
-              - generic [ref=e167]: Open
-              - generic [ref=e168]: 2 hours
-              - generic [ref=e169]: 1d
-              - generic [ref=e171]: 5.6K
-            - generic [ref=e172]: What does $0.001 actually buy you?
-            - generic [ref=e173]: tap to open · $0.001 · auto-burns after read
-          - img [ref=e175]
-        - generic [ref=e178] [cursor=pointer]:
-          - generic [ref=e180]: 🔥
-          - generic [ref=e181]:
-            - generic [ref=e182]:
-              - generic [ref=e183]: Burn
-              - generic [ref=e184]: burns on read
-              - generic [ref=e185]: 6 minutes
-              - generic [ref=e186]: 23h
-              - generic [ref=e188]: "3"
-            - generic [ref=e189]: This cast exists once. Then the tide takes it.
-            - generic [ref=e190]: tap to open · $0.001 · auto-burns after read
-          - img [ref=e192]
-        - generic [ref=e195] [cursor=pointer]:
-          - generic [ref=e197]: ◎
-          - generic [ref=e198]:
-            - generic [ref=e199]:
-              - generic [ref=e200]: Open
-              - generic [ref=e201]: 🔐 gated
-              - generic [ref=e202]: 30 minutes
-              - generic [ref=e203]: 1d
-              - generic [ref=e205]: 1.2K
-            - generic [ref=e206]: Signal requires payment. This is not negotiable.
-            - generic [ref=e207]: tap to open · $0.001 · auto-burns after read
-          - img [ref=e209]
-        - generic [ref=e212]:
-          - generic [ref=e214]: 🔒
-          - generic [ref=e215]:
-            - generic [ref=e216]:
-              - generic [ref=e217]: Future Signal
-              - generic [ref=e218]: 12 minutes
-              - generic [ref=e219]: 1d
-              - generic [ref=e221]: "0"
-            - generic [ref=e222]: This signal unlocks at midnight.
-            - generic [ref=e223]: 🔒 Unlocks in 6h
-        - generic [ref=e224]:
-          - text: 181.2K reads · the tide decides
-          - text: Signals survive by interaction. Otherwise, they sink.
-  - generic [ref=e225]:
-    - generic [ref=e226]: Fees sink to the void.
-    - generic [ref=e227]:
-      - generic [ref=e228]: ·
-      - text: No refunds.
-    - generic [ref=e229]:
-      - generic [ref=e230]: ·
-      - text: No recovery.
-    - generic [ref=e231]:
-      - generic [ref=e232]: ·
-      - text: No customer service.
+- generic [ref=e5]:
+  - generic [ref=e6]:
+    - generic [ref=e7]: ◌
+    - heading "Launch a Vessel" [level=2] [ref=e8]
+    - paragraph [ref=e9]: Your vessel is your anonymous identity. It draws fuel from Harbor through the Relay. Harbor never sees what your vessel does.
+  - generic [ref=e10]:
+    - generic [ref=e11]:
+      - generic [ref=e12]: ◌
+      - generic [ref=e13]:
+        - generic [ref=e14]: Vessel
+        - generic [ref=e15]: Anonymous by design. No tier. No identity. If compromised — burn it.
+    - generic [ref=e16]: All vessels are identical on the network. No metadata distinguishes one from another. Anonymity is not a setting — it is the only mode.
+  - generic [ref=e17]: If your identity is revealed, burn the vessel immediately. A new one can be launched. No history transfers.
+  - generic [ref=e18]:
+    - generic [ref=e19]:
+      - generic [ref=e20]: Vessel cost
+      - generic [ref=e21]: $0.01
+    - generic [ref=e22]:
+      - generic [ref=e23]: Lifespan
+      - generic [ref=e24]: 1yr · resets on activity
+  - generic [ref=e25]:
+    - button "← back" [ref=e26] [cursor=pointer]
+    - button "Launch Vessel · $0.01" [ref=e27] [cursor=pointer]
 ```

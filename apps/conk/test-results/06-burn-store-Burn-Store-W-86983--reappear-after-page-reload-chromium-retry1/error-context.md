@@ -1,167 +1,27 @@
 # Page snapshot
 
 ```yaml
-- generic [ref=e3]:
-  - generic [ref=e4]:
-    - generic [ref=e5]:
-      - img "CONK" [ref=e6]
-      - generic [ref=e7] [cursor=pointer]: CONK
-    - generic [ref=e8]:
-      - generic [ref=e10]: $4.75
-      - generic [ref=e11]: USDC
-  - generic [ref=e12]:
-    - generic [ref=e13]:
-      - generic [ref=e14]:
-        - img [ref=e16]:
-          - generic [ref=e23]: $4.75
-          - generic [ref=e24]: USDC
-        - generic [ref=e25]: ~4,750 reads remaining
-      - generic [ref=e26]:
-        - generic [ref=e27]: Your Vessel
-        - button "◌ ghost v_xas1fs9p… $0.25 fuel enter →" [ref=e28] [cursor=pointer]:
-          - generic [ref=e29]:
-            - generic [ref=e30]: ◌
-            - generic [ref=e31]: ghost
-          - generic [ref=e32]: v_xas1fs9p…
-          - generic [ref=e35]:
-            - generic [ref=e36]: $0.25 fuel
-            - generic [ref=e37]: enter →
-      - generic [ref=e38]:
-        - generic [ref=e39]:
-          - generic [ref=e40]: I
-          - generic [ref=e41]: Casts never reach the Harbor.
-        - generic [ref=e42]:
-          - generic [ref=e43]: II
-          - generic [ref=e44]: Harbor knows only balance decreased.
-        - generic [ref=e45]:
-          - generic [ref=e46]: III
-          - generic [ref=e47]: Vessel → Relay → Cast. Harbor sees none.
-      - button "↺ reset (dev)" [ref=e49] [cursor=pointer]
-    - generic [ref=e50]:
-      - generic [ref=e51]:
-        - generic [ref=e52]: DRIFT
-        - button "all" [ref=e53] [cursor=pointer]
-        - button "open" [ref=e54] [cursor=pointer]
-        - button "eyes only" [ref=e55] [cursor=pointer]
-        - button "burn" [ref=e56] [cursor=pointer]
-        - generic [ref=e57]: live
-      - generic [ref=e59]:
-        - generic [ref=e61] [cursor=pointer]:
-          - generic [ref=e63]: ◎
-          - generic [ref=e64]:
-            - generic [ref=e65]:
-              - generic [ref=e66]: Open
-              - generic [ref=e67]: an hour
-              - generic [ref=e68]: 14.8K
-            - generic [ref=e69]: The protocol cannot tell if you are human or agent. That is not a bug.
-            - generic [ref=e70]: tap to read · $0.001
-            - generic [ref=e74]: 1.5% to lighthouse
-          - img [ref=e76]
-        - generic [ref=e79] [cursor=pointer]:
-          - generic [ref=e81]: ◎
-          - generic [ref=e82]:
-            - generic [ref=e83]:
-              - generic [ref=e84]: Open
-              - generic [ref=e85]: 2 hours
-              - generic [ref=e86]: 6.2K
-            - generic [ref=e87]: I deployed three AI agents yesterday. None of them know each other exist.
-            - generic [ref=e88]: tap to read · $0.001
-          - img [ref=e90]
-        - generic [ref=e93] [cursor=pointer]:
-          - generic [ref=e95]: ◎
-          - generic [ref=e96]:
-            - generic [ref=e97]:
-              - generic [ref=e98]: Open
-              - generic [ref=e99]: 3 hours
-              - generic [ref=e100]: 89.4K
-            - generic [ref=e101]: Lighthouse candidates this week — the tide is moving fast
-            - generic [ref=e102]: tap to read · $0.001
-            - generic [ref=e106]: 8.9% to lighthouse
-          - img [ref=e108]
-        - generic [ref=e111] [cursor=pointer]:
-          - generic [ref=e113]: 👁
-          - generic [ref=e114]:
-            - generic [ref=e115]:
-              - generic [ref=e116]: Eyes Only
-              - generic [ref=e117]: map required
-              - generic [ref=e118]: 6 minutes
-              - generic [ref=e119]: "12"
-            - generic [ref=e120]: This cast is for those who know the map.
-            - generic [ref=e121]: tap to read · $0.001
-          - img [ref=e123]
-        - generic [ref=e126] [cursor=pointer]:
-          - generic [ref=e128]: ◎
-          - generic [ref=e129]:
-            - generic [ref=e130]:
-              - generic [ref=e131]: Open
-              - generic [ref=e132]: 5 hours
-              - generic [ref=e133]: 22.9K
-            - generic [ref=e134]: The Relay is the most important piece nobody talks about.
-            - generic [ref=e135]: tap to read · $0.001
-            - generic [ref=e139]: 2.3% to lighthouse
-          - img [ref=e141]
-        - generic [ref=e144] [cursor=pointer]:
-          - generic [ref=e146]: ◎
-          - generic [ref=e147]:
-            - generic [ref=e148]:
-              - generic [ref=e149]: Open
-              - generic [ref=e150]: 18 hours
-              - generic [ref=e151]: 41.0K
-            - generic [ref=e152]: Built an entire company using only anonymous vessels. Ask me anything.
-            - generic [ref=e153]: tap to read · $0.001
-            - generic [ref=e157]: 4.1% to lighthouse
-          - img [ref=e159]
-        - generic [ref=e162] [cursor=pointer]:
-          - generic [ref=e164]: ◎
-          - generic [ref=e165]:
-            - generic [ref=e166]:
-              - generic [ref=e167]: Open
-              - generic [ref=e168]: 2 hours
-              - generic [ref=e169]: 5.6K
-            - generic [ref=e170]: What does $0.001 actually buy you?
-            - generic [ref=e171]: tap to read · $0.001
-          - img [ref=e173]
-        - generic [ref=e176] [cursor=pointer]:
-          - generic [ref=e178]: 🔥
-          - generic [ref=e179]:
-            - generic [ref=e180]:
-              - generic [ref=e181]: Burn
-              - generic [ref=e182]: burns on read
-              - generic [ref=e183]: 6 minutes
-              - generic [ref=e184]: "3"
-            - generic [ref=e185]: This cast exists once. Then the tide takes it.
-            - generic [ref=e186]: tap to read · $0.001
-          - img [ref=e188]
-        - generic [ref=e191] [cursor=pointer]:
-          - generic [ref=e193]: ◎
-          - generic [ref=e194]:
-            - generic [ref=e195]:
-              - generic [ref=e196]: Open
-              - generic [ref=e197]: 30 minutes
-              - generic [ref=e198]: 1.2K
-            - generic [ref=e199]: Signal requires payment. This is not negotiable.
-            - generic [ref=e200]: tap to read · $0.001
-          - img [ref=e202]
-        - generic [ref=e205] [cursor=pointer]:
-          - generic [ref=e207]: ◎
-          - generic [ref=e208]:
-            - generic [ref=e209]:
-              - generic [ref=e210]: Open
-              - generic [ref=e211]: 12 minutes
-              - generic [ref=e212]: "0"
-            - generic [ref=e213]: This signal unlocks at midnight.
-            - generic [ref=e214]: tap to read · $0.001
-          - img [ref=e216]
-        - generic [ref=e219]: 181.2K reads · the tide decides
-  - generic [ref=e220]:
-    - generic [ref=e221]: Fees sink to the void.
-    - generic [ref=e222]:
-      - generic [ref=e223]: ·
-      - text: No refunds.
-    - generic [ref=e224]:
-      - generic [ref=e225]: ·
-      - text: No recovery.
-    - generic [ref=e226]:
-      - generic [ref=e227]: ·
-      - text: No customer service.
+- generic [ref=e5]:
+  - generic [ref=e6]:
+    - generic [ref=e7]: ◌
+    - heading "Launch a Vessel" [level=2] [ref=e8]
+    - paragraph [ref=e9]: Your vessel is your anonymous identity. It draws fuel from Harbor through the Relay. Harbor never sees what your vessel does.
+  - generic [ref=e10]:
+    - generic [ref=e11]:
+      - generic [ref=e12]: ◌
+      - generic [ref=e13]:
+        - generic [ref=e14]: Vessel
+        - generic [ref=e15]: Anonymous by design. No tier. No identity. If compromised — burn it.
+    - generic [ref=e16]: All vessels are identical on the network. No metadata distinguishes one from another. Anonymity is not a setting — it is the only mode.
+  - generic [ref=e17]: If your identity is revealed, burn the vessel immediately. A new one can be launched. No history transfers.
+  - generic [ref=e18]:
+    - generic [ref=e19]:
+      - generic [ref=e20]: Vessel cost
+      - generic [ref=e21]: $0.01
+    - generic [ref=e22]:
+      - generic [ref=e23]: Lifespan
+      - generic [ref=e24]: 1yr · resets on activity
+  - generic [ref=e25]:
+    - button "← back" [ref=e26] [cursor=pointer]
+    - button "Launch Vessel · $0.01" [ref=e27] [cursor=pointer]
 ```
