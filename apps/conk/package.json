@@ -13,15 +13,15 @@
     "test:report": "playwright show-report"
   },
   "dependencies": {
-    "@mysten/sui": "^1.19.0",
+    "@mysten/sui": "^1.45.2",
     "@mysten/zklogin": "^0.7.7",
+    "clsx": "^2.1.1",
+    "dayjs": "^1.11.13",
+    "framer-motion": "^11.18.2",
+    "lucide-react": "^0.483.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
-    "zustand": "^5.0.2",
-    "lucide-react": "^0.483.0",
-    "clsx": "^2.1.1",
-    "framer-motion": "^11.18.2",
-    "dayjs": "^1.11.13"
+    "zustand": "^5.0.2"
   },
   "devDependencies": {
     "@playwright/test": "^1.44.0",
