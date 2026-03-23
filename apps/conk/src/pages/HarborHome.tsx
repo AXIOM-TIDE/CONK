@@ -10,6 +10,7 @@ import { formatTide, timeUntilExpiry, formatTimeAgo } from '../utils/scrubber'
 import { ArcMeter } from '../components/FuelMeter'
 import { TreasuryStrip } from '../components/TreasuryStrip'
 import { DecayBadge } from '../components/DecayBadge'
+import { ZkLoginButton } from '../components/ZkLoginButton'
 
 interface Props {
   onEnterVessel: () => void
@@ -53,10 +54,13 @@ export function HarborHome({ onEnterVessel }: Props) {
         </div>
 
         {/* Balance */}
-        <div style={{ marginLeft:'auto', display:'flex', alignItems:'center', gap:'7px', padding:'5px 12px', background:'rgba(0,184,230,0.05)', border:'1px solid var(--border2)', borderRadius:'var(--radius-lg)' }}>
-          <div style={{ width:'6px', height:'6px', borderRadius:'50%', background:'var(--teal)', boxShadow:'0 0 6px var(--teal)', animation:'livePulse 2.5s ease-in-out infinite' }}/>
-          <span style={{ fontFamily:'var(--font-mono)', fontSize:'13px', fontWeight:600, color:'var(--teal)' }}>${bal}</span>
-          <span style={{ fontFamily:'var(--font-mono)', fontSize:'10px', color:'var(--text-dim)' }}>USDC</span>
+        <div style={{ marginLeft:'auto', display:'flex', alignItems:'center', gap:'10px' }}>
+          <ZkLoginButton/>
+          <div style={{ display:'flex', alignItems:'center', gap:'7px', padding:'5px 12px', background:'rgba(0,184,230,0.05)', border:'1px solid var(--border2)', borderRadius:'var(--radius-lg)' }}>
+            <div style={{ width:'6px', height:'6px', borderRadius:'50%', background:'var(--teal)', boxShadow:'0 0 6px var(--teal)', animation:'livePulse 2.5s ease-in-out infinite' }}/>
+            <span style={{ fontFamily:'var(--font-mono)', fontSize:'13px', fontWeight:600, color:'var(--teal)' }}>${bal}</span>
+            <span style={{ fontFamily:'var(--font-mono)', fontSize:'10px', color:'var(--text-dim)' }}>USDC</span>
+          </div>
         </div>
       </div>
 
