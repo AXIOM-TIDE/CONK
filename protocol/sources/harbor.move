@@ -11,7 +11,7 @@ module axiom_tide::harbor {
     use sui::clock::{Self, Clock};
     use sui::coin::{Self, Coin};
     use sui::balance::{Self, Balance};
-    use sui::usdc::USDC;
+    use 0xa1ec7fc00a6f40db9693ad1415d0c193ad3906494428cf252621037bd7117e29::usdc::USDC;
 
     const E_HARBOR_EXPIRED:       u64 = 1;
     const E_NOT_OWNER:            u64 = 2;

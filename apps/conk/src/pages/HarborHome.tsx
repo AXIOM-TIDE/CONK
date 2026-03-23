@@ -178,6 +178,19 @@ export function HarborHome({ onEnterVessel }: Props) {
         </div>
       </div>
       <TreasuryStrip/>
+      <div style={{padding:'8px 16px',textAlign:'center',display:'flex',justifyContent:'center',gap:'16px'}}>
+        <button onClick={() => window.dispatchEvent(new CustomEvent('conk:legal', {detail:'terms'}))}
+          style={{background:'none',border:'none',color:'var(--text-off)',fontFamily:'var(--font-mono)',fontSize:'9px',cursor:'pointer',letterSpacing:'0.06em'}}>
+          Terms
+        </button>
+        <button onClick={() => window.dispatchEvent(new CustomEvent('conk:legal', {detail:'privacy'}))}
+          style={{background:'none',border:'none',color:'var(--text-off)',fontFamily:'var(--font-mono)',fontSize:'9px',cursor:'pointer',letterSpacing:'0.06em'}}>
+          Privacy
+        </button>
+        <span style={{fontFamily:'var(--font-mono)',fontSize:'9px',color:'var(--text-off)'}}>
+          © 2026 Axiom Tide LLC
+        </span>
+      </div>
     </div>
   )
 }

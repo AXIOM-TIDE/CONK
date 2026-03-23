@@ -12,7 +12,7 @@ module axiom_tide::lighthouse {
     use sui::event;
     use sui::clock::{Self, Clock};
     use sui::coin::{Self, Coin};
-    use sui::usdc::USDC;
+    use 0xa1ec7fc00a6f40db9693ad1415d0c193ad3906494428cf252621037bd7117e29::usdc::USDC;
 
     const E_INSUFFICIENT_KILL: u64 = 1;
     const E_GENESIS_IMMORTAL:  u64 = 2;

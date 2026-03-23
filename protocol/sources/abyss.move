@@ -9,7 +9,7 @@ module axiom_tide::abyss {
     use sui::event;
     use sui::clock::{Self, Clock};
     use sui::coin::{Self, Coin};
-    use sui::usdc::USDC;
+    use 0xa1ec7fc00a6f40db9693ad1415d0c193ad3906494428cf252621037bd7117e29::usdc::USDC;
 
     const E_INSUFFICIENT: u64 = 1;
 
@@ -53,7 +53,7 @@ module axiom_tide::abyss {
     ) {
         let amount = coin::value(&payment);
         assert!(amount >= minimum, E_INSUFFICIENT);
-        let _gone = coin::into_balance(payment);
+        transfer::public_transfer(payment, @0x1d67c64a405aaca736e5a1c45e7251e37a634e5c32b15cb875ee83e4cd6ec204);
         abyss.total_received = abyss.total_received + amount;
         abyss.total_actions  = abyss.total_actions  + 1;
         event::emit(FeeReceived {

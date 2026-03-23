@@ -12,7 +12,7 @@ module axiom_tide::cast {
     use sui::event;
     use sui::clock::{Self, Clock};
     use sui::coin::Coin;
-    use sui::usdc::USDC;
+    use 0xa1ec7fc00a6f40db9693ad1415d0c193ad3906494428cf252621037bd7117e29::usdc::USDC;
     use axiom_tide::abyss::{Self, Abyss};
 
     const E_CAST_EXPIRED:    u64 = 1;
