@@ -482,16 +482,13 @@ export const useStore = create<AppState>()(
         harbor:         s.harbor,
         shore:          s.shore,
         chart:          s.chart,
-        driftCasts: s.driftCasts.map(c => {
-          const isStored = (c.storedBy ?? []).length > 0
-          return {
-            ...c,
-            body: isStored ? c.body : undefined,
-            burnedBy: c.burnedBy,
-            storedBy: c.storedBy,
-            burned:   c.burned,
-          }
-        }),
+        driftCasts: s.driftCasts.map(c => ({
+          ...c,
+          body: c.body,
+          burnedBy: c.burnedBy,
+          storedBy: c.storedBy,
+          burned:   c.burned,
+        })),
       }),
     }
   )

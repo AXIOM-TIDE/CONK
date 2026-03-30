@@ -17,7 +17,7 @@ export function SecurityModal({ question, onSubmit, onCancel, error }: Props) {
   const [answer, setAnswer] = useState('')
 
   return (
-    <div style={{
+    <div data-testid="security-modal" style={{
       position:'fixed', inset:0, zIndex:200,
       background:'rgba(1,6,8,0.92)', backdropFilter:'blur(12px)',
       display:'flex', alignItems:'center', justifyContent:'center',

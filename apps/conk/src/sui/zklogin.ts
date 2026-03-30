@@ -4,15 +4,16 @@
  * Vessel addresses derived from JWT — anonymous on-chain.
  */
 
-import { RPC } from './index'
+import { RPC, GOOGLE_CLIENT_ID } from './index'
 
-export const GOOGLE_CLIENT_ID = '628835024151-6u8eqr51da1ldcteub2986451sg69kpo.apps.googleusercontent.com'
+export { GOOGLE_CLIENT_ID }
 
 export interface ZkLoginSession {
   address:    string
   maxEpoch:   number
   salt:       string
   proof?:     unknown
+  addressSeed?: string
 }
 
 // ── STEP 1: START LOGIN ───────────────────────────────────────
@@ -21,25 +22,20 @@ export async function startZkLogin(): Promise<void> {
   const { Ed25519Keypair } = await import('@mysten/sui/keypairs/ed25519')
   const { getSuiClient } = await import('./client')
 
-  // Generate ephemeral keypair for this session
   const ephemeralKeypair = new Ed25519Keypair()
   const randomness = generateRandomness()
 
-  // Get current epoch from Sui
   const client = await getSuiClient() as any
   const { epoch } = await client.getLatestSuiSystemState()
   const maxEpoch = Number(epoch) + 10
 
-  // Store session data
   sessionStorage.setItem('zklogin_ephemeral_secret', ephemeralKeypair.getSecretKey())
   sessionStorage.setItem('zklogin_randomness', randomness)
   sessionStorage.setItem('zklogin_maxEpoch', String(maxEpoch))
 
-  // Generate nonce
   const { generateNonce } = await import('@mysten/sui/zklogin')
   const nonce = generateNonce(ephemeralKeypair.getPublicKey(), maxEpoch, randomness)
 
-  // Redirect to Google OAuth
   const params = new URLSearchParams({
     client_id:     GOOGLE_CLIENT_ID,
     redirect_uri:  window.location.origin,
@@ -52,7 +48,6 @@ export async function startZkLogin(): Promise<void> {
 
 // ── STEP 2: HANDLE RETURN FROM GOOGLE ────────────────────────
 export async function handleZkLoginCallback(): Promise<ZkLoginSession | null> {
-  // JWT comes back in URL hash: #id_token=...
   const hash = window.location.hash
   if (!hash.includes('id_token')) return null
 
@@ -60,12 +55,11 @@ export async function handleZkLoginCallback(): Promise<ZkLoginSession | null> {
   const jwt = params.get('id_token')
   if (!jwt) return null
 
-  // Clear hash from URL
   window.history.replaceState(null, '', window.location.pathname)
 
   const { jwtToAddress } = await import('@mysten/sui/zklogin')
 
-  // Get or create salt — stored locally, never on server
+  // Salt stored locally — never on server
   let salt = localStorage.getItem('zklogin_salt')
   if (!salt) {
     const array = new Uint8Array(16)
@@ -74,22 +68,24 @@ export async function handleZkLoginCallback(): Promise<ZkLoginSession | null> {
     localStorage.setItem('zklogin_salt', salt)
   }
 
+  // Decode JWT to get sub and aud for addressSeed
+  const jwtPayload = JSON.parse(atob(jwt.split('.')[1]))
+  const { genAddressSeed } = await import('@mysten/sui/zklogin')
+  const addressSeedValue = genAddressSeed(BigInt('0x' + salt), 'sub', jwtPayload.sub, jwtPayload.aud).toString()
   const address  = jwtToAddress(jwt, BigInt('0x' + salt))
   const maxEpoch = Number(sessionStorage.getItem('zklogin_maxEpoch') ?? 0)
-
-  // Generate ZK proof
   const randomness   = sessionStorage.getItem('zklogin_randomness') ?? ''
   const secretKey    = sessionStorage.getItem('zklogin_ephemeral_secret') ?? ''
+
   const { Ed25519Keypair } = await import('@mysten/sui/keypairs/ed25519')
   const ephemeralKeypair   = Ed25519Keypair.fromSecretKey(secretKey)
   const extendedKey        = ephemeralKeypair.getPublicKey().toSuiBytes()
   const extendedKeyB64     = btoa(String.fromCharCode(...extendedKey))
 
+  // Generate ZK proof via Shinami prover
   let proof: unknown = null
   try {
-    const proverUrl = RPC.SHINAMI_KEY
-      ? `https://api.shinami.com/zklogin/v1/prove`
-      : 'https://prover-dev.mystenlabs.com/v1'
+    const proverUrl = '/api/zkproof'
 
     const headers: Record<string,string> = { 'Content-Type': 'application/json' }
     if (RPC.SHINAMI_KEY) headers['X-API-Key'] = RPC.SHINAMI_KEY
@@ -98,48 +94,93 @@ export async function handleZkLoginCallback(): Promise<ZkLoginSession | null> {
       method: 'POST',
       headers,
       body: JSON.stringify({
-        jwt,
-        extendedEphemeralPublicKey: extendedKeyB64,
-        maxEpoch,
-        jwtRandomness: randomness,
-        salt: BigInt('0x' + salt).toString(),
-        keyClaimName: 'sub',
+        jsonrpc: '2.0',
+        method: 'shinami_zkp_createZkLoginProof',
+        params: [
+          jwt,
+          String(maxEpoch),
+          extendedKeyB64,
+          randomness,
+          BigInt('0x' + salt).toString(),
+        ],
+        id: 1,
       }),
     })
-    if (resp.ok) proof = await resp.json()
+    if (resp.ok) {
+      const raw = await resp.json()
+      proof = raw.result?.zkProof ?? raw.result ?? raw
+    } else {
+      console.warn('ZK proof failed:', resp.status, await resp.text())
+    }
   } catch (e) {
     console.warn('ZK proof generation failed:', e)
   }
 
-  const session: ZkLoginSession = { address, maxEpoch, salt, proof }
+  const session: ZkLoginSession = { address, maxEpoch, salt, proof, addressSeed: addressSeedValue }
   sessionStorage.setItem('zklogin_session', JSON.stringify(session))
   sessionStorage.setItem('zklogin_jwt', jwt)
 
   return session
 }
 
-// ── SIGN TRANSACTION ──────────────────────────────────────────
+// ── SIGN TRANSACTION WITH ZKLOGIN ────────────────────────────
 export async function signWithZkLogin(
   tx: unknown,
   session: ZkLoginSession
 ): Promise<{ bytes: string; signature: string }> {
+  // Accept raw base64 bytes directly
+  if (typeof tx === 'string') {
+    const { Ed25519Keypair } = await import('@mysten/sui/keypairs/ed25519')
+    const { getZkLoginSignature } = await import('@mysten/sui/zklogin')
+    const secretKey = sessionStorage.getItem('zklogin_ephemeral_secret') ?? ''
+    const ephemeralKeypair = Ed25519Keypair.fromSecretKey(secretKey)
+    const { fromB64 } = await import('@mysten/sui/utils')
+    const txBytes = fromB64(tx)
+    const { signature: ephemeralSig } = await ephemeralKeypair.signTransaction(txBytes)
+    const proofWithSeed = {
+      ...(session.proof as any),
+      addressSeed: session.addressSeed ?? BigInt('0x' + session.salt).toString(),
+    }
+    const zkLoginSig = getZkLoginSignature({
+      inputs: proofWithSeed,
+      maxEpoch: session.maxEpoch,
+      userSignature: ephemeralSig,
+    })
+    return { bytes: tx, signature: zkLoginSig }
+  }
+  if (!session.proof) {
+    throw new Error('ZK proof not available — cannot sign transaction')
+  }
+
   const { Ed25519Keypair } = await import('@mysten/sui/keypairs/ed25519')
   const { getZkLoginSignature } = await import('@mysten/sui/zklogin')
   const { toB64 } = await import('@mysten/sui/utils')
   const { Transaction } = await import('@mysten/sui/transactions')
   const { getSuiClient } = await import('./client')
 
-  const secretKey       = sessionStorage.getItem('zklogin_ephemeral_secret') ?? ''
+  const secretKey        = sessionStorage.getItem('zklogin_ephemeral_secret') ?? ''
   const ephemeralKeypair = Ed25519Keypair.fromSecretKey(secretKey)
-  const client          = await getSuiClient()
+  const client           = await getSuiClient()
 
-  const txBytes = await (tx as InstanceType<typeof Transaction>).build({ client } as any)
+  // Build transaction bytes
+  const txBytes = await (tx as InstanceType<typeof Transaction>).build({
+    client: client as any,
+  })
+
+  // Sign with ephemeral keypair
   const { signature: ephemeralSig } = await ephemeralKeypair.signTransaction(txBytes)
 
+  // Wrap with zkLogin proof to create final signature
+  // Add addressSeed derived from salt
+  const proofWithSeed = {
+    ...(session.proof as any),
+    addressSeed: session.addressSeed ?? BigInt('0x' + session.salt).toString(),
+  }
+
   const zkLoginSig = getZkLoginSignature({
-    inputs:           session.proof as any,
-    maxEpoch:         session.maxEpoch,
-    userSignature:    ephemeralSig,
+    inputs:        proofWithSeed,
+    maxEpoch:      session.maxEpoch,
+    userSignature: ephemeralSig,
   })
 
   return { bytes: toB64(txBytes), signature: zkLoginSig }
@@ -167,4 +208,8 @@ export function clearSession(): void {
 
 export function getAddress(): string | null {
   return getSession()?.address ?? null
+}
+
+export function hasProof(): boolean {
+  return !!getSession()?.proof
 }

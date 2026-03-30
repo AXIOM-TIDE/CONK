@@ -42,12 +42,6 @@ test.describe('Security Question Gate', () => {
   test('Wrong answer shows error and blocks reveal', async ({ page }) => {
     await enterVessel(page)
     await fuelVessel(page)
-    // Extra fuel for wrong answer penalty
-    await page.getByTestId('fuel-module').first().click()
-    await page.getByTestId('fuel-amount-25').click()
-    await page.getByTestId('charge-vessel-btn').click()
-    await page.waitForSelector('[data-testid="draw-fuel-modal"]', { state: 'hidden' })
-
     await openGatedCast(page)
     await page.getByTestId('security-answer-input').fill('wrong answer')
     await page.getByTestId('security-submit-btn').click()
@@ -58,10 +52,6 @@ test.describe('Security Question Gate', () => {
   test('Correct answer reveals content', async ({ page }) => {
     await enterVessel(page)
     await fuelVessel(page)
-    await page.getByTestId('fuel-module').first().click()
-    await page.getByTestId('fuel-amount-25').click()
-    await page.getByTestId('charge-vessel-btn').click()
-    await page.waitForSelector('[data-testid="draw-fuel-modal"]', { state: 'hidden' })
 
     await openGatedCast(page)
     await page.getByTestId('security-answer-input').fill('a read')

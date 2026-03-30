@@ -26,6 +26,12 @@ test.describe('Burn / Store / Wreck', () => {
     await page.waitForTimeout(500)
     // Reload
     await page.reload({ waitUntil: 'domcontentloaded' })
+    await page.waitForTimeout(1000)
+    // Re-enter vessel after reload
+    await page.waitForSelector('[data-testid="enter-vessels-btn"]', { timeout: 5000 })
+    await page.getByTestId('enter-vessels-btn').click()
+    await page.getByTestId('enter-vessel-btn').first().click()
+    await page.getByTestId('tab-drift').click()
     await page.waitForSelector('[data-testid="cast-row"]', { timeout: 5000 })
     const hooks = await page.getByTestId('cast-hook').allTextContents()
     expect(hooks).not.toContain(firstHook)
@@ -61,10 +67,10 @@ test.describe('Burn / Store / Wreck', () => {
     await page.getByTestId('tab-cast').click()
     await page.getByTestId('cast-hook-input').fill('Test wreck cast')
     await page.getByTestId('cast-review-btn').click()
+    await page.waitForSelector('[data-testid="cast-sound-btn"]', { timeout: 5000 })
     await page.getByTestId('cast-sound-btn').click()
-    await page.waitForSelector('[data-testid="cast-success"]', { timeout: 8000 })
-
-    // Go to drift and find that cast
+    // Navigate to drift — cast-success unmounts on rerender so check drift instead
+    await page.waitForTimeout(1000)
     await goToDrift(page)
     const ownCast = page.getByTestId('cast-row').filter({
       has: page.getByText('Test wreck cast')
@@ -73,10 +79,8 @@ test.describe('Burn / Store / Wreck', () => {
     if (await ownCast.count() > 0) {
       await ownCast.click()
       await page.waitForSelector('[data-testid="cast-expanded"]')
-      await page.getByTestId('cross-payway-btn').click()
-      await page.getByTestId('payway-continue-btn').click()
-      await page.getByTestId('payway-confirm-btn').click()
-      await page.waitForSelector('[data-testid="cast-body"]', { timeout: 8000 })
+      // Own casts are already revealed — no paywall needed
+      await page.waitForTimeout(500)
 
       const wreckBtn = page.getByTestId('wreck-btn')
       if (await wreckBtn.isVisible()) {

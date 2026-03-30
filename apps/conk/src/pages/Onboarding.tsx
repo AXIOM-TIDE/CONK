@@ -175,7 +175,7 @@ export function Onboarding() {
               </div>
             </div>
 
-            <div style={{padding:'16px',background:'var(--surface)',border:'1px solid var(--border2)',borderRadius:'var(--radius-xl)',marginBottom:'16px'}}>
+            <div data-testid="tier-ghost" style={{padding:'16px',background:'var(--surface)',border:'1px solid var(--border2)',borderRadius:'var(--radius-xl)',marginBottom:'16px'}}>
               <div style={{display:'flex',alignItems:'center',gap:'14px',marginBottom:'14px'}}>
                 <div style={{width:'52px',height:'52px',borderRadius:'50%',background:'rgba(0,184,230,0.08)',border:'1px solid var(--border2)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:'24px',color:'var(--teal)',flexShrink:0}}>◌</div>
                 <div>

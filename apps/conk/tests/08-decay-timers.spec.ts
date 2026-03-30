@@ -39,6 +39,7 @@ test.describe('Decay Timers & Tide State', () => {
     // Complete onboarding
     await page.getByTestId('onboard-continue').click()
     await page.getByTestId('onboard-continue').click()
+    await page.getByTestId('onboard-continue').click()
     await page.getByTestId('tier-ghost').click()
     await page.getByTestId('onboard-launch').click()
     await page.getByTestId('enter-vessels-btn').click()

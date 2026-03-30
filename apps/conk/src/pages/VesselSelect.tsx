@@ -61,7 +61,7 @@ export function VesselSelect({ onEnter, onBack }: Props) {
   }
 
   return (
-    <div className="shell" data-testid="vessel-select">
+    <div data-testid="vessel-select" className="shell">
       {/* Top bar */}
       <div style={{display:'flex',alignItems:'center',gap:'10px',padding:'0 16px',height:'52px',background:'rgba(3,12,20,0.92)',backdropFilter:'blur(20px)',borderBottom:'1px solid var(--border)',flexShrink:0,zIndex:20}}>
         <button data-testid="back-to-harbor" onClick={onBack} style={{display:'flex',alignItems:'center',gap:'6px',background:'none',border:'none',color:'var(--text-dim)',fontFamily:'var(--font-mono)',fontSize:'11px',cursor:'pointer',padding:0}}>

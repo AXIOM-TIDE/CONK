@@ -20,11 +20,15 @@ export async function completeOnboarding(page: Page) {
   await page.waitForSelector('[data-testid="onboard-continue"]', { timeout: 8000 })
   await page.getByTestId('onboard-continue').first().click()
 
-  // Step 2 — Harbor: click "Harbor ready → next"
+  // Step 2 — What is CONK: click "Understood"
   await page.waitForSelector('[data-testid="onboard-continue"]', { timeout: 5000 })
   await page.getByTestId('onboard-continue').first().click()
 
-  // Step 3 — Vessel: select ghost tier and launch
+  // Step 3 — Harbor: click "Harbor ready"
+  await page.waitForSelector('[data-testid="onboard-continue"]', { timeout: 5000 })
+  await page.getByTestId('onboard-continue').first().click()
+
+  // Step 4 — Vessel: select ghost tier and launch
   await page.waitForSelector('[data-testid="tier-ghost"]', { timeout: 5000 })
   await page.getByTestId('tier-ghost').click()
   await page.getByTestId('onboard-launch').click()
@@ -83,6 +87,10 @@ export async function openPayway(page: Page) {
     // Skip future signals
     const isFuture = await row.locator('[data-testid="future-countdown"]').count()
     if (isFuture > 0) continue
+
+    // Skip security-gated casts
+    const isSecurityGated = await row.getAttribute('data-security-gated')
+    if (isSecurityGated) continue
 
     await row.click()
 

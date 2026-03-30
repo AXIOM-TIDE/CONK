@@ -211,7 +211,7 @@ function CastRow({ cast, index }: { cast: Cast; index: number; key?: string }) {
   const handlePaywayConfirm = async () => {
     const receipt = await pay()
     if (!receipt) return
-    if (vesselFuel >= 0.1) debitVessel(0.1); else debitHarbor(0.1)
+    if (vesselFuel >= 10) debitVessel(10); else debitHarbor(10)
     if (isEyes) { setStep('eyes_map'); return }
     if (hasSecurityQ) { setStep('security'); return }
     doReveal()
@@ -226,7 +226,7 @@ function CastRow({ cast, index }: { cast: Cast; index: number; key?: string }) {
   const handleSecurityAnswer = async (answer: string) => {
     const correct = cast.securityAnswer?.toLowerCase().trim()
     if (correct && answer.toLowerCase().trim() !== correct) {
-      if (vesselFuel >= 0.1) debitVessel(0.1); else debitHarbor(0.1)
+      if (vesselFuel >= 10) debitVessel(10); else debitHarbor(10)
       setSecurityError(true); return
     }
     setSecurityError(false)
@@ -242,7 +242,10 @@ function CastRow({ cast, index }: { cast: Cast; index: number; key?: string }) {
     // Auto-burn after interaction if enabled and not stored
     else if (autoBurn && vessel?.id && !isStoredByMe) {
       setTimeout(() => {
-        if (!isStoredByMe) burnFromVessel(cast.id, vessel.id)
+        // Re-check current store state — user may have stored in the 8s window
+        const currentCast = useStore.getState().driftCasts.find(x => x.id === cast.id)
+        const currentlyStored = (currentCast?.storedBy ?? []).includes(vessel.id)
+        if (!currentlyStored) burnFromVessel(cast.id, vessel.id)
       }, 8000) // 8 second window to store before auto-burn
     }
   }
@@ -299,7 +302,7 @@ function CastRow({ cast, index }: { cast: Cast; index: number; key?: string }) {
           onConfirm={() => { burnCast(cast.id); setShowWreck(false) }} onCancel={() => setShowWreck(false)}/>
       )}
 
-      <div style={{borderBottom:'1px solid var(--border)'}} data-testid="cast-row" {...(isFuture ? {'data-future-signal': 'true'} : {})}>
+      <div style={{borderBottom:'1px solid var(--border)'}} data-testid="cast-row" {...(isFuture ? {'data-future-signal': 'true'} : {})} {...(cast.securityQuestion ? {'data-security-gated': 'true'} : {})}>
         {/* also expose as future-signal for direct queries */}
         {isFuture && <span data-testid="future-signal" style={{display:'none'}}/>}
         {/* Hook row */}

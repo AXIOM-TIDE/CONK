@@ -27,7 +27,7 @@ export default function App() {
       {showLegal && <Legal onClose={() => setShowLegal(false)}/>}
 
       {screen === 'vessel' && vessel && (
-        <VesselHome onBack={() => setScreen('vessels')}/>
+        <VesselHome onBack={() => setScreen('harbor')}/>
       )}
       {screen === 'vessels' && (
         <VesselSelect onEnter={() => setScreen('vessel')} onBack={() => setScreen('harbor')}/>
