@@ -1,6 +1,6 @@
 /**
  * CONK Sui Integration Layer — STEP 6
- * Treasury: 0x1d67c64a405aaca736e5a1c45e7251e37a634e5c32b15cb875ee83e4cd6ec204
+ * Treasury: 0x1d67c64a405aaca736e5a1c45e7251e37a634e5c32b15cb875ee83e4cd6ea15503f344bf
  * Axiom Tide LLC · Casper, Wyoming
  */
 export const ADDRESSES = {
@@ -12,16 +12,21 @@ export const ADDRESSES = {
   WALRUS_PUB:  'https://publisher.walrus-testnet.walrus.space',
   SEAL_SERVER: 'https://seal-dev.mystenlabs.com',
 }
+
 export const PACKAGES = {
   CONK:  import.meta.env.VITE_CONK_PACKAGE_ID || '0x135f21155784b0533a9d4565245f67e3e38e32fb9710ec9acf6ea15503f344bf',
   RELAY: import.meta.env.VITE_CONK_PACKAGE_ID || '0x135f21155784b0533a9d4565245f67e3e38e32fb9710ec9acf6ea15503f344bf',
 }
+
+const SHINAMI_KEY = import.meta.env.VITE_SHINAMI_KEY || ''
+
 export const RPC = {
-  SHINAMI_KEY: import.meta.env.VITE_SHINAMI_KEY || '',
-  SHINAMI_RPC: 'https://api.us1.shinami.com/sui/node/v1',
-  SHINAMI_WSS: 'wss://api.us1.shinami.com/sui/node/v1',
+  SHINAMI_KEY,
+  SHINAMI_RPC: `https://api.us1.shinami.com/sui/node/v1/${SHINAMI_KEY}`,
+  SHINAMI_WSS: `wss://api.us1.shinami.com/sui/node/v1/${SHINAMI_KEY}`,
   SHINAMI_GAS: 'https://api.us1.shinami.com/gas/v1',
   MAINNET_RPC: 'https://fullnode.mainnet.sui.io:443',
   TESTNET_RPC: 'https://fullnode.testnet.sui.io:443',
 }
+
 export const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || '628835024151-6u8eqr51da1ldcteub2986451sg69kpo.apps.googleusercontent.com'
