@@ -15,18 +15,20 @@
   "dependencies": {
     "@mysten/sui": "^1.19.0",
     "@mysten/zklogin": "^0.7.7",
+    "clsx": "^2.1.1",
+    "dayjs": "^1.11.13",
+    "framer-motion": "^11.18.2",
+    "lucide-react": "^0.483.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
-    "zustand": "^5.0.2",
-    "lucide-react": "^0.483.0",
-    "clsx": "^2.1.1",
-    "framer-motion": "^11.18.2",
-    "dayjs": "^1.11.13"
+    "zustand": "^5.0.2"
   },
   "devDependencies": {
     "@playwright/test": "^1.44.0",
+    "@types/node": "^25.5.0",
     "@types/react": "^18.3.12",
     "@types/react-dom": "^18.3.1",
+    "@vercel/node": "^5.6.22",
     "@vitejs/plugin-react": "^4.3.4",
     "typescript": "^5.6.3",
     "vite": "^6.0.7"
