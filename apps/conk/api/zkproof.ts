@@ -7,13 +7,19 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (!SHINAMI_KEY) return res.status(500).json({ error: 'Shinami key not configured' })
 
   try {
+    // Handle body parsing — Vercel may pass raw string or parsed object
+    let body = req.body
+    if (typeof body === 'string') {
+      try { body = JSON.parse(body) } catch {}
+    }
+
     const response = await fetch('https://api.us1.shinami.com/zklogin/v1/prove', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         'X-API-Key': SHINAMI_KEY,
       },
-      body: JSON.stringify(req.body),
+      body: JSON.stringify(body),
     })
 
     const data = await response.json()
