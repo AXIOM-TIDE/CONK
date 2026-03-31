@@ -2,13 +2,14 @@
 // Uses @mysten/sui (new package name)
 // Package: 0x135f21155784b0533a9d4565245f67e3e38e32fb9710ec9acf6ea15503f344bf
 // Treasury: 0x1d67c64a405aaca736e5a1c45e7251e37a634e5c32b15cb875ee83e4cd6ec204
-// Network: Sui Testnet via Shinami
+// Network: Sui Testnet — public RPC only, Shinami used for gas sponsorship only
 
 import { ADDRESSES, PACKAGES, RPC } from './index'
 import { getSession, signWithZkLogin } from './zklogin'
 
 export const NETWORK = 'testnet'
 
+// Always use public testnet RPC for SuiClient — never Shinami node directly
 export const SUI_RPC    = 'https://fullnode.testnet.sui.io:443'
 export const WALRUS_AGG = 'https://aggregator.walrus-testnet.walrus.space'
 export const WALRUS_PUB = 'https://publisher.walrus-testnet.walrus.space'
@@ -20,7 +21,10 @@ let _client: unknown = null
 export async function getSuiClient() {
   if (_client) return _client
   const { SuiClient } = await import('@mysten/sui/client')
-  _client = new SuiClient({ url: SUI_RPC })
+  // Hardcoded public testnet URL — never use Shinami node directly from browser
+  const url = 'https://fullnode.testnet.sui.io:443'
+  console.log('[CONK] SuiClient URL:', url)
+  _client = new SuiClient({ url })
   return _client as InstanceType<typeof import('@mysten/sui/client').SuiClient>
 }
 
@@ -77,7 +81,6 @@ export async function crossPaywall(opts: {
   return result.digest
 }
 
-
 export async function sponsorTx(tx: unknown, sender: string): Promise<unknown> {
   if (!RPC.SHINAMI_KEY) throw new Error('SHINAMI_KEY not set')
 
@@ -91,22 +94,19 @@ export async function sponsorTx(tx: unknown, sender: string): Promise<unknown> {
   })
   const b64 = toB64(txBytes)
 
-  const response = await fetch(
-    '/api/gas',
-    {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-API-Key': RPC.SHINAMI_KEY,
-      },
-      body: JSON.stringify({
-        jsonrpc: '2.0',
-        id: 1,
-        method: 'gas_sponsorTransactionBlock',
-        params: [b64, sender, 100000000],
-      }),
-    }
-  )
+  const response = await fetch('/api/gas', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-API-Key': RPC.SHINAMI_KEY,
+    },
+    body: JSON.stringify({
+      jsonrpc: '2.0',
+      id: 1,
+      method: 'gas_sponsorTransactionBlock',
+      params: [b64, sender, 100000000],
+    }),
+  })
 
   if (!response.ok) throw new Error('Shinami error: ' + response.status)
 
