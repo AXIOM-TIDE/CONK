@@ -21,7 +21,6 @@ let _client: unknown = null
 export async function getSuiClient() {
   if (_client) return _client
   const { SuiClient } = await import('@mysten/sui/client')
-  // Hardcoded public testnet URL — never use Shinami node directly from browser
   const url = 'https://fullnode.testnet.sui.io:443'
   console.log('[CONK] SuiClient URL:', url)
   _client = new SuiClient({ url })
@@ -52,17 +51,8 @@ export async function crossPaywall(opts: {
   const usdcCoinObj = tx.object(coins.data[0].coinObjectId)
   const [usdcPayment] = tx.splitCoins(usdcCoinObj, [tx.pure.u64(opts.amountUsdc)])
 
-  // Call the real cast::read Move function
-  tx.moveCall({
-    target: `${PACKAGES.CONK}::cast::read`,
-    arguments: [
-      tx.object(opts.castId),               // Cast object
-      usdcPayment,                           // Coin<USDC>
-      tx.object(ADDRESSES.ABYSS),            // Abyss shared object
-      tx.pure.address(session.address),      // vessel address
-      tx.object('0x6'),                      // Clock object
-    ],
-  })
+  // Transfer USDC to treasury (temporary until real cast objects exist on-chain)
+  tx.transferObjects([usdcPayment], tx.pure.address(ADDRESSES.TREASURY))
 
   const sponsored = await sponsorTx(tx, session.address)
   const sponsoredTx = sponsored as any
