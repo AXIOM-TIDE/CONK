@@ -1,4 +1,4 @@
-module.exports = async function handler(req, res) {
+export default async function handler(req, res) {
   const SHINAMI_KEY = process.env.VITE_SHINAMI_KEY
   if (!SHINAMI_KEY) return res.status(500).json({ error: 'Shinami key not configured' })
 
