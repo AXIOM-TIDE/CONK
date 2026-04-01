@@ -84,7 +84,7 @@ export async function sponsorTx(tx: unknown, sender: string): Promise<unknown> {
   })
   const b64 = toB64(txBytes)
 
-  const response = await fetch('/gas', {
+  const response = await fetch('/api/gas', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
