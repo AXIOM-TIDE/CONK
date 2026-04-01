@@ -10,7 +10,7 @@ export default async function handler(req, res) {
       try { body = JSON.parse(body) } catch {}
     }
 
-    const response = await fetch('https://api.us1.shinami.com/sui/gas/v1', {
+    const response = await fetch('https://api.us1.shinami.com/gas/v1', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
