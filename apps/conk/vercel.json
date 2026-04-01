@@ -1,9 +1,11 @@
 {
   "buildCommand": "vite build",
   "outputDirectory": "dist",
-  "rewrites": [
-    { "source": "/assets/(.*)", "destination": "/assets/$1" },
-    { "source": "^(?!/zkproof|/gas)/(.*)", "destination": "/index.html" }
+  "routes": [
+    { "src": "/zkproof", "dest": "/zkproof" },
+    { "src": "/gas", "dest": "/gas" },
+    { "src": "/assets/(.*)", "dest": "/assets/$1" },
+    { "src": "/(.*)", "dest": "/index.html" }
   ],
   "headers": [
     {
