@@ -1,6 +1,4 @@
 module.exports = async function handler(req, res) {
-  if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' })
-
   const SHINAMI_KEY = process.env.VITE_SHINAMI_KEY
   if (!SHINAMI_KEY) return res.status(500).json({ error: 'Shinami key not configured' })
 
@@ -23,10 +21,8 @@ module.exports = async function handler(req, res) {
     let data
     try { data = JSON.parse(text) } catch { data = { error: text } }
 
-    if (!response.ok) return res.status(response.status).json(data)
-
     res.setHeader('Access-Control-Allow-Origin', '*')
-    return res.status(200).json(data)
+    return res.status(response.status).json(data)
   } catch (e) {
     return res.status(500).json({ error: e.message })
   }
