@@ -2,6 +2,7 @@ import http from 'http'
 import https from 'https'
 
 const SHINAMI_KEY = process.env.SHINAMI_KEY || 'us1_sui_testnet_a1a53851661244fa9c395338586d2ba3'
+const PORT = process.env.PORT || 3001
 
 http.createServer((req, res) => {
   res.setHeader('Access-Control-Allow-Origin', '*')
@@ -37,4 +38,4 @@ http.createServer((req, res) => {
     r.write(body)
     r.end()
   })
-}).listen(process.env.PORT || 3001, () => console.log('zkproxy running'))
+}).listen(PORT, () => console.log(`zkproxy running on ${PORT}`))
