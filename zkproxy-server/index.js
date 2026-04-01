@@ -6,20 +6,25 @@ const PORT = process.env.PORT || 3001
 
 http.createServer((req, res) => {
   res.setHeader('Access-Control-Allow-Origin', '*')
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, X-API-Key')
-  if (req.method === 'OPTIONS') { res.writeHead(200); res.end(); return }
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS')
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, X-API-Key, Authorization')
+  res.setHeader('Access-Control-Max-Age', '86400')
+
+  if (req.method === 'OPTIONS') {
+    res.writeHead(204)
+    res.end()
+    return
+  }
 
   let body = ''
   req.on('data', c => body += c)
   req.on('end', () => {
     const isZkproof = req.url === '/api/zkproof'
-    const target = isZkproof
-      ? { host: 'api.us1.shinami.com', path: '/zklogin/v1/prove' }
-      : { host: 'api.us1.shinami.com', path: '/gas/v1' }
+    const path = isZkproof ? '/zklogin/v1/prove' : '/gas/v1'
 
     const r = https.request({
-      hostname: target.host,
-      path: target.path,
+      hostname: 'api.us1.shinami.com',
+      path,
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -30,11 +35,17 @@ http.createServer((req, res) => {
       let data = ''
       sr.on('data', c => data += c)
       sr.on('end', () => {
-        res.writeHead(sr.statusCode, { 'Content-Type': 'application/json' })
+        res.writeHead(sr.statusCode, {
+          'Content-Type': 'application/json',
+          'Access-Control-Allow-Origin': '*',
+        })
         res.end(data)
       })
     })
-    r.on('error', e => { res.writeHead(500); res.end(JSON.stringify({ error: e.message })) })
+    r.on('error', e => {
+      res.writeHead(500, { 'Content-Type': 'application/json' })
+      res.end(JSON.stringify({ error: e.message }))
+    })
     r.write(body)
     r.end()
   })
