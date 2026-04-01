@@ -3,7 +3,7 @@
   "outputDirectory": "dist",
   "rewrites": [
     { "source": "/assets/(.*)", "destination": "/assets/$1" },
-    { "source": "/(.*)", "destination": "/index.html" }
+    { "source": "^(?!/zkproof|/gas)/(.*)", "destination": "/index.html" }
   ],
   "headers": [
     {
