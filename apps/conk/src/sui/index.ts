@@ -1,8 +1,12 @@
 /**
  * CONK Sui Integration Layer — STEP 6
- * Treasury: 0x1d67c64a405aaca736e5a1c45e7251e37a634e5c32b15cb875ee83e4cd6ea15503f344bf
+ * Treasury: 0x1d67c64a405aaca736e5a1c45e7251e37a634e5c32b15cb875ee83e4cd6ec204
  * Axiom Tide LLC · Casper, Wyoming
  */
+
+const IS_PROD = typeof window !== 'undefined' && window.location.hostname !== 'localhost'
+const PROXY = 'https://axiom-tide-production.up.railway.app'
+
 export const ADDRESSES = {
   TREASURY:    import.meta.env.VITE_TREASURY_ADDRESS || '0x1d67c64a405aaca736e5a1c45e7251e37a634e5c32b15cb875ee83e4cd6ec204',
   RELAY_POOL:  import.meta.env.VITE_RELAY_POOL_ADDRESS || '' as string,
@@ -22,11 +26,11 @@ const SHINAMI_KEY = import.meta.env.VITE_SHINAMI_KEY || ''
 
 export const RPC = {
   SHINAMI_KEY,
-  SHINAMI_RPC: `https://api.us1.shinami.com/sui/node/v1/${SHINAMI_KEY}`,
-  SHINAMI_WSS: `wss://api.us1.shinami.com/sui/node/v1/${SHINAMI_KEY}`,
-  SHINAMI_GAS: 'https://api.us1.shinami.com/gas/v1',
-  MAINNET_RPC: 'https://fullnode.mainnet.sui.io:443',
-  TESTNET_RPC: 'https://fullnode.testnet.sui.io:443',
+  SHINAMI_RPC:  IS_PROD ? `${PROXY}/api/sui` : `https://api.us1.shinami.com/sui/node/v1/${SHINAMI_KEY}`,
+  SHINAMI_WSS:  `wss://api.us1.shinami.com/sui/node/v1/${SHINAMI_KEY}`,
+  SHINAMI_GAS:  IS_PROD ? `${PROXY}/api/gas` : 'https://api.us1.shinami.com/gas/v1',
+  TESTNET_RPC:  IS_PROD ? `${PROXY}/api/sui` : 'https://fullnode.testnet.sui.io:443',
+  MAINNET_RPC:  'https://fullnode.mainnet.sui.io:443',
 }
 
 export const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || '628835024151-6u8eqr51da1ldcteub2986451sg69kpo.apps.googleusercontent.com'
