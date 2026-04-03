@@ -1,9 +1,4 @@
-// CONK Sui Client - Real Implementation
-// Uses @mysten/sui (new package name)
-// Package: 0x135f21155784b0533a9d4565245f67e3e38e32fb9710ec9acf6ea15503f344bf
-// Treasury: 0x1d67c64a405aaca736e5a1c45e7251e37a634e5c32b15cb875ee83e4cd6ec204
-// Network: Sui Testnet
-
+// CONK Sui Client
 import { ADDRESSES, PACKAGES, RPC } from './index'
 import { getSession, signWithZkLogin } from './zklogin'
 
@@ -15,14 +10,18 @@ export const USDC_TYPE = '0xa1ec7fc00a6f40db9693ad1415d0c193ad3906494428cf252621
 const IS_PROD = typeof window !== 'undefined' && window.location.hostname !== 'localhost'
 const PROXY = 'https://axiom-tide-production.up.railway.app'
 
-export const SUI_RPC = IS_PROD ? `${PROXY}/api/sui` : 'https://fullnode.testnet.sui.io:443'
+export const SUI_RPC = IS_PROD
+  ? `${PROXY}/api/sui`
+  : 'https://fullnode.testnet.sui.io:443'
 
 let _client: unknown = null
 
 export async function getSuiClient() {
   if (_client) return _client
   const { SuiClient } = await import('@mysten/sui/client')
-  const url = IS_PROD ? `${PROXY}/api/sui` : 'https://fullnode.testnet.sui.io:443'
+  const url = IS_PROD
+    ? `${PROXY}/api/sui`
+    : 'https://fullnode.testnet.sui.io:443'
   console.log('[CONK] SuiClient URL:', url)
   _client = new SuiClient({ url })
   return _client as InstanceType<typeof import('@mysten/sui/client').SuiClient>
@@ -34,13 +33,10 @@ export async function crossPaywall(opts: {
   amountUsdc: number
 }): Promise<string> {
   const session = getSession()
-  if (!session) {
-    return 'mock_tx_' + Date.now()
-  }
+  if (!session) return 'mock_tx_' + Date.now()
 
   const { Transaction } = await import('@mysten/sui/transactions')
   const client = await getSuiClient()
-
   const tx = new Transaction()
 
   const coins = await client.getCoins({ owner: session.address, coinType: USDC_TYPE })
@@ -48,12 +44,10 @@ export async function crossPaywall(opts: {
 
   const usdcCoinObj = tx.object(coins.data[0].coinObjectId)
   const [usdcPayment] = tx.splitCoins(usdcCoinObj, [tx.pure.u64(opts.amountUsdc)])
-
   tx.transferObjects([usdcPayment], tx.pure.address(ADDRESSES.TREASURY))
 
   const sponsored = await sponsorTx(tx, session.address)
   const sponsoredTx = sponsored as any
-
   const { bytes, signature } = await signWithZkLogin(sponsoredTx.txBytes, session)
 
   const result = await client.executeTransactionBlock({
@@ -73,8 +67,8 @@ export async function sponsorTx(tx: unknown, sender: string): Promise<unknown> {
 
   const { Transaction } = await import('@mysten/sui/transactions')
   const client = await getSuiClient()
-
   const { toB64 } = await import('@mysten/sui/utils')
+
   const txBytes = await (tx as InstanceType<typeof Transaction>).build({
     client: client as any,
     onlyTransactionKind: true,
@@ -96,21 +90,18 @@ export async function sponsorTx(tx: unknown, sender: string): Promise<unknown> {
   })
 
   if (!response.ok) throw new Error('Shinami error: ' + response.status)
-
   const json = await response.json()
   if (json.error) throw new Error('Shinami RPC error: ' + json.error.message)
-
   return json.result
 }
 
 export function getStatus() {
   return {
-    network:    NETWORK,
-    package:    PACKAGES.CONK,
-    treasury:   ADDRESSES.TREASURY,
-    shinami:    RPC.SHINAMI_KEY ? 'ok' : 'missing',
-    walrus_agg: WALRUS_AGG,
-    sui_rpc:    SUI_RPC,
+    network: NETWORK,
+    package: PACKAGES.CONK,
+    treasury: ADDRESSES.TREASURY,
+    shinami: RPC.SHINAMI_KEY ? 'ok' : 'missing',
+    sui_rpc: SUI_RPC,
   }
 }
 

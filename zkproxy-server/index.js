@@ -74,11 +74,12 @@ http.createServer((req, res) => {
 
     } else if (req.url === '/api/sui') {
       proxyRequest({
-        hostname: 'fullnode.testnet.sui.io',
-        path: '/',
+        hostname: 'api.us1.shinami.com',
+        path: `/sui/node/v1/${SHINAMI_KEY}`,
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'X-API-Key': SHINAMI_KEY,
           'Content-Length': Buffer.byteLength(body),
         }
       }, body, res)
