@@ -4,15 +4,20 @@ import https from 'https'
 const SHINAMI_KEY = process.env.SHINAMI_KEY || 'us1_sui_testnet_a1a53851661244fa9c395338586d2ba3'
 const PORT = process.env.PORT || 3001
 
+function setCORS(res) {
+  res.setHeader('Access-Control-Allow-Origin', '*')
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS')
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, X-API-Key, Authorization, client-sdk-version, client-target-api-version')
+  res.setHeader('Access-Control-Max-Age', '86400')
+}
+
 function proxyRequest(options, body, res) {
   const r = https.request(options, sr => {
     let data = ''
     sr.on('data', c => data += c)
     sr.on('end', () => {
-      res.writeHead(sr.statusCode, {
-        'Content-Type': 'application/json',
-        'Access-Control-Allow-Origin': '*',
-      })
+      setCORS(res)
+      res.writeHead(sr.statusCode, { 'Content-Type': 'application/json' })
       res.end(data)
     })
   })
@@ -25,10 +30,7 @@ function proxyRequest(options, body, res) {
 }
 
 http.createServer((req, res) => {
-  res.setHeader('Access-Control-Allow-Origin', '*')
-  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS')
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, X-API-Key, Authorization')
-  res.setHeader('Access-Control-Max-Age', '86400')
+  setCORS(res)
 
   if (req.method === 'OPTIONS') {
     res.writeHead(204)
