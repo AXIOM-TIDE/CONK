@@ -11,7 +11,7 @@ const IS_PROD = typeof window !== 'undefined' && window.location.hostname !== 'l
 const PROXY = 'https://axiom-tide-production.up.railway.app'
 
 export const SUI_RPC = IS_PROD
-  ? `${PROXY}/api/sui`
+  ? 'https://sui-testnet-rpc.publicnode.com'
   : 'https://fullnode.testnet.sui.io:443'
 
 let _client: unknown = null
@@ -20,7 +20,7 @@ export async function getSuiClient() {
   if (_client) return _client
   const { SuiClient } = await import('@mysten/sui/client')
   const url = IS_PROD
-    ? `${PROXY}/api/sui`
+    ? 'https://sui-testnet-rpc.publicnode.com'
     : 'https://fullnode.testnet.sui.io:443'
   console.log('[CONK] SuiClient URL:', url)
   _client = new SuiClient({ url })
