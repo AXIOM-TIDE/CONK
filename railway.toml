@@ -1,2 +1,5 @@
 [deploy]
 startCommand = "node zkproxy-server/index.js"
+
+[[services]]
+internalPort = 8080

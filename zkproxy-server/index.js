@@ -88,4 +88,4 @@ http.createServer((req, res) => {
       res.end('not found')
     }
   })
-}).listen(PORT, () => console.log(`zkproxy running on ${PORT}`))
+}).listen(PORT, '0.0.0.0', () => console.log(`zkproxy running on ${PORT}`))
