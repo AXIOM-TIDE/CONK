@@ -25,9 +25,14 @@ export async function startZkLogin(): Promise<void> {
   const ephemeralKeypair = new Ed25519Keypair()
   const randomness = generateRandomness()
 
-  const client = await getSuiClient() as any
-  const { epoch } = await client.getLatestSuiSystemState()
-  const maxEpoch = Number(epoch) + 10
+  // Use CORS-friendly RPC directly for epoch (proxy blocks outbound)
+  const epochRes = await fetch('https://sui-testnet-rpc.publicnode.com', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'suix_getLatestSuiSystemState', params: [] })
+  })
+  const epochData = await epochRes.json()
+  const maxEpoch = Number(epochData.result?.epoch ?? 0) + 10
 
   sessionStorage.setItem('zklogin_ephemeral_secret', ephemeralKeypair.getSecretKey())
   sessionStorage.setItem('zklogin_randomness', randomness)
