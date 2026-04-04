@@ -90,7 +90,7 @@ export async function handleZkLoginCallback(): Promise<ZkLoginSession | null> {
   // Generate ZK proof via Shinami prover
   let proof: unknown = null
   try {
-    const proverUrl = 'https://axiom-tide-production.up.railway.app/api/zkproof'
+    const proverUrl = 'https://conk-proxy.italktonumbers.workers.dev/api/zkproof'
 
     const headers: Record<string,string> = { 'Content-Type': 'application/json' }
     if (RPC.SHINAMI_KEY) headers['X-API-Key'] = RPC.SHINAMI_KEY
