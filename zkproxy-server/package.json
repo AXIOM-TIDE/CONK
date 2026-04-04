@@ -2,6 +2,6 @@
   "name": "conk-zkproxy",
   "version": "1.0.0",
   "type": "module",
-  "main": "index.js",
-  "scripts": { "start": "node index.js" }
+  "main": "server.js",
+  "scripts": { "start": "node server.js" }
 }
