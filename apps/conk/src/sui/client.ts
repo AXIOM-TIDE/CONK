@@ -5,7 +5,7 @@ import { getSession, signWithZkLogin } from './zklogin'
 export const NETWORK = 'testnet'
 export const WALRUS_AGG = 'https://aggregator.walrus-testnet.walrus.space'
 export const WALRUS_PUB = 'https://publisher.walrus-testnet.walrus.space'
-export const USDC_TYPE = '0xa1ec7fc00a6f40db9693ad1415d0c193ad3906494428cf252621037bd7117e29::usdc::USDC'
+export const USDC_TYPE = '0xcdd397f2cffb7f5d439f56fc01afe5585c5f06e3bcd2ee3a21753c566de313d9::usdc::USDC'
 
 const IS_PROD = typeof window !== 'undefined' && window.location.hostname !== 'localhost'
 const PROXY = 'https://conk-proxy.italktonumbers.workers.dev'
