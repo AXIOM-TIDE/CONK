@@ -93,7 +93,6 @@ export async function handleZkLoginCallback(): Promise<ZkLoginSession | null> {
     const proverUrl = 'https://conk-proxy.italktonumbers.workers.dev/zkproof'
 
     const headers: Record<string,string> = { 'Content-Type': 'application/json' }
-    if (RPC.SHINAMI_KEY) headers['X-API-Key'] = RPC.SHINAMI_KEY
 
     const resp = await fetch(proverUrl, {
       method: 'POST',
