@@ -8,50 +8,50 @@ const CORS = {
 
 export default {
   async fetch(request) {
-    if (request.method === 'OPTIONS') {
-      return new Response(null, { status: 204, headers: CORS })
-    }
+    try {
+      if (request.method === 'OPTIONS') {
+        return new Response(null, { status: 204, headers: CORS })
+      }
+      const path = new URL(request.url).pathname
+      const body = await request.text()
+      console.log('HIT:', path)
 
-    const url = new URL(request.url)
-    const body = await request.text()
+      if (path === '/health') return new Response('ok', { headers: CORS })
 
-    if (url.pathname === '/health') {
-      return new Response('ok', { headers: CORS })
-    }
+      if (path === '/zkproof') {
+        const resp = await fetch('https://api.us1.shinami.com/zklogin/v1/prove', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'X-API-Key': SHINAMI_KEY },
+          body,
+        })
+        return new Response(await resp.text(), { status: resp.status, headers: { ...CORS, 'Content-Type': 'application/json' } })
+      }
 
-    if (url.pathname === '/api/zkproof') {
-      const resp = await fetch('https://api.us1.shinami.com/zklogin/v1/prove', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'X-API-Key': SHINAMI_KEY },
-        body,
+      if (path === '/gas') {
+        const resp = await fetch('https://api.us1.shinami.com/gas/v1/gas_sponsorTransactionBlock', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'X-API-Key': SHINAMI_KEY },
+          body,
+        })
+        return new Response(await resp.text(), { status: resp.status, headers: { ...CORS, 'Content-Type': 'application/json' } })
+      }
+
+      if (path === '/sui') {
+        const resp = await fetch('https://fullnode.testnet.sui.io/', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body,
+        })
+        return new Response(await resp.text(), { status: resp.status, headers: { ...CORS, 'Content-Type': 'application/json' } })
+      }
+
+      return new Response(JSON.stringify({ error: 'not found', path }), {
+        status: 404, headers: { ...CORS, 'Content-Type': 'application/json' }
       })
-      const data = await resp.text()
-      return new Response(data, { status: resp.status, headers: { ...CORS, 'Content-Type': 'application/json' } })
-    }
-
-    if (url.pathname === '/api/gas') {
-      const resp = await fetch('https://api.us1.shinami.com/gas/v1/gas_sponsorTransactionBlock', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'X-API-Key': SHINAMI_KEY },
-        body,
+    } catch(e) {
+      return new Response(JSON.stringify({ error: e.message }), {
+        status: 500, headers: { ...CORS, 'Content-Type': 'application/json' }
       })
-      const data = await resp.text()
-      return new Response(data, { status: resp.status, headers: { ...CORS, 'Content-Type': 'application/json' } })
     }
-
-    if (url.pathname === '/api/sui') {
-      const resp = await fetch('https://fullnode.testnet.sui.io/', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body,
-      })
-      const data = await resp.text()
-      return new Response(data, { status: resp.status, headers: { ...CORS, 'Content-Type': 'application/json' } })
-    }
-
-    return new Response(JSON.stringify({ error: 'not found', path: url.pathname }), {
-      status: 404,
-      headers: { ...CORS, 'Content-Type': 'application/json' }
-    })
   }
 }
