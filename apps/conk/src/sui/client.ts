@@ -8,7 +8,7 @@ export const WALRUS_PUB = 'https://publisher.walrus-testnet.walrus.space'
 export const USDC_TYPE = '0xcdd397f2cffb7f5d439f56fc01afe5585c5f06e3bcd2ee3a21753c566de313d9::usdc::USDC'
 
 const IS_PROD = typeof window !== 'undefined' && window.location.hostname !== 'localhost'
-const PROXY = 'https://conk-proxy.italktonumbers.workers.dev'
+const PROXY = 'https://conk-zkproxy-v2.italktonumbers.workers.dev'
 
 export const SUI_RPC = IS_PROD
   ? 'https://sui-testnet-rpc.publicnode.com'
