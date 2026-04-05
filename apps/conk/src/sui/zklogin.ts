@@ -98,21 +98,16 @@ export async function handleZkLoginCallback(): Promise<ZkLoginSession | null> {
       method: 'POST',
       headers,
       body: JSON.stringify({
-        jsonrpc: '2.0',
-        method: 'shinami_zkp_createZkLoginProof',
-        params: [
-          jwt,
-          String(maxEpoch),
-          extendedKeyB64,
-          randomness,
-          BigInt('0x' + salt).toString(),
-        ],
-        id: 1,
+        jwt,
+        extendedEphemeralPublicKey: extendedKeyB64,
+        maxEpoch: String(maxEpoch),
+        jwtRandomness: randomness,
+        salt: BigInt('0x' + salt).toString(),
+        keyClaimName: 'sub',
       }),
     })
     if (resp.ok) {
-      const raw = await resp.json()
-      proof = raw.result?.zkProof ?? raw.result ?? raw
+      proof = await resp.json()
     } else {
       console.warn('ZK proof failed:', resp.status, await resp.text())
     }
