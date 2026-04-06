@@ -46,8 +46,12 @@ export async function crossPaywall(opts: {
   const [usdcPayment] = tx.splitCoins(usdcCoinObj, [tx.pure.u64(opts.amountUsdc)])
   tx.transferObjects([usdcPayment], tx.pure.address(ADDRESSES.TREASURY))
 
+  const suiCoins = await client.getCoins({ owner: session.address, coinType: '0x2::sui::SUI' })
+  if (!suiCoins.data.length) throw new Error('No SUI for gas')
+
   tx.setSender(session.address)
   tx.setGasBudget(10000000)
+  tx.setGasPayment([{ objectId: suiCoins.data[0].coinObjectId, version: suiCoins.data[0].version, digest: suiCoins.data[0].digest }])
   const { bytes, signature } = await signWithZkLogin(tx, session)
 
   const result = await client.executeTransactionBlock({
