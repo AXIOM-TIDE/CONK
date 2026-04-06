@@ -90,7 +90,7 @@ export async function handleZkLoginCallback(): Promise<ZkLoginSession | null> {
   // Generate ZK proof via Shinami prover
   let proof: unknown = null
   try {
-    const proverUrl = 'https://prover-dev.mystenlabs.com/v1'
+    const proverUrl = 'https://conk-zkproxy-v2.italktonumbers.workers.dev/zkproof'
 
     const headers: Record<string,string> = { 'Content-Type': 'application/json' }
 
@@ -100,14 +100,15 @@ export async function handleZkLoginCallback(): Promise<ZkLoginSession | null> {
       body: JSON.stringify({
         jwt,
         extendedEphemeralPublicKey: extendedKeyB64,
-        maxEpoch: String(maxEpoch),
+        maxEpoch: maxEpoch,
         jwtRandomness: randomness,
         salt: BigInt('0x' + salt).toString(),
         keyClaimName: 'sub',
       }),
     })
     if (resp.ok) {
-      proof = await resp.json()
+      const raw = await resp.json()
+      proof = raw
     } else {
       console.warn('ZK proof failed:', resp.status, await resp.text())
     }
