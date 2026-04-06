@@ -46,6 +46,7 @@ export async function crossPaywall(opts: {
   const [usdcPayment] = tx.splitCoins(usdcCoinObj, [tx.pure.u64(opts.amountUsdc)])
   tx.transferObjects([usdcPayment], tx.pure.address(ADDRESSES.TREASURY))
 
+  tx.setSender(session.address)
   const { bytes, signature } = await signWithZkLogin(tx, session)
 
   const result = await client.executeTransactionBlock({
