@@ -90,7 +90,7 @@ export async function handleZkLoginCallback(): Promise<ZkLoginSession | null> {
   // Generate ZK proof via Shinami prover
   let proof: unknown = null
   try {
-    const proverUrl = 'https://conk-zkproxy-v2.italktonumbers.workers.dev/zkproof'
+    const proverUrl = 'https://prover.mystenlabs.com/v1'
 
     const headers: Record<string,string> = { 'Content-Type': 'application/json' }
 
