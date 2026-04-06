@@ -47,6 +47,7 @@ export async function crossPaywall(opts: {
   tx.transferObjects([usdcPayment], tx.pure.address(ADDRESSES.TREASURY))
 
   tx.setSender(session.address)
+  tx.setGasBudget(10000000)
   const { bytes, signature } = await signWithZkLogin(tx, session)
 
   const result = await client.executeTransactionBlock({
