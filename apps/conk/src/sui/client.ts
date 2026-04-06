@@ -46,13 +46,11 @@ export async function crossPaywall(opts: {
   const [usdcPayment] = tx.splitCoins(usdcCoinObj, [tx.pure.u64(opts.amountUsdc)])
   tx.transferObjects([usdcPayment], tx.pure.address(ADDRESSES.TREASURY))
 
-  const sponsored = await sponsorTx(tx, session.address)
-  const sponsoredTx = sponsored as any
-  const { bytes, signature } = await signWithZkLogin(sponsoredTx.txBytes, session)
+  const { bytes, signature } = await signWithZkLogin(tx, session)
 
   const result = await client.executeTransactionBlock({
     transactionBlock: bytes,
-    signature: [sponsoredTx.signature, signature].filter(Boolean),
+    signature: [signature],
     options: { showEffects: true },
   })
 
