@@ -3,6 +3,8 @@ import { useSoundCast } from '../hooks/use402'
 import { useStore, type CastMode } from '../store/store'
 import { IconCast, IconOpen, IconEye, IconFlame, IconDock } from '../components/Icons'
 import { FuelBar } from '../components/FuelMeter'
+import { MediaUpload } from '../components/MediaUpload'
+import type { WalrusUploadResult } from '../sui/walrus'
 
 const MODES: { id: CastMode; icon: React.ReactNode; label: string; desc: string; note?: string }[] = [
   { id:'open',      icon:<IconOpen size={13}  color="var(--teal)"/>,   label:'Open',      desc:'Anyone reads · can earn Lighthouse' },
@@ -40,6 +42,7 @@ export function CastPanel({ onClose }: { onClose: () => void }) {
   const [keywords, setKeywords] = useState('')
   const [useFuture,setUseFuture]= useState(false)
   const [futureHrs,setFutureHrs]= useState(6)
+  const [media, setMedia] = useState<WalrusUploadResult | null>(null)
 
   const isSending = status === 'pending'
   const isDone    = status === 'success'
@@ -120,6 +123,17 @@ export function CastPanel({ onClose }: { onClose: () => void }) {
         <label className="field-label">Body <span className="field-cost">$0.001 to read</span></label>
         <textarea className="input" rows={4} placeholder="What the tide carries..." value={body} onChange={e=>setBody(e.target.value)}/>
         <div style={{fontFamily:'var(--font-mono)',fontSize:'9px',color:'var(--text-off)',textAlign:'right'}}>{body.length > 0 ? `${body.length} chars` : 'unlimited'}</div>
+      </div>
+
+      {/* Media attachment */}
+      <div className="field" style={{marginBottom:'11px'}}>
+        <label className="field-label">Attachment <span className="field-cost">optional · stored on Walrus</span></label>
+        <MediaUpload
+          onUpload={setMedia}
+          onRemove={() => setMedia(null)}
+          uploaded={media}
+          label="Attach image or file"
+        />
       </div>
 
       <div className="field" style={{marginBottom:'11px'}}>

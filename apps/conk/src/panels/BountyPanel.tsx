@@ -6,6 +6,8 @@ import { useState } from 'react'
 import { useStore } from '../store/store'
 import { getBounties, postBounty, submitProof, formatReward, type Bounty } from '../bounties'
 import { BackButton } from '../components/BackButton'
+import { MediaUpload } from '../components/MediaUpload'
+import type { WalrusUploadResult } from '../sui/walrus'
 import { DecayBadge } from '../components/DecayBadge'
 
 const CATEGORY_ICONS: Record<string, string> = {
@@ -108,6 +110,7 @@ export function BountyPanel({ onBack }: { onBack: () => void }) {
   const [bountyList, setBountyList] = useState(() => getBounties())
   const [claiming, setClaiming]     = useState<string|null>(null)
   const [proofInput, setProofInput] = useState('')
+  const [proofFile, setProofFile] = useState<WalrusUploadResult | null>(null)
 
   // Post form
   const [hook, setHook]       = useState('')
@@ -132,10 +135,12 @@ export function BountyPanel({ onBack }: { onBack: () => void }) {
   const handleClaim = (bountyId: string) => {
     if (!proofInput.trim()) return
     // Generate proof hash from work description
-    const proofHash = `sha256_${btoa(proofInput).slice(0,32)}_${Date.now()}`
+    const proofHash = proofFile
+      ? `walrus_${proofFile.blobId}_${Date.now()}`
+      : `sha256_${btoa(proofInput).slice(0,32)}_${Date.now()}`
     submitProof(bountyId, vessel.id, proofHash)
     debitVessel(10)
-    setClaiming(null); setProofInput('')
+    setClaiming(null); setProofInput(''); setProofFile(null)
     refresh()
   }
 
@@ -163,7 +168,16 @@ export function BountyPanel({ onBack }: { onBack: () => void }) {
             </div>
             <textarea value={proofInput} onChange={e => setProofInput(e.target.value)}
               placeholder="Describe your deliverable in detail. This generates the proof hash."
-              rows={4} style={{width:'100%',boxSizing:'border-box',background:'var(--surface2)',border:'1px solid var(--border)',borderRadius:'var(--radius)',padding:'8px 10px',fontFamily:'var(--font-mono)',fontSize:'10px',color:'var(--text)',outline:'none',resize:'none',marginBottom:'10px'}}/>
+              rows={3} style={{width:'100%',boxSizing:'border-box',background:'var(--surface2)',border:'1px solid var(--border)',borderRadius:'var(--radius)',padding:'8px 10px',fontFamily:'var(--font-mono)',fontSize:'10px',color:'var(--text)',outline:'none',resize:'none',marginBottom:'10px'}}/>
+            <div style={{marginBottom:'10px'}}>
+              <MediaUpload
+                onUpload={f => setProofFile(f)}
+                onRemove={() => setProofFile(null)}
+                uploaded={proofFile}
+                label="Attach proof file (optional)"
+                accept="image/*,application/pdf,.txt,.md,.csv,.json"
+              />
+            </div>
             {proofInput.trim() && (
               <div style={{padding:'8px 10px',background:'var(--surface2)',borderRadius:'var(--radius)',marginBottom:'10px',fontFamily:'var(--font-mono)',fontSize:'9px',color:'var(--text-off)',wordBreak:'break-all'}}>
                 proof: sha256_{btoa(proofInput.trim()).slice(0,32)}_…
