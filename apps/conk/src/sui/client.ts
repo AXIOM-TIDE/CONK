@@ -52,7 +52,9 @@ export async function crossPaywall(opts: {
   tx.setSender(session.address)
   tx.setGasBudget(10000000)
   tx.setGasPayment([{ objectId: suiCoins.data[0].coinObjectId, version: suiCoins.data[0].version, digest: suiCoins.data[0].digest }])
-  const { bytes, signature } = await signWithZkLogin(tx, session)
+  const txBytes = await tx.build({ client: client as any })
+  const { toB64 } = await (await import('@mysten/sui/utils'))
+  const { bytes, signature } = await signWithZkLogin(toB64(txBytes), session)
 
   const result = await client.executeTransactionBlock({
     transactionBlock: bytes,
