@@ -8,7 +8,11 @@ const IS_PROD = typeof window !== 'undefined' && window.location.hostname !== 'l
 const PROXY = 'https://axiom-tide-production.up.railway.app'
 
 export const ADDRESSES = {
-  TREASURY:    import.meta.env.VITE_TREASURY_ADDRESS || '0xe0117fba317d2267b8d90adca1fe79eceeec756bcf54edf04cc29ee5306ab32e',
+  TREASURY:    import.meta.env.VITE_TREASURY_ADDRESS || (
+    import.meta.env.VITE_NETWORK === 'mainnet'
+      ? '0xe0117fba317d2267b8d90adca1fe79eceeec756bcf54edf04cc29ee5306ab32e'  // mainnet — ELLIPAL cold wallet
+      : '0x1d67c64a405aaca736e5a1c45e7251e37a634e5c32b15cb875ee83e4cd6ec204'  // testnet — development treasury
+  ),
   RELAY_POOL:  import.meta.env.VITE_RELAY_POOL_ADDRESS || '' as string,
   ABYSS:       import.meta.env.VITE_ABYSS_ADDRESS || '0xdce0b9ce76ec0f4ad1026fa58eeb0fb837be30b84a4b89fcb547fb5963c86277',
   DRIFT:       import.meta.env.VITE_DRIFT_ADDRESS || '0xfd89573b1948caacd9356a0272bcf73d7f361cb00bdf8fc59f012216ab038bc0',
