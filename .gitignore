@@ -8,3 +8,5 @@ build/
 .vite/
 *.log
 .sui/
+.wrangler/
+zkproxy-worker/.wrangler/
