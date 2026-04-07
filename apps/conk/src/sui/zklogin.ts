@@ -90,25 +90,28 @@ export async function handleZkLoginCallback(): Promise<ZkLoginSession | null> {
   // Generate ZK proof via Shinami prover
   let proof: unknown = null
   try {
-    const proverUrl = 'https://prover.mystenlabs.com/v1'
+    const proverUrl = 'https://api.enoki.mystenlabs.com/v1/zklogin/zkp'
 
-    const headers: Record<string,string> = { 'Content-Type': 'application/json' }
+    const headers: Record<string,string> = {
+      'Content-Type': 'application/json',
+      'zklogin-jwt': jwt,
+      'Authorization': 'Bearer enoki_public_fa10b08a0bbb5415b2a78850aba85c8c',
+    }
 
     const resp = await fetch(proverUrl, {
       method: 'POST',
       headers,
       body: JSON.stringify({
-        jwt,
-        extendedEphemeralPublicKey: extendedKeyB64,
+        network: 'testnet',
+        ephemeralPublicKey: extendedKeyB64,
         maxEpoch: maxEpoch,
-        jwtRandomness: randomness,
+        randomness: randomness,
         salt: BigInt('0x' + salt).toString(),
-        keyClaimName: 'sub',
       }),
     })
     if (resp.ok) {
       const raw = await resp.json()
-      proof = raw
+      proof = raw.data
     } else {
       console.warn('ZK proof failed:', resp.status, await resp.text())
     }
