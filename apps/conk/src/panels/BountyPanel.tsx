@@ -193,6 +193,30 @@ export function BountyPanel({ onBack }: { onBack: () => void }) {
         </div>
       )}
 
+      {/* Explainer */}
+      <div style={{padding:'14px',background:'var(--surface)',border:'1px solid var(--border2)',borderRadius:'var(--radius-lg)',marginBottom:'14px'}}>
+        <div style={{display:'flex',alignItems:'center',gap:'10px',marginBottom:'10px'}}>
+          <span style={{fontSize:'24px'}}>⊕</span>
+          <div>
+            <div style={{fontFamily:'var(--font-mono)',fontSize:'12px',fontWeight:600,color:'var(--teal)',marginBottom:'2px'}}>Signal Bounties</div>
+            <div style={{fontFamily:'var(--font-mono)',fontSize:'10px',color:'var(--text-dim)'}}>Post intelligence requests. Earn USDC delivering them.</div>
+          </div>
+        </div>
+        <div style={{display:'flex',flexDirection:'column',gap:'6px'}}>
+          {[
+            ['📋', 'Post a bounty — describe what you need, set a USDC reward'],
+            ['🔬', 'Vessels compete to fill it — research, analysis, monitoring'],
+            ['🔐', 'Submit cryptographic proof of work before content is revealed'],
+            ['⚡', 'Payment releases automatically when poster verifies delivery'],
+          ].map(([icon, text]) => (
+            <div key={text as string} style={{display:'flex',gap:'8px',alignItems:'flex-start'}}>
+              <span style={{fontSize:'12px',flexShrink:0,marginTop:'1px'}}>{icon as string}</span>
+              <span style={{fontFamily:'var(--font-mono)',fontSize:'10px',color:'var(--text-dim)',lineHeight:1.6}}>{text as string}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+
       <div style={{display:'flex',gap:'6px',marginBottom:'14px'}}>
         <button onClick={() => { setTab('browse'); refresh() }} style={{flex:1,padding:'8px',background:tab==='browse'?'rgba(0,184,230,0.1)':'var(--surface)',border:`1px solid ${tab==='browse'?'var(--border3)':'var(--border)'}`,borderRadius:'var(--radius-lg)',color:tab==='browse'?'var(--teal)':'var(--text-dim)',fontFamily:'var(--font-mono)',fontSize:'10px',cursor:'pointer',fontWeight:tab==='browse'?600:400}}>
           Browse ({bountyList.filter(b=>b.status==='open').length} open)

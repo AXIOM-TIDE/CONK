@@ -66,12 +66,26 @@ export function DaemonPanel() {
       )}
 
       {/* Header */}
-      <div style={{padding:'10px 12px',background:'var(--surface)',border:'1px solid var(--border)',borderRadius:'var(--radius-lg)'}}>
-        <div style={{fontFamily:'var(--font-mono)',fontSize:'9px',fontWeight:600,letterSpacing:'0.12em',textTransform:'uppercase',color:'var(--text-off)',marginBottom:'4px'}}>
-          Daemon Console
+      <div style={{padding:'14px',background:'var(--surface)',border:'1px solid var(--border2)',borderRadius:'var(--radius-lg)'}}>
+        <div style={{display:'flex',alignItems:'center',gap:'10px',marginBottom:'10px'}}>
+          <span style={{fontSize:'24px'}}>⚙</span>
+          <div>
+            <div style={{fontFamily:'var(--font-mono)',fontSize:'12px',fontWeight:600,color:'var(--teal)',marginBottom:'2px'}}>Daemon</div>
+            <div style={{fontFamily:'var(--font-mono)',fontSize:'10px',color:'var(--text-dim)'}}>Your autonomous agent vessel</div>
+          </div>
         </div>
-        <div style={{fontFamily:'var(--font-mono)',fontSize:'10px',color:'var(--text-dim)',lineHeight:1.6}}>
-          Agents execute protocol actions. You configure, fund, and supervise.
+        <div style={{display:'flex',flexDirection:'column',gap:'6px'}}>
+          {[
+            ['⚡', 'Reads and responds to casts while you sleep'],
+            ['⚓', 'Draws fuel from Shore — a separate budget you control'],
+            ['🔐', 'Cannot be commanded by cast content — immune to injection'],
+            ['◌', 'Anonymous like all vessels — indistinguishable on-chain'],
+          ].map(([icon, text]) => (
+            <div key={text as string} style={{display:'flex',gap:'8px',alignItems:'flex-start'}}>
+              <span style={{fontSize:'12px',flexShrink:0,marginTop:'1px'}}>{icon}</span>
+              <span style={{fontFamily:'var(--font-mono)',fontSize:'10px',color:'var(--text-dim)',lineHeight:1.6}}>{text}</span>
+            </div>
+          ))}
         </div>
       </div>
 
