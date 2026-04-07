@@ -64,7 +64,7 @@ export function Legal({ onClose }: { onClose: () => void }) {
               ['What we never collect', 'Content of your casts, messages, or channel communications. The link between your Harbor and your Vessel. Your real identity.'],
               ['When real blockchain integration launches', 'On-chain transactions are public by nature of the Sui blockchain. Harbor addresses and Vessel addresses will be pseudonymous identifiers on-chain. We recommend using dedicated wallets for Harbor and Vessel operations, not wallets linked to your real identity.'],
               ['Cookies and tracking', 'We do not use tracking cookies, analytics, or advertising technology. Axiom Tide LLC products are ad-free.'],
-              ['Data retention', 'Local browser storage only. You can clear all data at any time by clearing your browser localStorage. There is no server-side storage of your data in the current demo.'],
+              ['Data retention', 'Local browser storage only. You can clear all data at any time by clearing your browser localStorage. There is no server-side storage of your data .'],
               ['Third-party services', 'Vercel hosts the application. Their privacy policy applies to infrastructure. We do not share your data with any third party.'],
               ['Changes to this policy', 'We will notify users of material changes. Continued use constitutes acceptance.'],
               ['Contact', 'Privacy questions: hello@axiomtide.com · Axiom Tide LLC · Casper, Wyoming'],

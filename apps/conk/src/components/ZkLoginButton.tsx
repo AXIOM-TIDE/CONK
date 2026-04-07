@@ -11,6 +11,8 @@ export function ZkLoginButton() {
   const [loading, setLoading]   = useState(false)
   const [address, setAddress]   = useState<string | null>(null)
   const [error, setError]       = useState<string | null>(null)
+  const [showFund, setShowFund] = useState(false)
+  const [copied, setCopied]     = useState(false)
   const setHarbor = useStore((s) => s.setHarbor)
 
   // Check for OAuth callback on mount
@@ -23,6 +25,7 @@ export function ZkLoginButton() {
           const session = await handleZkLoginCallback()
           if (session) {
             setAddress(session.address)
+            setShowFund(true)
             // Initialize Harbor with zkLogin address
             setHarbor({
               balance:      500,
@@ -58,6 +61,75 @@ export function ZkLoginButton() {
   const handleDisconnect = () => {
     clearSession()
     setAddress(null)
+  }
+
+  const copyAddress = () => {
+    if (!address) return
+    navigator.clipboard.writeText(address)
+    setCopied(true)
+    setTimeout(() => setCopied(false), 2000)
+  }
+
+  if (showFund && address) {
+    return (
+      <div style={{position:'fixed',inset:0,zIndex:1000,background:'rgba(1,6,8,0.97)',display:'flex',alignItems:'center',justifyContent:'center',padding:'20px'}}>
+        <div style={{width:'100%',maxWidth:'400px',background:'var(--surface)',border:'1px solid var(--border2)',borderRadius:'var(--radius-xl)',padding:'24px'}}>
+          <div style={{textAlign:'center',marginBottom:'20px'}}>
+            <div style={{fontSize:'32px',marginBottom:'10px'}}>⚓</div>
+            <div style={{fontFamily:'var(--font-display)',fontSize:'18px',fontWeight:600,color:'var(--text)',marginBottom:'6px'}}>
+              Fund Your Vessel
+            </div>
+            <div style={{fontFamily:'var(--font-mono)',fontSize:'10px',color:'var(--text-dim)',lineHeight:1.7}}>
+              Your anonymous Sui wallet is ready. Send SUI and USDC to start using CONK.
+            </div>
+          </div>
+
+          {/* Address */}
+          <div style={{marginBottom:'16px'}}>
+            <div style={{fontFamily:'var(--font-mono)',fontSize:'9px',color:'var(--text-off)',letterSpacing:'0.1em',textTransform:'uppercase',marginBottom:'6px'}}>
+              Your Wallet Address
+            </div>
+            <div style={{display:'flex',alignItems:'center',gap:'8px',padding:'10px 12px',background:'var(--surface2)',border:'1px solid var(--border)',borderRadius:'var(--radius-lg)'}}>
+              <span style={{fontFamily:'var(--font-mono)',fontSize:'10px',color:'var(--teal)',flex:1,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>
+                {address}
+              </span>
+              <button onClick={copyAddress}
+                style={{background:'none',border:'none',color:copied?'#4CAF50':'var(--text-off)',cursor:'pointer',fontFamily:'var(--font-mono)',fontSize:'9px',flexShrink:0,padding:0}}>
+                {copied ? '✓ copied' : 'copy'}
+              </button>
+            </div>
+          </div>
+
+          {/* What to send */}
+          <div style={{display:'flex',flexDirection:'column',gap:'6px',marginBottom:'16px'}}>
+            {[
+              ['SUI', 'For gas fees (~0.01 SUI is enough to start)'],
+              ['USDC', 'To read casts ($0.001 per cast · any amount works)'],
+            ].map(([token, desc]) => (
+              <div key={token} style={{display:'flex',gap:'10px',padding:'10px 12px',background:'rgba(0,184,230,0.04)',border:'1px solid var(--border)',borderRadius:'var(--radius-lg)'}}>
+                <span style={{fontFamily:'var(--font-mono)',fontSize:'11px',fontWeight:700,color:'var(--teal)',flexShrink:0,minWidth:'36px'}}>{token}</span>
+                <span style={{fontFamily:'var(--font-mono)',fontSize:'10px',color:'var(--text-dim)',lineHeight:1.5}}>{desc}</span>
+              </div>
+            ))}
+          </div>
+
+          {/* Where to get it */}
+          <div style={{padding:'10px 12px',background:'var(--surface2)',borderRadius:'var(--radius-lg)',marginBottom:'16px',fontFamily:'var(--font-mono)',fontSize:'10px',color:'var(--text-dim)',lineHeight:1.7}}>
+            Get USDC on Sui via <span style={{color:'var(--teal)'}}>Slush wallet</span> or any Sui DEX.<br/>
+            Network: <span style={{color:'var(--teal)'}}>Sui Testnet</span>
+          </div>
+
+          <button onClick={() => setShowFund(false)}
+            style={{width:'100%',padding:'12px',background:'var(--teal)',border:'none',borderRadius:'var(--radius-lg)',color:'var(--text-inv)',fontFamily:'var(--font-mono)',fontSize:'12px',fontWeight:600,cursor:'pointer',letterSpacing:'0.04em'}}>
+            Got it — enter the tide →
+          </button>
+          <button onClick={() => setShowFund(false)}
+            style={{width:'100%',padding:'8px',background:'none',border:'none',color:'var(--text-off)',fontFamily:'var(--font-mono)',fontSize:'10px',cursor:'pointer',marginTop:'6px'}}>
+            I'll fund it later
+          </button>
+        </div>
+      </div>
+    )
   }
 
   if (loading) {
