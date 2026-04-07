@@ -119,7 +119,8 @@ export async function handleZkLoginCallback(): Promise<ZkLoginSession | null> {
     console.warn('ZK proof generation failed:', e)
   }
 
-  const session: ZkLoginSession = { address, maxEpoch, salt, proof, addressSeed: addressSeedValue }
+  const enokiAddressSeed = (proof as any)?.addressSeed ?? addressSeedValue
+  const session: ZkLoginSession = { address, maxEpoch, salt, proof, addressSeed: enokiAddressSeed }
   sessionStorage.setItem('zklogin_session', JSON.stringify(session))
   sessionStorage.setItem('zklogin_jwt', jwt)
 
