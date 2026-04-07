@@ -18,7 +18,7 @@ export function TreasuryStrip() {
         textAlign: 'center',
         lineHeight: 1.6,
       }}>
-        Fees route to the CONK treasury · No refunds · No recovery · Protocol in development — mock transactions only
+        Fees route to the CONK treasury · No refunds · No recovery · Protocol in development
       </span>
     </div>
   )

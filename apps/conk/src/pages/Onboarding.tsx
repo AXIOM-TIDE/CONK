@@ -73,7 +73,7 @@ export function Onboarding() {
               Enter the tide →
             </button>
             <div style={{fontFamily:'var(--font-mono)',fontSize:'9px',color:'var(--text-off)',marginTop:'12px'}}>
-              Protocol in development · Mock transactions · Real Sui integration coming
+              Protocol in development · Real transactions on Sui
             </div>
           </div>
         )}
