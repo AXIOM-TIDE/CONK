@@ -142,7 +142,7 @@ export async function signWithZkLogin(
     const { signature: ephemeralSig } = await ephemeralKeypair.signTransaction(txBytes)
     const proofWithSeed = {
       ...(session.proof as any),
-      addressSeed: session.addressSeed ?? BigInt('0x' + session.salt).toString(),
+      addressSeed: (session.proof as any).addressSeed ?? session.addressSeed ?? BigInt('0x' + session.salt).toString(),
     }
     const zkLoginSig = getZkLoginSignature({
       inputs: proofWithSeed,
@@ -177,7 +177,7 @@ export async function signWithZkLogin(
   // Add addressSeed derived from salt
   const proofWithSeed = {
     ...(session.proof as any),
-    addressSeed: session.addressSeed ?? BigInt('0x' + session.salt).toString(),
+    addressSeed: (session.proof as any).addressSeed ?? session.addressSeed ?? BigInt('0x' + session.salt).toString(),
   }
 
   const zkLoginSig = getZkLoginSignature({
