@@ -113,10 +113,25 @@ export function ZkLoginButton() {
             ))}
           </div>
 
-          {/* Where to get it */}
-          <div style={{padding:'10px 12px',background:'var(--surface2)',borderRadius:'var(--radius-lg)',marginBottom:'16px',fontFamily:'var(--font-mono)',fontSize:'10px',color:'var(--text-dim)',lineHeight:1.7}}>
-            Get USDC on Sui via <span style={{color:'var(--teal)'}}>Slush wallet</span> or any Sui DEX.<br/>
-            Network: <span style={{color:'var(--teal)'}}>Sui Testnet</span>
+          {/* Buy with Transak */}
+          <button
+            onClick={() => {
+              const url = new URL('https://global.transak.com')
+              url.searchParams.set('apiKey', '25117428-d358-438c-9f81-768ca665ee17')
+              url.searchParams.set('network', 'sui')
+              url.searchParams.set('cryptoCurrencyCode', 'USDC')
+              url.searchParams.set('walletAddress', address!)
+              url.searchParams.set('disableWalletAddressForm', 'true')
+              url.searchParams.set('defaultCryptoCurrency', 'USDC')
+              window.open(url.toString(), '_blank', 'width=450,height=700')
+            }}
+            style={{width:'100%',padding:'12px',background:'#0052FF',border:'none',borderRadius:'var(--radius-lg)',color:'#fff',fontFamily:'var(--font-mono)',fontSize:'12px',fontWeight:600,cursor:'pointer',letterSpacing:'0.04em',marginBottom:'8px',display:'flex',alignItems:'center',justifyContent:'center',gap:'8px'}}>
+            💳 Buy USDC with card — powered by Transak
+          </button>
+
+          {/* Manual option */}
+          <div style={{padding:'10px 12px',background:'var(--surface2)',borderRadius:'var(--radius-lg)',marginBottom:'16px',fontFamily:'var(--font-mono)',fontSize:'10px',color:'var(--text-dim)',lineHeight:1.7,textAlign:'center'}}>
+            or send SUI + USDC manually from <span style={{color:'var(--teal)'}}>Slush</span> or any Sui wallet
           </div>
 
           <button onClick={() => setShowFund(false)}
