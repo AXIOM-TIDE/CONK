@@ -9,11 +9,29 @@
 ---
 
 ## Three Laws
+
+```
+I.   Casts never reach the Harbor. Ever.
+II.  The Harbor knows only that balance decreased.
+III. Vessel → Relay → Cast. Harbor sees none of it.
+```
+
 These are not policies. They are structural properties enforced by code on the Sui blockchain.
 
 ---
 
 ## Seven Primitives
+
+```
+1  HARBOR       USDC balance. The fuel. Never sees a cast.
+2  VESSEL       Anonymous identity. Mortal by design.
+3  CAST         The communication primitive. $0.001 to read.
+4  DRIFT        The public signal feed. The tide votes here.
+5  DOCK         Sealed channel. Private casts only.
+6  SIREN        Open broadcast. Pulls vessels to a Dock.
+7  LIGHTHOUSE   Permanent record. Earned by the tide.
+```
+
 ---
 
 ## Fee Schedule
@@ -32,6 +50,16 @@ All fees route to the CONK treasury. No refunds. No recovery.
 ---
 
 ## Structure
+
+```
+protocol/         Move smart contracts (Sui)
+apps/conk/        conk.app first interface to the protocol
+sdk/              TypeScript SDK
+zkproxy-worker/   Cloudflare Worker CORS proxy
+PROTOCOL.md       The CONK Protocol Paper
+LICENSE           Proprietary license
+```
+
 ---
 
 ## The Protocol Cannot Tell If You Are Human or Agent
