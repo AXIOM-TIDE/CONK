@@ -107,6 +107,7 @@ export async function handleZkLoginCallback(): Promise<ZkLoginSession | null> {
         maxEpoch: maxEpoch,
         randomness: randomness,
         salt: BigInt('0x' + salt).toString(),
+        keyClaimName: 'sub',
       }),
     })
     if (resp.ok) {
@@ -120,7 +121,12 @@ export async function handleZkLoginCallback(): Promise<ZkLoginSession | null> {
   }
 
   const enokiAddressSeed = (proof as any)?.addressSeed ?? addressSeedValue
-  const session: ZkLoginSession = { address, maxEpoch, salt, proof, addressSeed: enokiAddressSeed }
+  // Recompute address from Enoki's addressSeed
+  const { computeZkLoginAddressFromSeed } = await import('@mysten/sui/zklogin')
+  const finalAddress = enokiAddressSeed !== addressSeedValue
+    ? computeZkLoginAddressFromSeed(BigInt(enokiAddressSeed), 'https://accounts.google.com')
+    : address
+  const session: ZkLoginSession = { address: finalAddress, maxEpoch, salt, proof, addressSeed: enokiAddressSeed }
   sessionStorage.setItem('zklogin_session', JSON.stringify(session))
   sessionStorage.setItem('zklogin_jwt', jwt)
 
