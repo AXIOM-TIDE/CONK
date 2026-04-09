@@ -26,6 +26,11 @@ export function HarborHome({ onEnterVessel }: Props) {
   const setOnboarded = useStore((s) => s.setOnboarded)
   const feedRef = useRef<HTMLDivElement>(null)
   const [filter, setFilter] = useState<'all'|CastMode>('all')
+  const [showWithdraw, setShowWithdraw] = useState(false)
+  const [withdrawAddr, setWithdrawAddr] = useState('')
+  const [withdrawAmt, setWithdrawAmt] = useState(0)
+  const [withdrawing, setWithdrawing] = useState(false)
+  const [withdrawDone, setWithdrawDone] = useState(false)
 
   // Live tide
   useEffect(() => {
@@ -39,6 +44,33 @@ export function HarborHome({ onEnterVessel }: Props) {
   }, [])
 
   const bal     = harbor ? (harbor.balance / 100).toFixed(2) : '0.00'
+
+  const handleWithdraw = async () => {
+    if (!withdrawAddr.trim() || !withdrawAmt || !harbor) return
+    setWithdrawing(true)
+    try {
+      const { crossPaywall } = await import('../sui/client')
+      const result = await crossPaywall({
+        vesselId:      vessel?.id ?? 'harbor',
+        castId:        'withdraw_' + Date.now(),
+        amountUsdc:    withdrawAmt * 1000000,
+        authorAddress: withdrawAddr.trim(),
+      })
+      console.log('Withdrawal confirmed:', result)
+      setHarbor({ ...harbor, balance: harbor.balance - withdrawAmt * 100 })
+      setWithdrawDone(true)
+      setTimeout(() => {
+        setShowWithdraw(false)
+        setWithdrawDone(false)
+        setWithdrawAddr('')
+        setWithdrawAmt(0)
+      }, 2000)
+    } catch(e: any) {
+      console.error('Withdrawal failed:', e)
+    } finally {
+      setWithdrawing(false)
+    }
+  }
   const filtered = filter === 'all' ? casts : casts.filter(c => c.mode === filter)
 
   return (
@@ -132,6 +164,50 @@ export function HarborHome({ onEnterVessel }: Props) {
                 <span style={{ fontFamily:'var(--font-mono)', fontSize:'9px', color:'var(--text-off)', lineHeight:1.6 }}>{l}</span>
               </div>
             ))}
+          </div>
+
+          {/* Withdraw */}
+          <div style={{padding:'12px 12px 8px'}}>
+            {!showWithdraw ? (
+              <button onClick={() => setShowWithdraw(true)}
+                style={{width:'100%',padding:'8px',background:'var(--surface)',border:'1px solid var(--border)',borderRadius:'var(--radius-lg)',color:'var(--text-dim)',fontFamily:'var(--font-mono)',fontSize:'10px',cursor:'pointer',letterSpacing:'0.04em'}}>
+                ↑ Withdraw USDC
+              </button>
+            ) : (
+              <div style={{background:'var(--surface)',border:'1px solid var(--border2)',borderRadius:'var(--radius-lg)',padding:'12px'}}>
+                <div style={{fontFamily:'var(--font-mono)',fontSize:'10px',fontWeight:600,color:'var(--teal)',marginBottom:'8px'}}>
+                  Withdraw USDC
+                </div>
+                <input
+                  placeholder="Destination Sui address (0x...)"
+                  value={withdrawAddr}
+                  onChange={e => setWithdrawAddr(e.target.value)}
+                  style={{width:'100%',boxSizing:'border-box',background:'var(--surface2)',border:'1px solid var(--border)',borderRadius:'var(--radius)',padding:'7px 9px',fontFamily:'var(--font-mono)',fontSize:'9px',color:'var(--text)',outline:'none',marginBottom:'8px'}}
+                />
+                <div style={{display:'flex',gap:'4px',marginBottom:'8px',flexWrap:'wrap'}}>
+                  {[1,5,10,50].map(amt => (
+                    <button key={amt} onClick={() => setWithdrawAmt(amt)}
+                      style={{flex:1,padding:'5px 4px',background:withdrawAmt===amt?'rgba(0,184,230,0.1)':'var(--surface2)',border:`1px solid ${withdrawAmt===amt?'var(--teal)':'var(--border)'}`,borderRadius:'var(--radius)',color:withdrawAmt===amt?'var(--teal)':'var(--text)',fontFamily:'var(--font-mono)',fontSize:'10px',fontWeight:600,cursor:'pointer',textAlign:'center'}}>
+                      ${amt}
+                    </button>
+                  ))}
+                </div>
+                <div style={{fontFamily:'var(--font-mono)',fontSize:'9px',color:'var(--text-off)',marginBottom:'8px'}}>
+                  Balance: ${bal} USDC
+                </div>
+                <div style={{display:'flex',gap:'6px'}}>
+                  <button onClick={() => {setShowWithdraw(false);setWithdrawAddr('');setWithdrawAmt(0)}}
+                    style={{flex:1,padding:'7px',background:'none',border:'1px solid var(--border)',borderRadius:'var(--radius)',color:'var(--text-off)',fontFamily:'var(--font-mono)',fontSize:'9px',cursor:'pointer'}}>
+                    cancel
+                  </button>
+                  <button onClick={handleWithdraw}
+                    disabled={!withdrawAddr.trim() || !withdrawAmt || withdrawing || withdrawDone}
+                    style={{flex:2,padding:'7px',background:withdrawDone?'#4CAF50':'rgba(0,184,230,0.1)',border:`1px solid ${withdrawDone?'#4CAF50':'var(--border3)'}`,borderRadius:'var(--radius)',color:withdrawDone?'#fff':'var(--teal)',fontFamily:'var(--font-mono)',fontSize:'9px',fontWeight:600,cursor:'pointer'}}>
+                    {withdrawing?'sending…':withdrawDone?'✓ sent':'Withdraw →'}
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Dev reset */}
