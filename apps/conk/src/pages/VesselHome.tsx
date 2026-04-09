@@ -410,7 +410,7 @@ function StoredPanel({ vesselId, onBack }: { vesselId: string; onBack: () => voi
             )
           })}
         </div>
-      )}
+      ) : null}
 
       <div style={{marginTop:'16px',padding:'10px',background:'rgba(0,184,230,0.03)',border:'1px solid var(--border)',borderRadius:'var(--radius)',fontFamily:'var(--font-mono)',fontSize:'9px',color:'var(--text-off)',lineHeight:1.7,textAlign:'center'}}>
         Stored signals survive until burned or globally wrecked.<br/>
