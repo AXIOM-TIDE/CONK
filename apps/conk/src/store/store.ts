@@ -64,6 +64,10 @@ export interface Cast {
   unlocksAt?: number
   // Relay pool: actual relay time (delayed from payment for timing privacy)
   relayedAt?: number
+  // Author payments
+  price?: number          // USDC micro units — default 1000 = $0.001
+  authorAddress?: string  // vessel address of cast creator
+  revenueEarned?: number  // total USDC earned from reads
 }
 
 export interface Siren {

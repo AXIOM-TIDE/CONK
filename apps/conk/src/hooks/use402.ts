@@ -27,13 +27,14 @@ export interface PaymentReceipt {
 }
 
 export interface Use402Options {
-  amount?:    number        // microUSDC, default 1000 ($0.001)
+  amount?:         number        // microUSDC, default 1000 ($0.001)
+  authorAddress?:  string        // cast author vessel address for 97/3 split
   onSuccess?: (receipt: PaymentReceipt) => void
   onError?:   (err: string) => void
 }
 
 export function use402(options: Use402Options = {}) {
-  const { amount = 1000, onSuccess, onError } = options
+  const { amount = 1000, authorAddress, onSuccess, onError } = options
   const [status, setStatus]   = useState<PaymentStatus>('idle')
   const [receipt, setReceipt] = useState<PaymentReceipt | null>(null)
   const harbor  = useStore((s) => s.harbor)
@@ -61,9 +62,10 @@ export function use402(options: Use402Options = {}) {
     try {
       // Real Sui transaction via zkLogin + Shinami gas sponsorship
       const result = await crossPaywall({
-        vesselId:   vessel.id,
-        castId:     castId,
-        amountUsdc: amount,
+        vesselId:      vessel.id,
+        castId:        castId,
+        amountUsdc:    amount,
+        authorAddress: authorAddress,
       })
 
       const txDigest = typeof result === 'string' ? result : result.txDigest
@@ -112,6 +114,7 @@ export function useSoundCast() {
       body:              string
       mode:              string
       duration:          string
+      price?:            number
       securityQuestion?: string
       securityAnswer?:   string
       keywords?:         string[]
@@ -125,10 +128,13 @@ export function useSoundCast() {
 
       try {
         // Real Sui transaction for cast creation
+        const castPrice = payload.price ?? 1000
         const result = await crossPaywall({
-          vesselId:   vessel.id,
-          castId:     `cast_${Date.now()}`,
-          amountUsdc: 1000,
+          vesselId:      vessel.id,
+          castId:        `cast_${Date.now()}`,
+          amountUsdc:    castPrice,
+          authorAddress: vessel.id,
+          price:         castPrice,
         })
 
         const castTxDigest = typeof result === 'string' ? result : result.txDigest
@@ -158,7 +164,9 @@ export function useSoundCast() {
           securityAnswer:     payload.securityAnswer,
           keywords:           payload.keywords,
           unlocksAt:          payload.unlocksAt,
-          txDigest:           castTxDigest,
+          price:              payload.price ?? 1000,
+          authorAddress:      vessel.id,
+          revenueEarned:      0,
         })
 
         // Debit fuel

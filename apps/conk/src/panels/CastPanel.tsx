@@ -43,6 +43,7 @@ export function CastPanel({ onClose }: { onClose: () => void }) {
   const [useFuture,setUseFuture]= useState(false)
   const [futureHrs,setFutureHrs]= useState(6)
   const [media, setMedia] = useState<WalrusUploadResult | null>(null)
+  const [price, setPrice] = useState<number>(1000) // default $0.001
 
   const isSending = status === 'pending'
   const isDone    = status === 'success'
@@ -56,6 +57,7 @@ export function CastPanel({ onClose }: { onClose: () => void }) {
     const ok = await sound({
       hook: hook.trim(),
       body: body.trim() || hook.trim(),
+      price,
       mode, duration: dur,
       securityQuestion: useSecQ && secQ.trim() ? secQ.trim() : undefined,
       securityAnswer:   useSecQ && secA.trim() ? secA.trim() : undefined,
@@ -82,7 +84,7 @@ export function CastPanel({ onClose }: { onClose: () => void }) {
         </div>
         <div className="summary-row"><span>Duration</span><span className="summary-val">{dur}</span></div>
         <div className="summary-row"><span>Security gate</span><span className="summary-val">{useSecQ && secQ ? 'enabled' : 'none'}</span></div>
-        <div className="summary-row" style={{borderBottom:'none'}}><span>Cost</span><span className="summary-val">$0.001</span></div>
+        <div className="summary-row" style={{borderBottom:'none'}}><span>Read price</span><span className="summary-val">${(price/1000000).toFixed(3)}</span></div>
       </div>
 
       {/* Void notice */}
@@ -93,7 +95,7 @@ export function CastPanel({ onClose }: { onClose: () => void }) {
       {error && <div style={{padding:'8px 10px',background:'var(--burn-dim)',border:'1px solid var(--burn-line)',borderRadius:'var(--radius)',fontFamily:'var(--font-mono)',fontSize:'11px',color:'var(--burn)',marginBottom:'10px'}}>{error}</div>}
 
       <button data-testid="cast-sound-btn" className="btn btn-primary btn-full" onClick={handleSend} disabled={isSending||isDone||lowFuel}>
-        {isSending ? <><span className="spinner"/>Sounding…</> : isDone ? <span data-testid="cast-success">✓ cast sounded</span> : <><IconCast size={12} color="var(--text-inv)"/> Sound it · $0.001</>}
+        {isSending ? <><span className="spinner"/>Sounding…</> : isDone ? <span data-testid="cast-success">✓ cast sounded</span> : <><IconCast size={12} color="var(--text-inv)"/> Sound it · ${(price/1000000).toFixed(3)}</>}
       </button>
       <button className="btn btn-ghost btn-full" style={{marginTop:'6px'}} onClick={() => setStep('compose')}>← edit</button>
     </>
@@ -123,6 +125,29 @@ export function CastPanel({ onClose }: { onClose: () => void }) {
         <label className="field-label">Body <span className="field-cost">$0.001 to read</span></label>
         <textarea className="input" rows={4} placeholder="What the tide carries..." value={body} onChange={e=>setBody(e.target.value)}/>
         <div style={{fontFamily:'var(--font-mono)',fontSize:'9px',color:'var(--text-off)',textAlign:'right'}}>{body.length > 0 ? `${body.length} chars` : 'unlimited'}</div>
+      </div>
+
+      {/* Price selector */}
+      <div className="field" style={{marginBottom:'11px'}}>
+        <label className="field-label">Read Price <span className="field-cost">readers pay this to unlock</span></label>
+        <div style={{display:'flex',gap:'6px',flexWrap:'wrap'}}>
+          {[
+            {label:'$0.001', value:1000},
+            {label:'$0.01',  value:10000},
+            {label:'$0.10',  value:100000},
+            {label:'$1.00',  value:1000000},
+            {label:'$5.00',  value:5000000},
+          ].map(p => (
+            <button key={p.value} onClick={() => setPrice(p.value)}
+              className={`chip ${price===p.value?'active':''}`}
+              style={{fontSize:'11px',padding:'4px 10px'}}>
+              {p.label}
+            </button>
+          ))}
+        </div>
+        <div style={{fontFamily:'var(--font-mono)',fontSize:'9px',color:'var(--text-off)',marginTop:'4px'}}>
+          You earn 97% · Protocol fee 3%
+        </div>
       </div>
 
       {/* Media attachment */}

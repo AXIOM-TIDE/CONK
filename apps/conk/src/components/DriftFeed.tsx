@@ -8,6 +8,14 @@ import { SecurityModal } from './SecurityModal'
 import { VesselSelectModal } from './VesselSelectModal'
 import { PaywayModal } from './PaywayModal'
 
+function formatPrice(microUsdc: number): string {
+  const usdc = microUsdc / 1000000
+  if (usdc < 0.01) return `$${(usdc * 1000).toFixed(1)}m`
+  if (usdc < 1) return `$${usdc.toFixed(3)}`
+  return `$${usdc.toFixed(2)}`
+}
+
+
 const MODE_FILTERS: { id: 'all'|CastMode; label: string }[] = [
   { id:'all',       label:'all'       },
   { id:'open',      label:'open'      },
@@ -162,7 +170,7 @@ function CastRow({ cast, index }: { cast: Cast; index: number; key?: string }) {
   const storeForVessel  = useStore((s) => s.storeForVessel)
   const debitVessel     = useStore((s) => s.debitVessel)
   const debitHarbor     = useStore((s) => s.debitHarbor)
-  const { pay, status }             = use402({ amount: 1000 })
+  const { pay, status }             = use402({ amount: cast.price ?? 1000, authorAddress: cast.authorAddress })
   const { sound, status: soundSt }  = useSoundCast()
 
   const [step,          setStep]          = useState<UnlockStep>('idle')
@@ -352,7 +360,7 @@ function CastRow({ cast, index }: { cast: Cast; index: number; key?: string }) {
             )}
             {!isFuture && step==='idle' && (
               <div style={{fontFamily:'var(--font-mono)',fontSize:'9px',color:'var(--text-off)',opacity:0.5}}>
-                {isUnlocked ? 'tap to expand' : 'tap to open · $0.001'}
+                {isUnlocked ? 'tap to expand' : `tap to open · ${formatPrice(cast.price ?? 1000)}`}
                 {autoBurn&&!isUnlocked&&vessel&&' · auto-burns after read'}
               </div>
             )}
@@ -403,9 +411,9 @@ function CastRow({ cast, index }: { cast: Cast; index: number; key?: string }) {
                   onMouseEnter={e=>(e.currentTarget.style.boxShadow='var(--teal-glow)')}
                   onMouseLeave={e=>(e.currentTarget.style.boxShadow='0 0 12px rgba(0,184,230,0.2)')}>
                   {!vessel?'Select vessel to read →'
-                    :isBurn?'Cross payway · $0.001 · burns after'
-                    :isEyes?'Cross payway · $0.001 · map required'
-                    :'Cross payway · $0.001'}
+                    :isBurn?`Cross payway · ${formatPrice(cast.price ?? 1000)} · burns after`
+                    :isEyes?`Cross payway · ${formatPrice(cast.price ?? 1000)} · map required`
+                    :`Cross payway · ${formatPrice(cast.price ?? 1000)}`}
                 </button>
                 <div style={{fontFamily:'var(--font-mono)',fontSize:'9px',color:'var(--text-off)',marginTop:'5px',textAlign:'center',lineHeight:1.5}}>
                   Harbor access alone does not reveal signal content
@@ -445,7 +453,7 @@ function CastRow({ cast, index }: { cast: Cast; index: number; key?: string }) {
                     {/* Return cast */}
                     <button onClick={()=>setShowReturn(true)}
                       style={{display:'flex',alignItems:'center',gap:'5px',padding:'6px 12px',background:'var(--teal-dim)',border:'1px solid var(--border3)',borderRadius:'var(--radius)',color:'var(--teal)',fontFamily:'var(--font-mono)',fontSize:'10px',cursor:'pointer',letterSpacing:'0.04em'}}>
-                      ↩ return · $0.001
+                      ↩ return · ${formatPrice(cast.price ?? 1000)}
                     </button>
 
                     {/* Store */}
@@ -488,7 +496,7 @@ function CastRow({ cast, index }: { cast: Cast; index: number; key?: string }) {
                     <div style={{display:'flex',gap:'6px'}}>
                       <button onClick={doReturn} disabled={isSoundPending||!returnHook.trim()}
                         style={{flex:1,padding:'8px',background:'var(--teal)',color:'var(--text-inv)',border:'none',borderRadius:'var(--radius)',fontFamily:'var(--font-mono)',fontSize:'11px',fontWeight:600,cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',gap:'6px'}}>
-                        {isSoundPending?<><span className="spinner" style={{borderTopColor:'var(--text-inv)',borderColor:'rgba(0,0,0,0.2)'}}/>sounding…</>:'Sound · $0.001'}
+                        {isSoundPending?<><span className="spinner" style={{borderTopColor:'var(--text-inv)',borderColor:'rgba(0,0,0,0.2)'}}/>sounding…</>:`Sound · ${formatPrice(cast.price ?? 1000)}`}
                       </button>
                       <button onClick={()=>{setShowReturn(false);setReturnHook('')}}
                         style={{padding:'8px 12px',background:'none',border:'1px solid var(--border)',borderRadius:'var(--radius)',color:'var(--text-dim)',fontFamily:'var(--font-mono)',fontSize:'11px',cursor:'pointer'}}>

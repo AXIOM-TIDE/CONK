@@ -31,6 +31,8 @@ export async function crossPaywall(opts: {
   vesselId: string
   castId: string
   amountUsdc: number
+  authorAddress?: string
+  price?: number
 }): Promise<string> {
   const session = getSession()
   if (!session) return 'mock_tx_' + Date.now()
@@ -43,8 +45,27 @@ export async function crossPaywall(opts: {
   if (!coins.data.length) throw new Error('No USDC coins found')
 
   const usdcCoinObj = tx.object(coins.data[0].coinObjectId)
-  const [usdcPayment] = tx.splitCoins(usdcCoinObj, [tx.pure.u64(opts.amountUsdc)])
-  tx.transferObjects([usdcPayment], tx.pure.address(ADDRESSES.TREASURY))
+
+  // 97/3 split — author gets 97%, treasury gets 3%
+  const totalAmount = opts.amountUsdc
+  const authorAmount = Math.floor(totalAmount * 0.97)
+  const treasuryAmount = totalAmount - authorAmount
+
+  const hasAuthor = opts.authorAddress && opts.authorAddress !== opts.vesselId
+
+  if (hasAuthor && authorAmount > 0) {
+    // Split into author + treasury
+    const [authorPayment, treasuryPayment] = tx.splitCoins(usdcCoinObj, [
+      tx.pure.u64(authorAmount),
+      tx.pure.u64(treasuryAmount),
+    ])
+    tx.transferObjects([authorPayment], tx.pure.address(opts.authorAddress!))
+    tx.transferObjects([treasuryPayment], tx.pure.address(ADDRESSES.TREASURY))
+  } else {
+    // No author or same vessel — 100% to treasury
+    const [usdcPayment] = tx.splitCoins(usdcCoinObj, [tx.pure.u64(totalAmount)])
+    tx.transferObjects([usdcPayment], tx.pure.address(ADDRESSES.TREASURY))
+  }
 
   const suiCoins = await client.getCoins({ owner: session.address, coinType: '0x2::sui::SUI' })
   if (!suiCoins.data.length) throw new Error('No SUI for gas')
