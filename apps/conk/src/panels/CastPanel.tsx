@@ -47,6 +47,10 @@ export function CastPanel({ onClose }: { onClose: () => void }) {
   const [castType, setCastType] = useState<'standard'|'subscription'|'timelocked'>('standard')
   const [subInterval, setSubInterval] = useState<'daily'|'weekly'|'monthly'>('weekly')
   const [lockHrs, setLockHrs] = useState<number>(24)
+  const [useCascade, setUseCascade] = useState(false)
+  const [cascadeThreshold, setCascadeThreshold] = useState(100)
+  const [cascadeHook, setCascadeHook] = useState('')
+  const [cascadeBody, setCascadeBody] = useState('')
 
   const isSending = status === 'pending'
   const isDone    = status === 'success'
@@ -71,6 +75,11 @@ export function CastPanel({ onClose }: { onClose: () => void }) {
       unlocksAt: castType === 'timelocked' ? Date.now() + lockHrs * 3600000 : useFuture ? Date.now() + futureHrs * 3600000 : undefined,
       castType,
       subInterval: castType === 'subscription' ? subInterval : undefined,
+      cascade: useCascade && cascadeHook.trim() ? {
+        threshold: cascadeThreshold,
+        hook: cascadeHook.trim(),
+        body: cascadeBody.trim() || cascadeHook.trim(),
+      } : undefined,
     })
     if (ok) { setHook(''); setBody(''); setStep('compose'); setTimeout(onClose, 300) }
     else setError('Failed. Check your Harbor balance.')

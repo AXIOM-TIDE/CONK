@@ -117,6 +117,7 @@ export function useSoundCast() {
       price?:            number
       castType?:         string
       subInterval?:      string
+      cascade?:          { threshold: number; hook: string; body: string }
       securityQuestion?: string
       securityAnswer?:   string
       keywords?:         string[]
@@ -170,6 +171,8 @@ export function useSoundCast() {
           authorAddress:      vessel.id,
           revenueEarned:      0,
           castType:           payload.castType ?? 'standard',
+          cascade:            payload.cascade,
+          cascadeFired:       false,
           subInterval:        payload.subInterval,
         })
 

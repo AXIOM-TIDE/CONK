@@ -71,6 +71,8 @@ export interface Cast {
   castType?: string       // standard | subscription | timelocked
   subInterval?: string    // daily | weekly | monthly
   lockHrs?: number        // hours until time-locked cast unlocks
+  cascade?: { threshold: number; hook: string; body: string } // auto-publish follow-up at threshold
+  cascadeFired?: boolean  // true once cascade has triggered
 }
 
 export interface Siren {
