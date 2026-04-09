@@ -360,13 +360,25 @@ export const useStore = create<AppState>()(
 
       burnVessel: (id) => set((s) => {
         const rem = s.vessels.filter(v => v.id !== id)
-        return { vessels: rem, vessel: rem[0] ?? null, activeVesselId: rem[0]?.id ?? null }
+        const burningVessel = s.vessels.find(v => v.id === id)
+        // Auto-sweep: transfer vessel fuel balance back to Harbor before burn
+        const sweepAmount = burningVessel?.fuel ?? 0
+        const updatedHarbor = s.harbor && sweepAmount > 0
+          ? { ...s.harbor, balance: s.harbor.balance + sweepAmount }
+          : s.harbor
+        return { vessels: rem, vessel: rem[0] ?? null, activeVesselId: rem[0]?.id ?? null, harbor: updatedHarbor }
       }),
 
       // Identity exposed — vessel marked compromised then auto-burned
       compromiseVessel: (id) => set((s) => {
         const rem = s.vessels.filter(v => v.id !== id)
-        return { vessels: rem, vessel: rem[0] ?? null, activeVesselId: rem[0]?.id ?? null }
+        const burningVessel = s.vessels.find(v => v.id === id)
+        // Auto-sweep: transfer vessel fuel balance back to Harbor before burn
+        const sweepAmount = burningVessel?.fuel ?? 0
+        const updatedHarbor = s.harbor && sweepAmount > 0
+          ? { ...s.harbor, balance: s.harbor.balance + sweepAmount }
+          : s.harbor
+        return { vessels: rem, vessel: rem[0] ?? null, activeVesselId: rem[0]?.id ?? null, harbor: updatedHarbor }
       }),
 
       toggleAutoBurn: () => set((s) => {
