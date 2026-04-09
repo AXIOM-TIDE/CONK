@@ -44,6 +44,9 @@ export function CastPanel({ onClose }: { onClose: () => void }) {
   const [futureHrs,setFutureHrs]= useState(6)
   const [media, setMedia] = useState<WalrusUploadResult | null>(null)
   const [price, setPrice] = useState<number>(1000) // default $0.001
+  const [castType, setCastType] = useState<'standard'|'subscription'|'timelocked'>('standard')
+  const [subInterval, setSubInterval] = useState<'daily'|'weekly'|'monthly'>('weekly')
+  const [lockHrs, setLockHrs] = useState<number>(24)
 
   const isSending = status === 'pending'
   const isDone    = status === 'success'
@@ -65,7 +68,9 @@ export function CastPanel({ onClose }: { onClose: () => void }) {
       securityQuestion: useSecQ && secQ.trim() ? secQ.trim() : undefined,
       securityAnswer:   useSecQ && secA.trim() ? secA.trim() : undefined,
       keywords: keywords.trim() ? keywords.split(',').map(k => k.trim()).filter(Boolean) : undefined,
-      unlocksAt: useFuture ? Date.now() + futureHrs * 3600000 : undefined,
+      unlocksAt: castType === 'timelocked' ? Date.now() + lockHrs * 3600000 : useFuture ? Date.now() + futureHrs * 3600000 : undefined,
+      castType,
+      subInterval: castType === 'subscription' ? subInterval : undefined,
     })
     if (ok) { setHook(''); setBody(''); setStep('compose'); setTimeout(onClose, 300) }
     else setError('Failed. Check your Harbor balance.')
@@ -119,6 +124,58 @@ export function CastPanel({ onClose }: { onClose: () => void }) {
       )}
 
       <div className="field" style={{marginBottom:'11px'}}>
+        {/* Cast Type */}
+        <label className="field-label">Cast Type</label>
+        <div style={{display:'flex',gap:'6px',marginBottom:'12px',flexWrap:'wrap'}}>
+          {[
+            {id:'standard',    label:'⚡ Standard',     desc:'One-time read'},
+            {id:'subscription',label:'♻ Subscription',  desc:'Recurring readers'},
+            {id:'timelocked',  label:'⏳ Time-Locked',   desc:'Unlocks at set time'},
+          ].map(t => (
+            <button key={t.id} onClick={() => setCastType(t.id as any)}
+              style={{flex:1,padding:'8px',background:castType===t.id?'rgba(0,184,230,0.1)':'var(--surface)',border:`1px solid ${castType===t.id?'var(--teal)':'var(--border)'}`,borderRadius:'var(--radius)',cursor:'pointer',textAlign:'left'}}>
+              <div style={{fontFamily:'var(--font-mono)',fontSize:'10px',fontWeight:600,color:castType===t.id?'var(--teal)':'var(--text)',marginBottom:'2px'}}>{t.label}</div>
+              <div style={{fontFamily:'var(--font-mono)',fontSize:'9px',color:'var(--text-off)'}}>{t.desc}</div>
+            </button>
+          ))}
+        </div>
+
+        {/* Subscription interval */}
+        {castType === 'subscription' && (
+          <div style={{marginBottom:'12px',padding:'10px 12px',background:'rgba(0,184,230,0.04)',border:'1px solid var(--border)',borderRadius:'var(--radius-lg)'}}>
+            <div style={{fontFamily:'var(--font-mono)',fontSize:'9px',color:'var(--text-off)',marginBottom:'8px',letterSpacing:'0.08em',textTransform:'uppercase'}}>Subscription Interval</div>
+            <div style={{display:'flex',gap:'6px'}}>
+              {(['daily','weekly','monthly'] as const).map(i => (
+                <button key={i} onClick={() => setSubInterval(i)}
+                  style={{flex:1,padding:'6px',background:subInterval===i?'rgba(0,184,230,0.1)':'var(--surface2)',border:`1px solid ${subInterval===i?'var(--teal)':'var(--border)'}`,borderRadius:'var(--radius)',fontFamily:'var(--font-mono)',fontSize:'10px',color:subInterval===i?'var(--teal)':'var(--text-dim)',cursor:'pointer',fontWeight:subInterval===i?600:400}}>
+                  {i}
+                </button>
+              ))}
+            </div>
+            <div style={{fontFamily:'var(--font-mono)',fontSize:'9px',color:'var(--text-off)',marginTop:'6px'}}>
+              Readers pay {['daily','weekly','monthly'].includes(subInterval)?'per '+subInterval+' publication':''} · 97% to you
+            </div>
+          </div>
+        )}
+
+        {/* Time-lock settings */}
+        {castType === 'timelocked' && (
+          <div style={{marginBottom:'12px',padding:'10px 12px',background:'rgba(0,184,230,0.04)',border:'1px solid var(--border)',borderRadius:'var(--radius-lg)'}}>
+            <div style={{fontFamily:'var(--font-mono)',fontSize:'9px',color:'var(--text-off)',marginBottom:'8px',letterSpacing:'0.08em',textTransform:'uppercase'}}>Unlock After</div>
+            <div style={{display:'flex',gap:'6px',flexWrap:'wrap'}}>
+              {[1,6,12,24,48,72].map(h => (
+                <button key={h} onClick={() => setLockHrs(h)}
+                  style={{padding:'6px 10px',background:lockHrs===h?'rgba(0,184,230,0.1)':'var(--surface2)',border:`1px solid ${lockHrs===h?'var(--teal)':'var(--border)'}`,borderRadius:'var(--radius)',fontFamily:'var(--font-mono)',fontSize:'10px',color:lockHrs===h?'var(--teal)':'var(--text-dim)',cursor:'pointer',fontWeight:lockHrs===h?600:400}}>
+                  {h}h
+                </button>
+              ))}
+            </div>
+            <div style={{fontFamily:'var(--font-mono)',fontSize:'9px',color:'var(--text-off)',marginTop:'6px'}}>
+              Body encrypts until unlock · all paying vessels receive simultaneously
+            </div>
+          </div>
+        )}
+
         <label className="field-label">Hook <span className="field-cost">free · always visible</span></label>
         <textarea className="input" rows={2} data-testid="cast-hook-input" placeholder="The line they see first..." value={hook} onChange={e=>setHook(e.target.value)} maxLength={160} autoFocus/>
         <div style={{fontFamily:'var(--font-mono)',fontSize:'9px',color:'var(--text-off)',textAlign:'right'}}>{hook.length}/160</div>

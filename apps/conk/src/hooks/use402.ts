@@ -115,6 +115,8 @@ export function useSoundCast() {
       mode:              string
       duration:          string
       price?:            number
+      castType?:         string
+      subInterval?:      string
       securityQuestion?: string
       securityAnswer?:   string
       keywords?:         string[]
@@ -167,6 +169,8 @@ export function useSoundCast() {
           price:              payload.price ?? 1000,
           authorAddress:      vessel.id,
           revenueEarned:      0,
+          castType:           payload.castType ?? 'standard',
+          subInterval:        payload.subInterval,
         })
 
         // Debit fuel

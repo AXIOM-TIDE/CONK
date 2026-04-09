@@ -68,6 +68,9 @@ export interface Cast {
   price?: number          // USDC micro units — default 1000 = $0.001
   authorAddress?: string  // vessel address of cast creator
   revenueEarned?: number  // total USDC earned from reads
+  castType?: string       // standard | subscription | timelocked
+  subInterval?: string    // daily | weekly | monthly
+  lockHrs?: number        // hours until time-locked cast unlocks
 }
 
 export interface Siren {
