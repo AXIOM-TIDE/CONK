@@ -276,8 +276,11 @@ function StoredPanel({ vesselId, onBack }: { vesselId: string; onBack: () => voi
   const casts          = useStore((s) => s.driftCasts)
   const burnFromVessel = useStore((s) => s.burnFromVessel)
   const [expanded, setExpanded] = useState<string|null>(null)
+  const [view, setView] = useState<'stored'|'earnings'>('stored')
 
-  const stored = casts.filter(c => (c.storedBy ?? []).includes(vesselId) && !c.burned && !(c.burnedBy ?? []).includes(vesselId))
+  const stored   = casts.filter(c => (c.storedBy ?? []).includes(vesselId) && !c.burned && !(c.burnedBy ?? []).includes(vesselId))
+  const myCasts  = casts.filter(c => c.authorAddress === vesselId && !c.burned)
+  const totalEarned = myCasts.reduce((sum, c) => sum + (c.revenueEarned ?? 0), 0)
 
   return (
     <div data-testid="stored-panel" style={{flex:1,overflowY:'auto',padding:'16px',scrollbarWidth:'thin',scrollbarColor:'var(--border2) transparent'}}>
@@ -288,7 +291,61 @@ function StoredPanel({ vesselId, onBack }: { vesselId: string; onBack: () => voi
         </span>
       </div>
 
-      {stored.length === 0 ? (
+      {/* Tab switcher */}
+      <div style={{display:'flex',gap:'6px',marginBottom:'14px'}}>
+        <button onClick={() => setView('stored')}
+          style={{flex:1,padding:'7px',background:view==='stored'?'rgba(0,184,230,0.1)':'var(--surface)',border:`1px solid ${view==='stored'?'var(--border3)':'var(--border)'}`,borderRadius:'var(--radius)',color:view==='stored'?'var(--teal)':'var(--text-dim)',fontFamily:'var(--font-mono)',fontSize:'10px',cursor:'pointer'}}>
+          Stored ({stored.length})
+        </button>
+        <button onClick={() => setView('earnings')}
+          style={{flex:1,padding:'7px',background:view==='earnings'?'rgba(0,184,230,0.1)':'var(--surface)',border:`1px solid ${view==='earnings'?'var(--border3)':'var(--border)'}`,borderRadius:'var(--radius)',color:view==='earnings'?'var(--teal)':'var(--text-dim)',fontFamily:'var(--font-mono)',fontSize:'10px',cursor:'pointer'}}>
+          Earnings ({myCasts.length} casts)
+        </button>
+      </div>
+
+      {/* Earnings view */}
+      {view === 'earnings' && (
+        <div>
+          <div style={{padding:'12px',background:'rgba(0,184,230,0.04)',border:'1px solid var(--border2)',borderRadius:'var(--radius-lg)',marginBottom:'12px',display:'flex',justifyContent:'space-between',alignItems:'center'}}>
+            <div>
+              <div style={{fontFamily:'var(--font-mono)',fontSize:'9px',color:'var(--text-off)',letterSpacing:'0.08em',textTransform:'uppercase',marginBottom:'2px'}}>Total Earned</div>
+              <div style={{fontFamily:'var(--font-mono)',fontSize:'20px',fontWeight:700,color:'var(--teal)'}}>${(totalEarned/1000000).toFixed(4)}</div>
+            </div>
+            <div style={{textAlign:'right'}}>
+              <div style={{fontFamily:'var(--font-mono)',fontSize:'9px',color:'var(--text-off)',marginBottom:'2px'}}>{myCasts.length} active casts</div>
+              <div style={{fontFamily:'var(--font-mono)',fontSize:'9px',color:'var(--text-dim)'}}>97% of all reads</div>
+            </div>
+          </div>
+
+          {myCasts.length === 0 ? (
+            <div style={{textAlign:'center',padding:'32px',fontFamily:'var(--font-mono)',fontSize:'11px',color:'var(--text-dim)'}}>
+              No casts yet. Sound a cast to start earning.
+            </div>
+          ) : (
+            <div style={{display:'flex',flexDirection:'column',gap:'8px'}}>
+              {myCasts.map(cast => (
+                <div key={cast.id} style={{padding:'12px',background:'var(--surface)',border:'1px solid var(--border)',borderRadius:'var(--radius-lg)'}}>
+                  <div style={{fontFamily:'var(--font-display)',fontSize:'13px',color:'var(--text)',marginBottom:'6px',lineHeight:1.4}}>
+                    {cast.hook}
+                  </div>
+                  <div style={{display:'flex',alignItems:'center',justifyContent:'space-between'}}>
+                    <div style={{display:'flex',gap:'8px',alignItems:'center'}}>
+                      <span style={{fontFamily:'var(--font-mono)',fontSize:'9px',color:'var(--text-off)'}}>{cast.tideCount.toLocaleString()} reads</span>
+                      <span style={{fontFamily:'var(--font-mono)',fontSize:'9px',color:'var(--text-off)'}}>·</span>
+                      <span style={{fontFamily:'var(--font-mono)',fontSize:'9px',color:'var(--text-dim)'}}>price: ${((cast.price ?? 1000)/1000000).toFixed(3)}</span>
+                    </div>
+                    <span style={{fontFamily:'var(--font-mono)',fontSize:'11px',fontWeight:700,color:'var(--teal)'}}>
+                      +${((cast.revenueEarned ?? 0)/1000000).toFixed(4)}
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {view === 'stored' && stored.length === 0 ? (
         <div style={{textAlign:'center',padding:'40px 20px'}}>
           <div style={{fontSize:'28px',marginBottom:'12px',opacity:0.3}}>⊕</div>
           <div style={{fontFamily:'var(--font-display)',fontSize:'14px',color:'var(--text)',marginBottom:'6px'}}>No stored signals</div>
@@ -296,7 +353,7 @@ function StoredPanel({ vesselId, onBack }: { vesselId: string; onBack: () => voi
             After reading a signal, tap Store to save it here.<br/>Stored signals never auto-burn.
           </div>
         </div>
-      ) : (
+      ) : view === 'stored' ? (
         <div style={{display:'flex',flexDirection:'column',gap:'8px'}}>
           {stored.map(c => {
             const isExpanded = expanded === c.id
