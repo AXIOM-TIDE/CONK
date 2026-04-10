@@ -78,51 +78,143 @@ function HarborInheritance() {
 
 function SignalFuturesUI() {
   const vessel = useStore((s) => s.vessel)
-  const casts  = useStore((s) => s.driftCasts)
-  const futureCasts = casts.filter(c => c.unlocksAt && c.unlocksAt > Date.now())
+  const [view, setView] = React.useState<'browse'|'create'>('browse')
+  const [prediction, setPrediction] = React.useState('')
+  const [stake, setStake] = React.useState(1000)
+  const [expiry, setExpiry] = React.useState<'24h'|'48h'|'7d'>('24h')
+  const [futures, setFutures] = React.useState<Array<{
+    id: string; prediction: string; stake: number; expiry: number
+    author: string; takers: Array<{vessel: string; stake: number}>
+    resolved: boolean
+  }>>([])
+
+  const fmt = (n: number) => '$' + (n / 1000000).toFixed(3)
+  const timeLeft = (ts: number) => {
+    const h = (ts - Date.now()) / 3600000
+    if (h < 0) return 'expired'
+    if (h < 1) return '<1h'
+    if (h < 24) return Math.floor(h) + 'h'
+    return Math.floor(h / 24) + 'd'
+  }
+  const expiryMs: Record<string,number> = { '24h': 86400000, '48h': 172800000, '7d': 604800000 }
+
+  const createFuture = () => {
+    if (!prediction.trim() || !vessel) return
+    setFutures(prev => [...prev, {
+      id: 'f_' + Date.now(), prediction: prediction.trim(),
+      stake, expiry: Date.now() + expiryMs[expiry],
+      author: vessel.id, takers: [], resolved: false
+    }])
+    setPrediction('')
+    setView('browse')
+  }
+
+  const takeSide = (id: string) => {
+    if (!vessel) return
+    setFutures(prev => prev.map(f =>
+      f.id === id && !f.takers.find(t => t.vessel === vessel.id)
+        ? { ...f, takers: [...f.takers, { vessel: vessel.id, stake: f.stake }] } : f
+    ))
+  }
+
+  const resolve = (id: string, authorWins: boolean) => {
+    setFutures(prev => prev.map(f =>
+      f.id === id ? { ...f, resolved: true } : f
+    ))
+  }
 
   return (
-    <div style={{padding:'14px',background:'var(--surface)',border:'1px solid var(--border)',borderRadius:'var(--radius-xl)'}}>
-      <div style={{fontFamily:'var(--font-mono)',fontSize:'11px',fontWeight:600,color:'var(--text)',marginBottom:'4px'}}>
-        Signal Futures
-      </div>
-      <div style={{fontFamily:'var(--font-mono)',fontSize:'9px',color:'var(--text-off)',lineHeight:1.6,marginBottom:'12px'}}>
-        Casts that unlock when on-chain conditions are met — not just timestamps. Price triggers, tide thresholds, Lighthouse status.
+    <div>
+      <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:'12px'}}>
+        <div>
+          <div style={{fontFamily:'var(--font-mono)',fontSize:'11px',fontWeight:600,color:'var(--text)'}}>Signal Futures</div>
+          <div style={{fontFamily:'var(--font-mono)',fontSize:'9px',color:'var(--text-off)',marginTop:'2px'}}>
+            Stake USDC on a prediction. Caster verifies outcome. Winner collects pool.
+          </div>
+        </div>
+        <button onClick={() => setView(view === 'create' ? 'browse' : 'create')}
+          style={{padding:'6px 12px',background:'rgba(0,184,230,0.1)',border:'1px solid var(--border3)',borderRadius:'var(--radius)',fontFamily:'var(--font-mono)',fontSize:'10px',color:'var(--teal)',cursor:'pointer'}}>
+          {view === 'create' ? 'browse' : '+ new future'}
+        </button>
       </div>
 
-      {futureCasts.length === 0 ? (
-        <div style={{textAlign:'center',padding:'16px',fontFamily:'var(--font-mono)',fontSize:'10px',color:'var(--text-dim)'}}>
-          No future signals active. Cast a signal with a future unlock condition from the Cast tab.
+      {view === 'create' && (
+        <div style={{padding:'12px',background:'var(--surface)',border:'1px solid var(--border2)',borderRadius:'var(--radius-lg)',marginBottom:'12px'}}>
+          <textarea placeholder="State your prediction. You verify the outcome." value={prediction}
+            onChange={e => setPrediction(e.target.value)} rows={3}
+            style={{width:'100%',boxSizing:'border-box',background:'var(--surface2)',border:'1px solid var(--border)',borderRadius:'var(--radius)',padding:'8px',fontFamily:'var(--font-mono)',fontSize:'11px',color:'var(--text)',outline:'none',resize:'none',marginBottom:'8px'}}/>
+          <div style={{display:'flex',gap:'6px',marginBottom:'8px',flexWrap:'wrap'}}>
+            {[1000,10000,100000,1000000].map(s => (
+              <button key={s} onClick={() => setStake(s)}
+                style={{padding:'5px 8px',background:stake===s?'rgba(0,184,230,0.1)':'var(--surface2)',border:('1px solid ' + (stake===s?'var(--teal)':'var(--border)')),borderRadius:'var(--radius)',fontFamily:'var(--font-mono)',fontSize:'9px',color:stake===s?'var(--teal)':'var(--text-dim)',cursor:'pointer'}}>
+                {fmt(s)}
+              </button>
+            ))}
+            {(['24h','48h','7d'] as const).map(e => (
+              <button key={e} onClick={() => setExpiry(e)}
+                style={{padding:'5px 8px',background:expiry===e?'rgba(0,184,230,0.1)':'var(--surface2)',border:('1px solid ' + (expiry===e?'var(--teal)':'var(--border)')),borderRadius:'var(--radius)',fontFamily:'var(--font-mono)',fontSize:'9px',color:expiry===e?'var(--teal)':'var(--text-dim)',cursor:'pointer'}}>
+                {e}
+              </button>
+            ))}
+          </div>
+          <button onClick={createFuture} disabled={!prediction.trim()}
+            style={{width:'100%',padding:'8px',background:prediction.trim()?'var(--teal)':'var(--surface2)',border:'none',borderRadius:'var(--radius)',color:prediction.trim()?'var(--text-inv)':'var(--text-dim)',fontFamily:'var(--font-mono)',fontSize:'11px',fontWeight:600,cursor:prediction.trim()?'pointer':'not-allowed'}}>
+            Post future
+          </button>
+        </div>
+      )}
+
+      {futures.length === 0 ? (
+        <div style={{textAlign:'center',padding:'24px',fontFamily:'var(--font-mono)',fontSize:'10px',color:'var(--text-dim)'}}>
+          No futures active. Post a prediction and stake USDC on it.
         </div>
       ) : (
-        <div style={{display:'flex',flexDirection:'column',gap:'6px'}}>
-          {futureCasts.map(c => {
-            const remaining = (c.unlocksAt! - Date.now()) / 3600000
+        <div style={{display:'flex',flexDirection:'column',gap:'8px'}}>
+          {futures.map(f => {
+            const pool = f.stake + f.takers.reduce((s,t) => s + t.stake, 0)
+            const isAuthor = vessel?.id === f.author
+            const hasTaken = !!f.takers.find(t => t.vessel === vessel?.id)
+            const expired = f.expiry < Date.now()
             return (
-              <div key={c.id} style={{padding:'8px 10px',background:'var(--surface2)',borderRadius:'var(--radius)',display:'flex',alignItems:'center',gap:'10px'}}>
-                <span style={{fontSize:'14px'}}>🔒</span>
-                <div style={{flex:1,minWidth:0}}>
-                  <div style={{fontFamily:'var(--font-mono)',fontSize:'10px',color:'var(--text)',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>
-                    {c.hook}
-                  </div>
-                  <div style={{fontFamily:'var(--font-mono)',fontSize:'8px',color:'var(--teal)'}}>
-                    Unlocks in {remaining < 1 ? '<1h' : remaining < 24 ? `${Math.floor(remaining)}h` : `${Math.floor(remaining/24)}d`}
-                  </div>
+              <div key={f.id} style={{padding:'12px',background:'var(--surface)',border:'1px solid var(--border2)',borderRadius:'var(--radius-lg)',opacity:f.resolved?0.6:1}}>
+                <div style={{fontFamily:'var(--font-mono)',fontSize:'11px',color:'var(--text)',marginBottom:'6px',lineHeight:1.5}}>{f.prediction}</div>
+                <div style={{display:'flex',gap:'8px',marginBottom:'8px',flexWrap:'wrap'}}>
+                  <span style={{fontFamily:'var(--font-mono)',fontSize:'9px',color:'var(--teal)',fontWeight:600}}>pool: {fmt(pool)}</span>
+                  <span style={{fontFamily:'var(--font-mono)',fontSize:'9px',color:'var(--text-off)'}}>{f.takers.length} takers</span>
+                  <span style={{fontFamily:'var(--font-mono)',fontSize:'9px',color:expired?'var(--burn)':'var(--text-off)'}}>{timeLeft(f.expiry)}</span>
+                  {f.resolved && <span style={{fontFamily:'var(--font-mono)',fontSize:'9px',color:'#4CAF50'}}>resolved</span>}
                 </div>
+                {!f.resolved && !isAuthor && !hasTaken && !expired && (
+                  <button onClick={() => takeSide(f.id)}
+                    style={{width:'100%',padding:'6px',background:'rgba(0,184,230,0.08)',border:'1px solid var(--border3)',borderRadius:'var(--radius)',fontFamily:'var(--font-mono)',fontSize:'10px',color:'var(--teal)',cursor:'pointer'}}>
+                    take opposite · stake {fmt(f.stake)}
+                  </button>
+                )}
+                {!f.resolved && isAuthor && f.takers.length > 0 && (
+                  <div style={{display:'flex',gap:'6px'}}>
+                    <button onClick={() => resolve(f.id, true)}
+                      style={{flex:1,padding:'6px',background:'rgba(0,184,230,0.08)',border:'1px solid var(--border3)',borderRadius:'var(--radius)',fontFamily:'var(--font-mono)',fontSize:'10px',color:'var(--teal)',cursor:'pointer'}}>
+                      I was right
+                    </button>
+                    <button onClick={() => resolve(f.id, false)}
+                      style={{flex:1,padding:'6px',background:'var(--burn-dim)',border:'1px solid var(--burn-line)',borderRadius:'var(--radius)',fontFamily:'var(--font-mono)',fontSize:'10px',color:'var(--burn)',cursor:'pointer'}}>
+                      I was wrong
+                    </button>
+                  </div>
+                )}
+                {hasTaken && !isAuthor && !f.resolved && (
+                  <div style={{fontFamily:'var(--font-mono)',fontSize:'9px',color:'var(--text-dim)',paddingTop:'4px'}}>
+                    position taken · awaiting caster resolution
+                  </div>
+                )}
               </div>
             )
           })}
         </div>
       )}
-
-      <div style={{marginTop:'10px',padding:'8px 10px',background:'rgba(0,184,230,0.04)',borderRadius:'var(--radius)',fontFamily:'var(--font-mono)',fontSize:'9px',color:'var(--text-dim)',lineHeight:1.7}}>
-        Add unlock conditions from the <strong>Cast</strong> tab → toggle "Future Release".<br/>
-        <span style={{color:'var(--text-off)'}}>STEP 6: price triggers + tide thresholds verified by Sui oracle.</span>
-      </div>
     </div>
   )
 }
-
 type SubTab = 'tide' | 'futures' | 'deadmans' | 'inheritance' | 'void'
 
 export function ProtocolPanel({ onBack }: { onBack: () => void }) {
