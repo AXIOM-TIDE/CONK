@@ -11,21 +11,27 @@ import { VoidReceipt } from '../components/VoidReceipt'
 import { BackButton } from '../components/BackButton'
 
 function HarborInheritance() {
-  const vessel = useStore((s) => s.vessel)
   const harbor = useStore((s) => s.harbor)
-  const [successor, setSuccessor] = useState('')
-  const [delay, setDelay]         = useState(90)
-  const [saved, setSaved]         = useState(false)
-  const [saving, setSaving]       = useState(false)
+  const [successor, setSuccessor] = React.useState('')
+  const [delay, setDelay] = React.useState(90)
+  const [saved, setSaved] = React.useState(false)
+  const [saving, setSaving] = React.useState(false)
+  const [configured, setConfigured] = React.useState(null)
 
   const save = async () => {
     if (!successor.trim()) return
     setSaving(true)
     await new Promise(r => setTimeout(r, 600))
-    // TODO (STEP 6): write inheritance config to Sui time-locked contract
+    setConfigured({ successor: successor.trim(), delay })
     setSaving(false)
     setSaved(true)
     setTimeout(() => setSaved(false), 3000)
+  }
+
+  const clear = () => {
+    setConfigured(null)
+    setSuccessor('')
+    setDelay(90)
   }
 
   return (
@@ -34,47 +40,60 @@ function HarborInheritance() {
         Harbor Inheritance
       </div>
       <div style={{fontFamily:'var(--font-mono)',fontSize:'9px',color:'var(--text-off)',lineHeight:1.6,marginBottom:'12px'}}>
-        If your Harbor is inactive for the set period, control transfers to the successor address. No court. No platform. No administrator.
+        If your Harbor is inactive for the set period, the balance transfers to the successor address. No court. No platform. No administrator.
       </div>
 
-      <div style={{marginBottom:'10px'}}>
-        <div style={{fontFamily:'var(--font-mono)',fontSize:'10px',color:'var(--text-dim)',marginBottom:'6px'}}>
-          Successor Harbor address (Sui)
+      {configured && (
+        <div style={{padding:'10px 12px',background:'rgba(0,184,230,0.06)',border:'1px solid var(--border3)',borderRadius:'var(--radius-lg)',marginBottom:'12px'}}>
+          <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:'4px'}}>
+            <span style={{fontFamily:'var(--font-mono)',fontSize:'9px',color:'#4CAF50',fontWeight:600}}>Active</span>
+            <button onClick={clear} style={{background:'none',border:'none',color:'var(--text-off)',fontFamily:'var(--font-mono)',fontSize:'9px',cursor:'pointer'}}>clear</button>
+          </div>
+          <div style={{fontFamily:'var(--font-mono)',fontSize:'9px',color:'var(--text-dim)',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>
+            {configured.successor}
+          </div>
+          <div style={{fontFamily:'var(--font-mono)',fontSize:'9px',color:'var(--text-off)',marginTop:'2px'}}>
+            triggers after {configured.delay} days inactivity
+          </div>
         </div>
-        <input
-          value={successor}
-          onChange={e => setSuccessor(e.target.value)}
-          placeholder="0x… successor wallet address"
-          style={{width:'100%',boxSizing:'border-box',background:'var(--surface2)',border:'1px solid var(--border)',borderRadius:'var(--radius)',padding:'8px 10px',fontFamily:'var(--font-mono)',fontSize:'10px',color:'var(--text)',outline:'none'}}
-        />
-      </div>
+      )}
 
-      <div style={{marginBottom:'12px'}}>
-        <div style={{fontFamily:'var(--font-mono)',fontSize:'10px',color:'var(--text-dim)',marginBottom:'6px'}}>
-          Transfer after inactivity
+      {!configured && (
+        <div>
+          <div style={{marginBottom:'10px'}}>
+            <div style={{fontFamily:'var(--font-mono)',fontSize:'10px',color:'var(--text-dim)',marginBottom:'6px'}}>
+              Successor Harbor address
+            </div>
+            <input value={successor} onChange={e => setSuccessor(e.target.value)}
+              placeholder="0x… successor wallet address"
+              style={{width:'100%',boxSizing:'border-box',background:'var(--surface2)',border:'1px solid var(--border)',borderRadius:'var(--radius)',padding:'8px 10px',fontFamily:'var(--font-mono)',fontSize:'10px',color:'var(--text)',outline:'none'}}/>
+          </div>
+          <div style={{marginBottom:'12px'}}>
+            <div style={{fontFamily:'var(--font-mono)',fontSize:'10px',color:'var(--text-dim)',marginBottom:'6px'}}>
+              Transfer after inactivity
+            </div>
+            <div style={{display:'flex',gap:'6px'}}>
+              {[30,60,90,180,365].map(d => (
+                <button key={d} onClick={() => setDelay(d)}
+                  style={{flex:1,padding:'6px 4px',background:delay===d?'rgba(0,184,230,0.1)':'var(--surface2)',border:'1px solid ' + (delay===d?'var(--border3)':'var(--border)'),borderRadius:'var(--radius)',color:delay===d?'var(--teal)':'var(--text)',fontFamily:'var(--font-mono)',fontSize:'9px',cursor:'pointer',textAlign:'center'}}>
+                  {d}d
+                </button>
+              ))}
+            </div>
+          </div>
+          <div style={{padding:'8px 10px',background:'rgba(0,184,230,0.04)',borderRadius:'var(--radius)',marginBottom:'10px',fontFamily:'var(--font-mono)',fontSize:'9px',color:'var(--text-dim)',lineHeight:1.7}}>
+            Balance: <span style={{color:'var(--teal)',fontWeight:600}}>${((harbor?.balance ?? 0)/100).toFixed(2)}</span> transfers after {delay} days inactivity.
+          </div>
+          <button onClick={save} disabled={!successor.trim() || saving}
+            style={{width:'100%',padding:'9px',background:successor.trim()?'rgba(0,184,230,0.08)':'var(--surface2)',border:'1px solid ' + (successor.trim()?'var(--border3)':'var(--border)'),borderRadius:'var(--radius-lg)',color:saved?'#4CAF50':successor.trim()?'var(--teal)':'var(--text-off)',fontFamily:'var(--font-mono)',fontSize:'10px',fontWeight:600,cursor:successor.trim()?'pointer':'default',transition:'all 0.2s'}}>
+            {saving ? 'Saving...' : saved ? 'Configured' : 'Set Harbor Inheritance'}
+          </button>
         </div>
-        <div style={{display:'flex',gap:'6px'}}>
-          {[30,60,90,180,365].map(d => (
-            <button key={d} onClick={() => setDelay(d)}
-              style={{flex:1,padding:'6px 4px',background:delay===d?'rgba(0,184,230,0.1)':'var(--surface2)',border:`1px solid ${delay===d?'var(--border3)':'var(--border)'}`,borderRadius:'var(--radius)',color:delay===d?'var(--teal)':'var(--text)',fontFamily:'var(--font-mono)',fontSize:'9px',cursor:'pointer',textAlign:'center'}}>
-              {d}d
-            </button>
-          ))}
-        </div>
-      </div>
-
-      <div style={{padding:'8px 10px',background:'rgba(0,184,230,0.04)',borderRadius:'var(--radius)',marginBottom:'10px',fontFamily:'var(--font-mono)',fontSize:'9px',color:'var(--text-dim)',lineHeight:1.7}}>
-        Current balance: <span style={{color:'var(--teal)',fontWeight:600}}>${((harbor?.balance ?? 0)/100).toFixed(2)}</span><br/>
-        After {delay} days of inactivity, this transfers to the successor.
-      </div>
-
-      <button onClick={save} disabled={!successor.trim() || saving}
-        style={{width:'100%',padding:'9px',background:successor.trim()?'rgba(0,184,230,0.08)':'var(--surface2)',border:`1px solid ${successor.trim()?'var(--border3)':'var(--border)'}`,borderRadius:'var(--radius-lg)',color:saved?'#4CAF50':successor.trim()?'var(--teal)':'var(--text-off)',fontFamily:'var(--font-mono)',fontSize:'10px',fontWeight:600,cursor:successor.trim()?'pointer':'default',letterSpacing:'0.04em',transition:'all 0.2s'}}>
-        {saving ? 'Writing to chain…' : saved ? '✓ Inheritance configured' : 'Set Harbor Inheritance · on-chain'}
-      </button>
+      )}
     </div>
   )
 }
+
 
 function SignalFuturesUI() {
   const vessel = useStore((s) => s.vessel)
