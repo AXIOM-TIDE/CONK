@@ -30,7 +30,7 @@ export function Onboarding() {
       fuelDrawing: true,
       autoBurn: true,
     })
-    setHarbor({ balance: 500, tier: 1, lastMovement: now, expiresAt: now + yr })
+    setHarbor({ balance: 0, tier: 1, lastMovement: now, expiresAt: now + yr })
     setOnboarded(true)
   }
 
@@ -139,7 +139,7 @@ export function Onboarding() {
 
             <div style={{display:'flex',flexDirection:'column',gap:'8px',marginBottom:'20px'}}>
               {[
-                ['Starting balance', '$5.00 USDC'],
+
                 ['What Harbor sees', 'Balance only. Nothing else. Ever.'],
                 ['What Harbor never sees', 'Casts. Vessels. Messages. Agents.'],
                 ['Funding', 'Top up anytime with USDC on Sui'],

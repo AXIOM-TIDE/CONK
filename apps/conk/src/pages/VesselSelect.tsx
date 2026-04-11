@@ -50,7 +50,7 @@ export function VesselSelect({ onEnter, onBack }: Props) {
       fuel: 0, fuelDrawing: true, autoBurn: true,
     }
     addVessel(v)
-    if (!harbor) setHarbor({ balance:500, tier:1, lastMovement:now, expiresAt:now+365*24*60*60*1000 })
+    if (!harbor) setHarbor({ balance:0, tier:1, lastMovement:now, expiresAt:now+365*24*60*60*1000 })
     setLaunching(false)
     setShowNew(false)
   }

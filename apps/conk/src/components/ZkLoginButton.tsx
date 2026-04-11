@@ -28,7 +28,7 @@ export function ZkLoginButton() {
             setShowFund(true)
             // Initialize Harbor with zkLogin address
             setHarbor({
-              balance:      500,
+              balance:      0,
               tier:         1,
               lastMovement: Date.now(),
               expiresAt:    Date.now() + 365*24*60*60*1000,
