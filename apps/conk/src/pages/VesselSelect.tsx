@@ -84,7 +84,7 @@ export function VesselSelect({ onEnter, onBack }: Props) {
         {burnId && (
           <WreckModal
             title="Burn this vessel?"
-            description="This vessel and all its casts will be removed permanently. Fuel remaining sinks to the void."
+            description="This vessel and all its casts will be removed permanently. Remaining fuel sweeps to Harbor automatically before burn."
             confirmLabel="Confirm — burn vessel"
             onConfirm={() => { burnVessel(burnId); setBurnId(null) }}
             onCancel={() => setBurnId(null)}

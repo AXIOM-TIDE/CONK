@@ -259,7 +259,7 @@ export function ProtocolPanel({ onBack }: { onBack: () => void }) {
       {/* Sub-tabs */}
       <div style={{display:'flex',gap:'4px',marginBottom:'14px',overflowX:'auto',paddingBottom:'2px'}}>
         {tabs.map(t => (
-          <button key={t.id} onClick={() => setSub(t.id)}
+          <button key={t.id} data-testid={`subtab-${t.id}`} onClick={() => setSub(t.id)}
             style={{flexShrink:0,padding:'6px 10px',background:sub===t.id?'rgba(0,184,230,0.1)':'var(--surface)',border:`1px solid ${sub===t.id?'var(--border3)':'var(--border)'}`,borderRadius:'var(--radius)',color:sub===t.id?'var(--teal)':'var(--text-dim)',fontFamily:'var(--font-mono)',fontSize:'9px',cursor:'pointer',letterSpacing:'0.04em',whiteSpace:'nowrap'}}>
             {t.icon} {t.label}
           </button>
