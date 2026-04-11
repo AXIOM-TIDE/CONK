@@ -62,7 +62,7 @@ export function CastPanel({ onClose }: { onClose: () => void }) {
     setError('')
     if (lowFuel) { setError('Vessel fuel too low. Draw fuel from Harbor first.'); return }
     const harborBalance = harbor?.balance ?? 0
-    const maxPrice = Math.min(1000000000, Math.floor(harborBalance * 100000 * 0.10))
+    const maxPrice = Math.min(1000000000, Math.floor(harborBalance * 10000 * 0.10))
     if (price > maxPrice) { setError('Price exceeds 10% of Harbor balance. Add more USDC to Harbor first.'); return }
     const ok = await sound({
       hook: hook.trim(),
@@ -199,7 +199,7 @@ export function CastPanel({ onClose }: { onClose: () => void }) {
       {/* Price selector */}
       <div className="field" style={{marginBottom:'11px'}}>
         <label className="field-label">Read Price <span className="field-cost">readers pay this to unlock</span></label>
-        <div style={{display:'flex',gap:'6px',flexWrap:'wrap'}}>
+        <div style={{display:'flex',gap:'6px',flexWrap:'wrap',marginBottom:'6px'}}>
           {[
             {label:'$0.001', value:1000},
             {label:'$0.01',  value:10000},
@@ -214,6 +214,32 @@ export function CastPanel({ onClose }: { onClose: () => void }) {
             </button>
           ))}
         </div>
+        <div style={{display:'flex',alignItems:'center',gap:'6px'}}>
+          <span style={{fontFamily:'var(--font-mono)',fontSize:'11px',color:'var(--text-dim)'}}>$</span>
+          <input
+            type="number"
+            min="0.001"
+            max="1000"
+            step="0.001"
+            value={(price/1000000).toFixed(price<1000?3:price<10000?2:price<100000?1:0)}
+            onChange={e => {
+              const dollars = parseFloat(e.target.value)
+              if (!isNaN(dollars) && dollars >= 0.001 && dollars <= 1000) {
+                setPrice(Math.round(dollars * 1000000))
+              }
+            }}
+            className="input"
+            style={{width:'110px',fontFamily:'var(--font-mono)',fontSize:'12px',padding:'4px 8px'}}
+          />
+          <span style={{fontFamily:'var(--font-mono)',fontSize:'9px',color:'var(--text-off)'}}>
+            0.001 – 1,000.00
+          </span>
+        </div>
+        {price > 100000000 && (
+          <div style={{marginTop:'5px',fontFamily:'var(--font-mono)',fontSize:'9px',color:'var(--warning,#FFB020)',letterSpacing:'0.04em'}}>
+            ⚠ High price — readers will see a warning before paying
+          </div>
+        )}
         <div style={{fontFamily:'var(--font-mono)',fontSize:'9px',color:'var(--text-off)',marginTop:'4px'}}>
           You earn 97% · Protocol fee 3%
         </div>
