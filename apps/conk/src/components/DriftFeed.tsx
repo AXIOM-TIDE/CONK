@@ -10,7 +10,7 @@ import { PaywayModal } from './PaywayModal'
 
 function formatPrice(microUsdc: number): string {
   const usdc = microUsdc / 1000000
-  if (usdc < 0.01) return `$${(usdc * 1000).toFixed(1)}m`
+  if (usdc < 0.01) return `$${usdc.toFixed(3)}`
   if (usdc < 1) return `$${usdc.toFixed(3)}`
   return `$${usdc.toFixed(2)}`
 }
