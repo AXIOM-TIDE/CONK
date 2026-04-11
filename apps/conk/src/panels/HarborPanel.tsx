@@ -77,9 +77,9 @@ export function HarborPanel() {
           </button>
         ))}
       </div>
-      <button className="btn btn-primary btn-full" style={{ marginBottom: '20px' }}>
-        Purchase via Transak — coming soon
-      </button>
+      <div style={{padding:'10px 12px',background:'rgba(0,184,230,0.04)',border:'1px solid var(--border)',borderRadius:'var(--radius-lg)',marginBottom:'20px',fontFamily:'var(--font-mono)',fontSize:'10px',color:'var(--text-dim)',lineHeight:1.8,textAlign:'center'}}>
+        Send USDC to your Harbor address from <span style={{color:'var(--teal)'}}>Slush</span>, <span style={{color:'var(--teal)'}}>Sui Wallet</span>, or any Sui-compatible wallet
+      </div>
 
       {/* Three Laws */}
       <div className="section-hd">Three Laws</div>

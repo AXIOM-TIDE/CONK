@@ -1,24 +1,29 @@
 /**
- * ZkLoginButton — Connect with Google
- * Derives an anonymous Sui vessel address from Google JWT.
- * No seed phrase. No wallet app. Just Google.
+ * AuthButton — Connect with Google or Sui Wallet
+ * Google path: zkLogin — anonymous address derived from JWT
+ * Wallet path: Slush / Sui Wallet / any Sui-compatible wallet
+ * 
+ * Both paths write identical session shape.
+ * The rest of the app sees no difference.
+ * Transak removed — wallets fund Harbor directly on-chain.
  */
 import { useState, useEffect } from 'react'
 import { startZkLogin, handleZkLoginCallback, getSession, clearSession, isLoggedIn, getAddress } from '../sui/zklogin'
+import { getAvailableWallets, connectWallet, clearWalletSession, isWalletSession } from '../sui/walletSession'
 import { useStore } from '../store/store'
 
 export function ZkLoginButton() {
-  const [loading, setLoading]   = useState(false)
-  const [address, setAddress]   = useState<string | null>(null)
-  const [error, setError]       = useState<string | null>(null)
-  const [showFund, setShowFund] = useState(false)
-  const [copied, setCopied]     = useState(false)
+  const [loading, setLoading]       = useState(false)
+  const [address, setAddress]       = useState<string | null>(null)
+  const [error, setError]           = useState<string | null>(null)
+  const [showFund, setShowFund]     = useState(false)
+  const [copied, setCopied]         = useState(false)
+  const [showWallets, setShowWallets] = useState(false)
+  const [wallets, setWallets]       = useState<{ name: string; wallet: any }[]>([])
   const setHarbor = useStore((s) => s.setHarbor)
 
-  // Check for OAuth callback on mount
   useEffect(() => {
     const init = async () => {
-      // Handle return from Google OAuth
       if (window.location.hash.includes('id_token')) {
         setLoading(true)
         try {
@@ -26,13 +31,7 @@ export function ZkLoginButton() {
           if (session) {
             setAddress(session.address)
             setShowFund(true)
-            // Initialize Harbor with zkLogin address
-            setHarbor({
-              balance:      0,
-              tier:         1,
-              lastMovement: Date.now(),
-              expiresAt:    Date.now() + 365*24*60*60*1000,
-            })
+            setHarbor({ balance: 0, tier: 1, lastMovement: Date.now(), expiresAt: Date.now() + 365*24*60*60*1000 })
           }
         } catch (e: any) {
           setError(e.message)
@@ -46,20 +45,42 @@ export function ZkLoginButton() {
     init()
   }, [])
 
-  const handleConnect = async () => {
+  const handleGoogleConnect = async () => {
     setLoading(true)
     setError(null)
     try {
       await startZkLogin()
-      // Page redirects to Google — execution stops here
     } catch (e: any) {
       setError(e.message)
       setLoading(false)
     }
   }
 
+  const handleShowWallets = () => {
+    const available = getAvailableWallets()
+    setWallets(available)
+    setShowWallets(true)
+  }
+
+  const handleWalletConnect = async (walletObj: any, walletName: string) => {
+    setLoading(true)
+    setError(null)
+    setShowWallets(false)
+    try {
+      const addr = await connectWallet(walletObj, walletName)
+      setAddress(addr)
+      setShowFund(true)
+      setHarbor({ balance: 0, tier: 1, lastMovement: Date.now(), expiresAt: Date.now() + 365*24*60*60*1000 })
+    } catch (e: any) {
+      setError(e.message)
+    } finally {
+      setLoading(false)
+    }
+  }
+
   const handleDisconnect = () => {
-    clearSession()
+    if (isWalletSession()) clearWalletSession()
+    else clearSession()
     setAddress(null)
   }
 
@@ -70,6 +91,7 @@ export function ZkLoginButton() {
     setTimeout(() => setCopied(false), 2000)
   }
 
+  // ── FUND MODAL ────────────────────────────────────────────────
   if (showFund && address) {
     return (
       <div style={{position:'fixed',inset:0,zIndex:1000,background:'rgba(1,6,8,0.97)',display:'flex',alignItems:'center',justifyContent:'center',padding:'20px'}}>
@@ -77,17 +99,18 @@ export function ZkLoginButton() {
           <div style={{textAlign:'center',marginBottom:'20px'}}>
             <div style={{fontSize:'32px',marginBottom:'10px'}}>⚓</div>
             <div style={{fontFamily:'var(--font-display)',fontSize:'18px',fontWeight:600,color:'var(--text)',marginBottom:'6px'}}>
-              Fund Your Vessel
+              Fund Your Harbor
             </div>
             <div style={{fontFamily:'var(--font-mono)',fontSize:'10px',color:'var(--text-dim)',lineHeight:1.7}}>
-              Your anonymous Sui wallet is ready. Send SUI and USDC to start using CONK.
+              Send USDC from any Sui wallet to your Harbor address below.
+              Your Harbor never sees what you read or who you pay.
             </div>
           </div>
 
           {/* Address */}
           <div style={{marginBottom:'16px'}}>
             <div style={{fontFamily:'var(--font-mono)',fontSize:'9px',color:'var(--text-off)',letterSpacing:'0.1em',textTransform:'uppercase',marginBottom:'6px'}}>
-              Your Wallet Address
+              Your Harbor Address
             </div>
             <div style={{display:'flex',alignItems:'center',gap:'8px',padding:'10px 12px',background:'var(--surface2)',border:'1px solid var(--border)',borderRadius:'var(--radius-lg)'}}>
               <span style={{fontFamily:'var(--font-mono)',fontSize:'10px',color:'var(--teal)',flex:1,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>
@@ -103,8 +126,8 @@ export function ZkLoginButton() {
           {/* What to send */}
           <div style={{display:'flex',flexDirection:'column',gap:'6px',marginBottom:'16px'}}>
             {[
-              ['SUI', 'For gas fees (~0.01 SUI is enough to start)'],
-              ['USDC', 'To read casts ($0.001 per cast · any amount works)'],
+              ['USDC', 'To read casts and pay authors · any amount · $0.001 minimum per cast'],
+              ['SUI',  'For gas fees · ~0.01 SUI is enough to start'],
             ].map(([token, desc]) => (
               <div key={token} style={{display:'flex',gap:'10px',padding:'10px 12px',background:'rgba(0,184,230,0.04)',border:'1px solid var(--border)',borderRadius:'var(--radius-lg)'}}>
                 <span style={{fontFamily:'var(--font-mono)',fontSize:'11px',fontWeight:700,color:'var(--teal)',flexShrink:0,minWidth:'36px'}}>{token}</span>
@@ -113,30 +136,28 @@ export function ZkLoginButton() {
             ))}
           </div>
 
-          {/* Buy with Transak */}
-          <button
-            onClick={() => {
-              const url = new URL('https://global.transak.com')
-              url.searchParams.set('apiKey', '25117428-d358-438c-9f81-768ca665ee17')
-              url.searchParams.set('network', 'sui')
-              url.searchParams.set('cryptoCurrencyCode', 'USDC')
-              url.searchParams.set('walletAddress', address!)
-              url.searchParams.set('disableWalletAddressForm', 'true')
-              url.searchParams.set('defaultCryptoCurrency', 'USDC')
-              window.open(url.toString(), '_blank', 'width=450,height=700')
-            }}
-            style={{width:'100%',padding:'12px',background:'#0052FF',border:'none',borderRadius:'var(--radius-lg)',color:'#fff',fontFamily:'var(--font-mono)',fontSize:'12px',fontWeight:600,cursor:'pointer',letterSpacing:'0.04em',marginBottom:'8px',display:'flex',alignItems:'center',justifyContent:'center',gap:'8px'}}>
-            💳 Buy USDC with card — powered by Transak
-          </button>
-
-          {/* Manual option */}
+          {/* Send from wallet instruction */}
           <div style={{padding:'10px 12px',background:'var(--surface2)',borderRadius:'var(--radius-lg)',marginBottom:'16px',fontFamily:'var(--font-mono)',fontSize:'10px',color:'var(--text-dim)',lineHeight:1.7,textAlign:'center'}}>
-            or send SUI + USDC manually from <span style={{color:'var(--teal)'}}>Slush</span> or any Sui wallet
+            Send from <span style={{color:'var(--teal)'}}>Slush</span>, <span style={{color:'var(--teal)'}}>Sui Wallet</span>, or any Sui-compatible wallet.<br/>
+            Copy the address above and send directly on-chain.
+          </div>
+
+          {/* Three Laws reminder */}
+          <div style={{padding:'10px 12px',background:'rgba(0,184,230,0.04)',border:'1px solid var(--border)',borderRadius:'var(--radius-lg)',marginBottom:'16px'}}>
+            {[
+              'Harbor never sees what you read',
+              'Harbor never sees who you pay',
+              'Harbor knows only that balance decreased',
+            ].map(law => (
+              <div key={law} style={{fontFamily:'var(--font-mono)',fontSize:'9px',color:'var(--text-off)',lineHeight:1.8}}>
+                · {law}
+              </div>
+            ))}
           </div>
 
           <button onClick={() => setShowFund(false)}
             style={{width:'100%',padding:'12px',background:'var(--teal)',border:'none',borderRadius:'var(--radius-lg)',color:'var(--text-inv)',fontFamily:'var(--font-mono)',fontSize:'12px',fontWeight:600,cursor:'pointer',letterSpacing:'0.04em'}}>
-            Got it — enter the tide →
+            Enter the tide →
           </button>
           <button onClick={() => setShowFund(false)}
             style={{width:'100%',padding:'8px',background:'none',border:'none',color:'var(--text-off)',fontFamily:'var(--font-mono)',fontSize:'10px',cursor:'pointer',marginTop:'6px'}}>
@@ -147,17 +168,51 @@ export function ZkLoginButton() {
     )
   }
 
-  if (loading) {
+  // ── WALLET PICKER ─────────────────────────────────────────────
+  if (showWallets) {
     return (
-      <div style={{display:'flex',alignItems:'center',gap:'8px',padding:'8px 14px',background:'var(--surface)',border:'1px solid var(--border)',borderRadius:'var(--radius-lg)'}}>
-        <span className="spinner" style={{width:'12px',height:'12px',borderWidth:'2px'}}/>
-        <span style={{fontFamily:'var(--font-mono)',fontSize:'10px',color:'var(--text-dim)'}}>
-          connecting...
-        </span>
+      <div style={{position:'fixed',inset:0,zIndex:1000,background:'rgba(1,6,8,0.97)',display:'flex',alignItems:'center',justifyContent:'center',padding:'20px'}}>
+        <div style={{width:'100%',maxWidth:'360px',background:'var(--surface)',border:'1px solid var(--border2)',borderRadius:'var(--radius-xl)',padding:'24px'}}>
+          <div style={{fontFamily:'var(--font-display)',fontSize:'16px',fontWeight:600,color:'var(--text)',marginBottom:'16px',textAlign:'center'}}>
+            Connect Wallet
+          </div>
+          {wallets.length === 0 ? (
+            <div style={{fontFamily:'var(--font-mono)',fontSize:'11px',color:'var(--text-dim)',textAlign:'center',lineHeight:1.8,padding:'16px 0'}}>
+              No Sui wallet detected.<br/>
+              Install <span style={{color:'var(--teal)'}}>Slush</span> or <span style={{color:'var(--teal)'}}>Sui Wallet</span> and try again.
+            </div>
+          ) : (
+            <div style={{display:'flex',flexDirection:'column',gap:'8px',marginBottom:'16px'}}>
+              {wallets.map(({ name, wallet }) => (
+                <button key={name} onClick={() => handleWalletConnect(wallet, name)}
+                  style={{width:'100%',padding:'12px 16px',background:'var(--surface2)',border:'1px solid var(--border)',borderRadius:'var(--radius-lg)',color:'var(--text)',fontFamily:'var(--font-mono)',fontSize:'12px',fontWeight:600,cursor:'pointer',textAlign:'left',letterSpacing:'0.04em'}}
+                  onMouseEnter={e => (e.currentTarget as HTMLElement).style.borderColor='var(--teal)'}
+                  onMouseLeave={e => (e.currentTarget as HTMLElement).style.borderColor='var(--border)'}>
+                  {name}
+                </button>
+              ))}
+            </div>
+          )}
+          <button onClick={() => setShowWallets(false)}
+            style={{width:'100%',padding:'8px',background:'none',border:'none',color:'var(--text-off)',fontFamily:'var(--font-mono)',fontSize:'10px',cursor:'pointer'}}>
+            cancel
+          </button>
+        </div>
       </div>
     )
   }
 
+  // ── LOADING ───────────────────────────────────────────────────
+  if (loading) {
+    return (
+      <div style={{display:'flex',alignItems:'center',gap:'8px',padding:'8px 14px',background:'var(--surface)',border:'1px solid var(--border)',borderRadius:'var(--radius-lg)'}}>
+        <span className="spinner" style={{width:'12px',height:'12px',borderWidth:'2px'}}/>
+        <span style={{fontFamily:'var(--font-mono)',fontSize:'10px',color:'var(--text-dim)'}}>connecting...</span>
+      </div>
+    )
+  }
+
+  // ── CONNECTED ─────────────────────────────────────────────────
   if (address) {
     return (
       <div style={{display:'flex',alignItems:'center',gap:'8px',padding:'6px 12px',background:'rgba(0,184,230,0.08)',border:'1px solid var(--border3)',borderRadius:'var(--radius-lg)'}}>
@@ -173,14 +228,14 @@ export function ZkLoginButton() {
     )
   }
 
+  // ── AUTH OPTIONS ──────────────────────────────────────────────
   return (
-    <div>
-      <button onClick={handleConnect}
+    <div style={{display:'flex',flexDirection:'column',gap:'8px'}}>
+      {/* Google / zkLogin */}
+      <button onClick={handleGoogleConnect}
         style={{display:'flex',alignItems:'center',gap:'8px',padding:'8px 16px',background:'var(--surface)',border:'1px solid var(--border2)',borderRadius:'var(--radius-lg)',cursor:'pointer',transition:'all 0.15s'}}
         onMouseEnter={e => (e.currentTarget as HTMLElement).style.borderColor='var(--teal)'}
-        onMouseLeave={e => (e.currentTarget as HTMLElement).style.borderColor='var(--border2)'}
-      >
-        {/* Google icon */}
+        onMouseLeave={e => (e.currentTarget as HTMLElement).style.borderColor='var(--border2)'}>
         <svg width="14" height="14" viewBox="0 0 24 24">
           <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
           <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
@@ -188,11 +243,27 @@ export function ZkLoginButton() {
           <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
         </svg>
         <span style={{fontFamily:'var(--font-mono)',fontSize:'10px',color:'var(--text)',fontWeight:600,letterSpacing:'0.04em'}}>
-          Connect with Google
+          Continue with Google
         </span>
       </button>
+
+      {/* Sui Wallet */}
+      <button onClick={handleShowWallets}
+        style={{display:'flex',alignItems:'center',gap:'8px',padding:'8px 16px',background:'var(--surface)',border:'1px solid var(--border2)',borderRadius:'var(--radius-lg)',cursor:'pointer',transition:'all 0.15s'}}
+        onMouseEnter={e => (e.currentTarget as HTMLElement).style.borderColor='var(--teal)'}
+        onMouseLeave={e => (e.currentTarget as HTMLElement).style.borderColor='var(--border2)'}>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+          <rect x="2" y="6" width="20" height="14" rx="2" stroke="var(--teal)" strokeWidth="1.5"/>
+          <path d="M16 13a1 1 0 1 0 0-2 1 1 0 0 0 0 2z" fill="var(--teal)"/>
+          <path d="M2 10h20" stroke="var(--teal)" strokeWidth="1.5"/>
+        </svg>
+        <span style={{fontFamily:'var(--font-mono)',fontSize:'10px',color:'var(--text)',fontWeight:600,letterSpacing:'0.04em'}}>
+          Connect Sui Wallet
+        </span>
+      </button>
+
       {error && (
-        <div style={{fontFamily:'var(--font-mono)',fontSize:'9px',color:'var(--burn)',marginTop:'4px'}}>
+        <div style={{fontFamily:'var(--font-mono)',fontSize:'9px',color:'var(--burn)',marginTop:'2px'}}>
           {error}
         </div>
       )}

@@ -2,7 +2,7 @@
  * CONK Onboarding — Sprint 6
  * Email → Harbor → Vessel → Agent running in under 5 minutes.
  * No crypto knowledge required. zkLogin handles the wallet.
- * Transak handles USDC. Shinami handles gas.
+ * Shinami handles gas. Sui wallets fund Harbor directly.
  */
 import { useState } from 'react'
 import { useStore } from '../store/store'
