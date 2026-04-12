@@ -147,3 +147,45 @@ export async function getUsdcBalance(address: string): Promise<number> {
     return 0
   }
 }
+
+// ── Withdraw Harbor — 100% to user, no protocol fee ──────────
+export async function withdrawHarbor(opts: {
+  toAddress:  string
+  amountUsdc: number
+}): Promise<string> {
+  const session = getSession()
+  if (!session) throw new Error('No session — please connect')
+
+  const { Transaction } = await import('@mysten/sui/transactions')
+  const { toB64 }       = await import('@mysten/sui/utils')
+  const client          = await getSuiClient()
+  const tx              = new Transaction()
+
+  // Get USDC coins
+  const coins = await client.getCoins({ owner: session.address, coinType: USDC_TYPE })
+  if (!coins.data.length) throw new Error('No USDC to withdraw')
+
+  const usdcCoinObj = tx.object(coins.data[0].coinObjectId)
+
+  // 100% to user — no split, no protocol fee
+  const [payment] = tx.splitCoins(usdcCoinObj, [tx.pure.u64(opts.amountUsdc)])
+  tx.transferObjects([payment], tx.pure.address(opts.toAddress))
+
+  tx.setSender(session.address)
+
+  // Sponsored gas — user never pays
+  const { sponsoredBytes, sponsorSig } = await sponsorTx(tx, session.address)
+  const { bytes, signature }           = await signTx(sponsoredBytes)
+
+  const result = await client.executeTransactionBlock({
+    transactionBlock: bytes,
+    signature:        [signature, sponsorSig],
+    options:          { showEffects: true },
+  })
+
+  if (result.effects?.status?.status !== 'success') {
+    throw new Error('Withdrawal failed: ' + JSON.stringify(result.effects?.status))
+  }
+
+  return result.digest
+}

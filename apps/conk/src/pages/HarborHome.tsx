@@ -66,12 +66,10 @@ export function HarborHome({ onEnterVessel }: Props) {
     if (!withdrawAddr.trim() || !withdrawAmt || !harbor) return
     setWithdrawing(true)
     try {
-      const { crossPaywall } = await import('../sui/client')
-      const result = await crossPaywall({
-        vesselId:      vessel?.id ?? 'harbor',
-        castId:        'withdraw_' + Date.now(),
-        amountUsdc:    withdrawAmt * 1000000,
-        authorAddress: withdrawAddr.trim(),
+      const { withdrawHarbor } = await import('../sui/client')
+      const result = await withdrawHarbor({
+        toAddress:  withdrawAddr.trim(),
+        amountUsdc: withdrawAmt * 1000000,
       })
       console.log('Withdrawal confirmed:', result)
       setHarbor({ ...harbor, balance: harbor.balance - withdrawAmt * 100 })
