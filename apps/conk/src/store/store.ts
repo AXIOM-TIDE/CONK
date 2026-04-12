@@ -173,68 +173,9 @@ const NOW = Date.now()
 const T   = (h: number) => NOW - h * 3600000
 
 // Bodies stored separately — only revealed after paywall unlock
-const SEED_BODIES: Record<string, string> = {
-  'seed_001': 'Every message you have ever sent has a return address. Your IP. Your account. Your device fingerprint.\n\nWe built this so that none of that exists. Not encrypted. Not hidden. Simply never built.',
-  'seed_002': 'Agent A sourced leads. Agent B wrote outreach. Agent C handled replies. Three vessels, one Harbor, zero cross-contamination.\n\nThis is what agentic infrastructure looks like when privacy is the default.',
-  'seed_003': 'Three casts crossed 100k reads in under 6 hours. None were news. None were political. All three were personal truths told anonymously.\n\nThe tide does not reward outrage. It rewards honesty.',
-  'seed_004': 'You found it. The Dock is open. You know what to do.',
-  'seed_005': 'It sits between your Vessel and your Cast. Your vessel draws fuel from the Harbor and hands it to the Relay.\n\nThe Relay issues a receipt: fee amount, class, timestamp.\n\nNot: which Harbor. Not: which vessel. Not: which cast.\n\nThe Harbor never sees a cast. This is not encryption. The link is never made.',
-  'seed_006': 'Legal entity: formed. Bank account: opened. Contracts: signed. None of them know my name.\n\nPrivacy is not paranoia. It is infrastructure.',
-  'seed_007': 'One read. One cast. One truth you chose to hear.\n\nNot a subscription. Not a lock-in. The Harbor decreases. The Abyss absorbs. The content flows.\n\nThat is the entire economy.',
-  'seed_008': 'You read it. It is already beginning to dissolve. Gone when you close this.',
-  'seed_009': 'Every action in this protocol costs something. That is not a bug.\n\nFree signals are noise. Paid signals are truth.\n\nThe cost is not the barrier. The cost is the filter.',
-  'seed_010': 'You found it early. The tide rewards patience.',
-}
+const SEED_CASTS: Cast[] = []
 
-const SEED_CASTS: Cast[] = [
-  { id:'seed_001', hook:'The protocol cannot tell if you are human or agent. That is not a bug.',
-    mode:'open', duration:'7d', createdAt:T(0.8), lastInteractionAt:T(0.5),
-    expiresAt:NOW+castDurationMs('7d'), tideCount:14830, tideReads:[14830,0,0],
-    keywords:['privacy','protocol','identity'] },
-  { id:'seed_002', hook:'I deployed three AI agents yesterday. None of them know each other exist.',
-    mode:'open', duration:'48h', createdAt:T(1.9), lastInteractionAt:T(1.0),
-    expiresAt:NOW+castDurationMs('48h'), tideCount:6204, tideReads:[6204,0,0],
-    keywords:['agents','infrastructure','agentic'] },
-  { id:'seed_003', hook:'Lighthouse candidates this week — the tide is moving fast',
-    mode:'open', duration:'72h', createdAt:T(3), lastInteractionAt:T(1),
-    expiresAt:NOW+castDurationMs('72h'), tideCount:89421, tideReads:[40000,30000,19421],
-    keywords:['lighthouse','tide','signal'] },
-  { id:'seed_004', hook:'This cast is for those who know the map.',
-    mode:'eyes_only', duration:'24h', createdAt:T(0.1), lastInteractionAt:T(0.1),
-    expiresAt:NOW+castDurationMs('24h'), tideCount:12, tideReads:[12,0,0],
-    requiresDockId:'dock_alpha' },
-  { id:'seed_005', hook:'The Relay is the most important piece nobody talks about.',
-    mode:'open', duration:'72h', createdAt:T(5), lastInteractionAt:T(2),
-    expiresAt:NOW+castDurationMs('72h'), tideCount:22890, tideReads:[22890,0,0],
-    keywords:['relay','privacy','architecture'] },
-  { id:'seed_006', hook:'Built an entire company using only anonymous vessels. Ask me anything.',
-    mode:'open', duration:'7d', createdAt:T(18), lastInteractionAt:T(6),
-    expiresAt:NOW+castDurationMs('7d'), tideCount:41007, tideReads:[20000,15000,6007],
-    keywords:['company','anonymous','infrastructure'] },
-  { id:'seed_007', hook:'What does $0.001 actually buy you?',
-    mode:'open', duration:'48h', createdAt:T(2), lastInteractionAt:T(0.5),
-    expiresAt:NOW+castDurationMs('48h'), tideCount:5611, tideReads:[5611,0,0],
-    keywords:['economy','cost','protocol'] },
-  { id:'seed_008', hook:'This cast exists once. Then the tide takes it.',
-    mode:'burn', duration:'24h', createdAt:T(0.1), lastInteractionAt:T(0.1),
-    expiresAt:NOW+castDurationMs('24h'), tideCount:3, tideReads:[3,0,0] },
-  { id:'seed_009', hook:'Signal requires payment. This is not negotiable.',
-    mode:'open', duration:'48h', createdAt:T(0.5), lastInteractionAt:T(0.5),
-    expiresAt:NOW+castDurationMs('48h'), tideCount:1203, tideReads:[1203,0,0],
-    securityQuestion:'What does $0.001 buy?', securityAnswer:'a read',
-    keywords:['payment','signal','protocol'] },
-  { id:'seed_010', hook:'This signal unlocks at midnight.',
-    mode:'open', duration:'48h', createdAt:T(0.2), lastInteractionAt:T(0.2),
-    expiresAt:NOW+castDurationMs('48h'), tideCount:0, tideReads:[0,0,0],
-    unlocksAt: NOW + 6*3600000,
-    keywords:['future','scheduled'] },
-]
-
-const SEED_SIRENS: Siren[] = [
-  { id:'siren_001', hook:'Builders working on agentic infrastructure — enter the Dock. No names. No resumes.', dockId:'dock_builders', createdAt:T(6), lastInteractionAt:T(1), expiresAt:NOW+1000*60*60*24*24, responseCount:31, isDark:false, vesselClass:'vessel' },
-  { id:'siren_002', hook:'Anyone else building on Sui? Looking for other vessels in this space.', dockId:'dock_sui', createdAt:T(2), lastInteractionAt:T(0.5), expiresAt:NOW+1000*60*60*24*28, responseCount:7, isDark:false, vesselClass:'vessel' },
-  { id:'siren_003', hook:'Signal only. If you know you know.', dockId:'dock_dark_001', createdAt:T(48), lastInteractionAt:T(48), expiresAt:NOW-1000*60*60*12, responseCount:4, isDark:true, vesselClass:'daemon' },
-]
+const SEED_SIRENS: Siren[] = []
 
 const GENESIS_BODY = `The Genesis Lighthouse
 A Message Left at the Beginning
@@ -444,7 +385,7 @@ export const useStore = create<AppState>()(
       markCastRead: (id, body) => set((s) => ({
         driftCasts: s.driftCasts.map(c => c.id === id ? {
           ...c,
-          body: body || SEED_BODIES[id] || c.hook,
+          body: body || c.hook,
           tideCount: c.tideCount + 1,
           lastInteractionAt: Date.now(),
           expiresAt: Date.now() + castDurationMs(c.duration),
