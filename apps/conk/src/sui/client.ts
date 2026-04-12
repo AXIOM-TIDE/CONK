@@ -89,37 +89,26 @@ export async function crossPaywall(opts: {
   return result.digest
 }
 
-export async function sponsorTx(tx: unknown, sender: string): Promise<unknown> {
-  if (!RPC.SHINAMI_KEY) throw new Error('SHINAMI_KEY not set')
-
+export async function sponsorTx(tx: unknown, sender: string): Promise<{ sponsoredBytes: string; sponsorSig: string }> {
   const { Transaction } = await import('@mysten/sui/transactions')
-  const client = await getSuiClient()
-  const { toB64 } = await import('@mysten/sui/utils')
+  const { toB64 }       = await import('@mysten/sui/utils')
+  const client          = await getSuiClient()
 
   const txBytes = await (tx as InstanceType<typeof Transaction>).build({
     client: client as any,
     onlyTransactionKind: true,
   })
-  const b64 = toB64(txBytes)
 
   const response = await fetch(`${PROXY}/gas`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'X-API-Key': RPC.SHINAMI_KEY,
-    },
-    body: JSON.stringify({
-      jsonrpc: '2.0',
-      id: 1,
-      method: 'gas_sponsorTransactionBlock',
-      params: [b64, sender, 100000000],
-    }),
+    method:  'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body:    JSON.stringify({ txBytes: toB64(txBytes), sender }),
   })
 
-  if (!response.ok) throw new Error('Shinami error: ' + response.status)
+  if (!response.ok) throw new Error('Gas sponsor error: ' + response.status)
   const json = await response.json()
-  if (json.error) throw new Error('Shinami RPC error: ' + json.error.message)
-  return json.result
+  if (json.error) throw new Error('Gas sponsor error: ' + json.error)
+  return json
 }
 
 export function getStatus() {
@@ -127,11 +116,11 @@ export function getStatus() {
     network: NETWORK,
     package: PACKAGES.CONK,
     treasury: ADDRESSES.TREASURY,
-    shinami: RPC.SHINAMI_KEY ? 'ok' : 'missing',
+    gas: 'self-hosted',
     sui_rpc: SUI_RPC,
   }
 }
 
 export function isReady(): boolean {
-  return !!(RPC.SHINAMI_KEY && PACKAGES.CONK)
+  return !!PACKAGES.CONK
 }
