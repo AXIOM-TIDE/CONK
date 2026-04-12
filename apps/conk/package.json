@@ -14,6 +14,7 @@
   },
   "dependencies": {
     "@mysten/sui": "^1.19.0",
+    "@mysten/wallet-standard": "^0.20.1",
     "@mysten/zklogin": "^0.7.7",
     "clsx": "^2.1.1",
     "dayjs": "^1.11.13",

@@ -1,56 +1,44 @@
 /**
  * CONK Wallet Session Adapter
- * Connects any Sui-compatible wallet using the Sui Wallet Standard.
- * Slush, Sui Wallet, and any compliant wallet are detected automatically.
+ * Uses @mysten/wallet-standard for proper wallet detection.
+ * Slush, Sui Wallet, and any compliant wallet detected automatically.
  * 
  * The wallet is a funding pipe only.
  * It never sees casts, vessels, or what was paid for.
  * Three Laws hold regardless of auth method.
  */
 
-// Sui Wallet Standard — wallets register here
-function getSuiStandardWallets(): { name: string; wallet: any }[] {
-  const win = window as any
-  const wallets: { name: string; wallet: any }[] = []
+import { getWallets } from '@mysten/wallet-standard'
 
-  // Sui Wallet Standard (Slush, Sui Wallet, and others register here)
-  if (win.__suiWallets__) {
-    for (const w of win.__suiWallets__) {
-      wallets.push({ name: w.name, wallet: w })
+export function getAvailableWallets(): { name: string; wallet: any }[] {
+  try {
+    const api     = getWallets()
+    const all     = api.get()
+    const suiOnly = all.filter(w =>
+      w.chains?.some((c: string) => c.startsWith('sui:'))
+    )
+    if (suiOnly.length > 0) {
+      return suiOnly.map(w => ({ name: w.name, wallet: w }))
     }
-    return wallets
-  }
-
-  // Wallet standard event-based registration
-  if (win.navigator?.wallets) {
-    const registered = win.navigator.wallets.get?.() || []
-    for (const w of registered) {
-      if (w.chains?.some((c: string) => c.startsWith('sui:'))) {
-        wallets.push({ name: w.name, wallet: w })
-      }
-    }
-    if (wallets.length) return wallets
+  } catch (e) {
+    console.warn('wallet-standard detection failed:', e)
   }
 
   // Legacy fallbacks
+  const win = window as any
+  const wallets: { name: string; wallet: any }[] = []
   if (win.slush)     wallets.push({ name: 'Slush',      wallet: win.slush })
   if (win.suiWallet) wallets.push({ name: 'Sui Wallet', wallet: win.suiWallet })
   if (win.martian)   wallets.push({ name: 'Martian',    wallet: win.martian })
   if (win.suiet)     wallets.push({ name: 'Suiet',      wallet: win.suiet })
-
   return wallets
 }
 
-export function getAvailableWallets(): { name: string; wallet: any }[] {
-  return getSuiStandardWallets()
-}
-
 export async function connectWallet(walletObj: any, walletName: string): Promise<string> {
-  // Sui Wallet Standard connect
   let address: string | null = null
 
   try {
-    // Standard API
+    // Wallet Standard API
     if (walletObj.features?.['standard:connect']) {
       const result = await walletObj.features['standard:connect'].connect()
       address = result?.accounts?.[0]?.address ?? null
@@ -85,33 +73,28 @@ export async function connectWallet(walletObj: any, walletName: string): Promise
 
 export async function signWithWallet(txBytes: string): Promise<{ bytes: string; signature: string }> {
   const walletName = sessionStorage.getItem('wallet_name')
-  const wallets    = getSuiStandardWallets()
-  const walletObj  = wallets.find(w => w.name === walletName)?.wallet
 
-  if (!walletObj) throw new Error('Wallet not found — please reconnect')
+  try {
+    const api      = getWallets()
+    const walletObj = api.get().find(w => w.name === walletName)
 
-  // Sui Wallet Standard sign
-  if (walletObj.features?.['sui:signTransaction']) {
-    const result = await walletObj.features['sui:signTransaction'].signTransaction({
-      transaction: txBytes,
-      chain: 'sui:mainnet',
-    })
-    return {
-      bytes:     result.bytes ?? txBytes,
-      signature: result.signature,
+    if (walletObj?.features?.['sui:signTransaction']) {
+      const result = await (walletObj.features['sui:signTransaction'] as any).signTransaction({
+        transaction: txBytes,
+        chain: 'sui:mainnet',
+      })
+      return { bytes: result.bytes ?? txBytes, signature: result.signature }
     }
-  }
 
-  // Legacy sign
-  if (walletObj.signTransactionBlock) {
-    const result = await walletObj.signTransactionBlock({
-      transactionBlock: txBytes,
-      chain: 'sui:mainnet',
-    })
-    return {
-      bytes:     result.transactionBlockBytes ?? txBytes,
-      signature: result.signature,
+    if (walletObj?.features?.['sui:signTransactionBlock']) {
+      const result = await (walletObj.features['sui:signTransactionBlock'] as any).signTransactionBlock({
+        transactionBlock: txBytes,
+        chain: 'sui:mainnet',
+      })
+      return { bytes: result.transactionBlockBytes ?? txBytes, signature: result.signature }
     }
+  } catch (e: any) {
+    throw new Error('Wallet signing failed: ' + e.message)
   }
 
   throw new Error('Wallet does not support transaction signing')
