@@ -6,6 +6,8 @@
  */
 import { useState } from 'react'
 import { useStore } from '../store/store'
+import { openHarbor, launchVessel, getUsdcBalance } from '../sui/client'
+import { getAddress } from '../sui/zklogin'
 
 type Step = 'welcome' | 'what' | 'harbor' | 'vessel' | 'launching' | 'done'
 
@@ -15,23 +17,55 @@ export function Onboarding() {
   const [understood, setUnderstood] = useState(false)
 
   const yr  = 365*24*60*60*1000
+  const [launchError, setLaunchError] = useState<string | null>(null)
+
   const launch = async () => {
     setStep('launching')
-    await new Promise(r => setTimeout(r, 1400))
+    setLaunchError(null)
     const now = Date.now()
-    addVessel({
-      id: `v_${Math.random().toString(36).slice(2,10)}`,
-      class: 'vessel',
-      tempOrPerm: 'perm',
-      createdAt: now,
-      lastCastAt: null,
-      expiresAt: now + yr,
-      fuel: 0,
-      fuelDrawing: true,
-      autoBurn: true,
-    })
-    setHarbor({ balance: 0, tier: 1, lastMovement: now, expiresAt: now + yr })
-    setOnboarded(true)
+
+    try {
+      // Step 1 — Open Harbor on-chain
+      const { harborId, harborCapId } = await openHarbor(1)
+
+      // Step 2 — Read real USDC balance
+      const address = getAddress()
+      const balance = address ? await getUsdcBalance(address) : 0
+
+      // Step 3 — Launch Vessel on-chain
+      const { vesselId, vesselCapId } = await launchVessel(harborId, harborCapId, false)
+
+      // Step 4 — Store in app state with on-chain IDs
+      addVessel({
+        id:           vesselId,
+        class:        'vessel',
+        tempOrPerm:   'perm',
+        createdAt:    now,
+        lastCastAt:   null,
+        expiresAt:    now + yr,
+        fuel:         0,
+        fuelDrawing:  true,
+        autoBurn:     true,
+        onChainId:    vesselId,
+        vesselCapId:  vesselCapId,
+      })
+
+      setHarbor({
+        balance:     balance,
+        tier:        1,
+        lastMovement: now,
+        expiresAt:   now + yr,
+        onChainId:   harborId,
+        harborCapId: harborCapId,
+      })
+
+      setOnboarded(true)
+
+    } catch (err: any) {
+      console.error('Launch failed:', err)
+      setLaunchError(err.message ?? 'Launch failed — please try again')
+      setStep('vessel')
+    }
   }
 
   return (

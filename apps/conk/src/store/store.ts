@@ -23,6 +23,9 @@ export interface Vessel {
   autoBurn: boolean
   // Identity protection: if identity is exposed, vessel self-destructs
   compromised?: boolean
+  // On-chain object IDs — set after vessel::launch
+  onChainId?:    string
+  vesselCapId?:  string
 }
 
 export interface Harbor {
@@ -30,6 +33,9 @@ export interface Harbor {
   tier: number
   lastMovement: number
   expiresAt: number
+  // On-chain object IDs — set after harbor::open
+  onChainId?:   string
+  harborCapId?: string
 }
 
 // Shore — the daemon's fuel source. Human-funded, daemon-controlled.
