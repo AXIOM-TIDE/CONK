@@ -1,9 +1,10 @@
 /**
  * CONK Sui Client — Mainnet
  * Axiom Tide LLC — April 2026
- * 
- * Gas sponsored via self-hosted Cloudflare Worker.
- * Users never pay gas. Privacy preserved — no wallet correlation.
+ *
+ * Wired to deployed Move contracts.
+ * Package: 0x8cde30c2af7523193689e2f3eaca6dc4fadf6fd486471a6c31b14bc9db5164b2
+ * Gas sponsored — users never pay gas. Privacy preserved.
  */
 
 import { ADDRESSES, PACKAGES, RPC } from './index'
@@ -14,7 +15,10 @@ export const NETWORK   = 'mainnet'
 export const USDC_TYPE = '0xdba34672e30cb065b1f93e3ab55318768fd6fef66c15942c9f7cb846e2f900e7::usdc::USDC'
 export const SUI_RPC   = 'https://fullnode.mainnet.sui.io:443'
 
-const PROXY = RPC.PROXY
+const PROXY   = RPC.PROXY
+const PACKAGE = PACKAGES.CONK
+const ABYSS   = ADDRESSES.ABYSS
+const CLOCK   = '0x6'  // Sui system clock object
 
 let _client: unknown = null
 
@@ -29,10 +33,7 @@ export async function getSuiClient() {
 async function signTx(txBytes: string): Promise<{ bytes: string; signature: string }> {
   const session = getSession()
   if (!session) throw new Error('No session — please connect')
-
-  if (isWalletSession()) {
-    return signWithWallet(txBytes)
-  }
+  if (isWalletSession()) return signWithWallet(txBytes)
   return signWithZkLogin(txBytes, session)
 }
 
@@ -59,93 +60,248 @@ export async function sponsorTx(tx: unknown, sender: string): Promise<{ sponsore
   return json
 }
 
-// ── Cross Paywall — read a cast or sound a cast ───────────────
+// ── Execute sponsored transaction ─────────────────────────────
+async function executeTx(tx: unknown, sender: string): Promise<any> {
+  const client = await getSuiClient()
+  const { sponsoredBytes, sponsorSig } = await sponsorTx(tx, sender)
+  const { bytes, signature }           = await signTx(sponsoredBytes)
+
+  const result = await client.executeTransactionBlock({
+    transactionBlock: bytes,
+    signature:        [signature, sponsorSig],
+    options:          { showEffects: true, showObjectChanges: true },
+  })
+
+  if (result.effects?.status?.status !== 'success') {
+    throw new Error('Transaction failed: ' + JSON.stringify(result.effects?.status))
+  }
+  return result
+}
+
+// ── Read on-chain USDC balance ────────────────────────────────
+export async function getUsdcBalance(address: string): Promise<number> {
+  try {
+    const client = await getSuiClient()
+    const coins  = await client.getCoins({ owner: address, coinType: USDC_TYPE })
+    const total  = coins.data.reduce((sum, c) => sum + Number(c.balance), 0)
+    return Math.floor(total / 10000)
+  } catch (e) {
+    console.warn('Balance read failed:', e)
+    return 0
+  }
+}
+
+// ── Open Harbor on-chain ──────────────────────────────────────
+export async function openHarbor(tier: number = 1): Promise<{ harborId: string; harborCapId: string }> {
+  const session = getSession()
+  if (!session) throw new Error('No session')
+
+  const { Transaction } = await import('@mysten/sui/transactions')
+  const client = await getSuiClient()
+  const tx     = new Transaction()
+
+  // Get USDC for harbor open fee (TIER_1_COST + MINIMUM_BALANCE = 50000 + 100000 = 150000 microUSDC = $0.15)
+  const coins = await client.getCoins({ owner: session.address, coinType: USDC_TYPE })
+  if (!coins.data.length) throw new Error('No USDC — fund your Harbor address first')
+
+  const [payment] = tx.splitCoins(tx.object(coins.data[0].coinObjectId), [tx.pure.u64(150000)])
+
+  const harborCap = tx.moveCall({
+    target:    `${PACKAGE}::harbor::open`,
+    arguments: [
+      payment,
+      tx.pure.u8(tier),
+      tx.object(CLOCK),
+    ],
+  })
+
+  // Transfer HarborCap to user
+  tx.transferObjects([harborCap], tx.pure.address(session.address))
+  tx.setSender(session.address)
+
+  const result = await executeTx(tx, session.address)
+
+  // Extract Harbor and HarborCap object IDs from transaction result
+  const created = result.objectChanges?.filter((c: any) => c.type === 'created') ?? []
+  const harborObj    = created.find((c: any) => c.objectType?.includes('::harbor::Harbor'))
+  const harborCapObj = created.find((c: any) => c.objectType?.includes('::harbor::HarborCap'))
+
+  if (!harborObj || !harborCapObj) throw new Error('Harbor creation failed — objects not found')
+
+  return {
+    harborId:    harborObj.objectId,
+    harborCapId: harborCapObj.objectId,
+  }
+}
+
+// ── Launch Vessel on-chain ────────────────────────────────────
+export async function launchVessel(
+  harborId:    string,
+  harborCapId: string,
+  burnAfterCast: boolean = false
+): Promise<{ vesselId: string; vesselCapId: string }> {
+  const session = getSession()
+  if (!session) throw new Error('No session')
+
+  const { Transaction } = await import('@mysten/sui/transactions')
+  const tx = new Transaction()
+
+  const vesselCap = tx.moveCall({
+    target:    `${PACKAGE}::vessel::launch`,
+    arguments: [
+      tx.object(harborId),
+      tx.pure.u8(0), // GHOST tier — most anonymous
+      tx.pure.bool(burnAfterCast),
+      tx.object(CLOCK),
+    ],
+  })
+
+  tx.transferObjects([vesselCap], tx.pure.address(session.address))
+  tx.setSender(session.address)
+
+  const result = await executeTx(tx, session.address)
+
+  const created = result.objectChanges?.filter((c: any) => c.type === 'created') ?? []
+  const vesselObj    = created.find((c: any) => c.objectType?.includes('::vessel::Vessel'))
+  const vesselCapObj = created.find((c: any) => c.objectType?.includes('::vessel::VesselCap'))
+
+  if (!vesselObj || !vesselCapObj) throw new Error('Vessel launch failed — objects not found')
+
+  return {
+    vesselId:    vesselObj.objectId,
+    vesselCapId: vesselCapObj.objectId,
+  }
+}
+
+// ── Cross Paywall — read a cast via Relay ─────────────────────
 export async function crossPaywall(opts: {
   vesselId:       string
   castId:         string
   amountUsdc:     number
   authorAddress?: string
   price?:         number
+  harborId?:      string
+  harborCapId?:   string
+  vesselCapId?:   string
 }): Promise<string> {
   const session = getSession()
   if (!session) return 'mock_tx_' + Date.now()
 
   const { Transaction } = await import('@mysten/sui/transactions')
-  const { toB64, fromB64 } = await import('@mysten/sui/utils')
-  const client  = await getSuiClient()
-  const tx      = new Transaction()
+  const client = await getSuiClient()
+  const tx     = new Transaction()
 
-  // Get USDC coins
   const coins = await client.getCoins({ owner: session.address, coinType: USDC_TYPE })
-  if (!coins.data.length) throw new Error('No USDC in Harbor — fund your Harbor first')
+  if (!coins.data.length) throw new Error('No USDC — fund your Harbor first')
 
-  const usdcCoinObj   = tx.object(coins.data[0].coinObjectId)
-  const totalAmount   = opts.amountUsdc
-  const authorAmount  = Math.floor(totalAmount * 0.97)
+  const totalAmount    = opts.amountUsdc
+  const authorAmount   = Math.floor(totalAmount * 0.97)
   const treasuryAmount = totalAmount - authorAmount
-  const hasAuthor     = opts.authorAddress && opts.authorAddress !== opts.vesselId
+  const hasAuthor      = opts.authorAddress && opts.authorAddress !== opts.vesselId
 
-  if (hasAuthor && authorAmount > 0) {
-    const [authorPayment, treasuryPayment] = tx.splitCoins(usdcCoinObj, [
-      tx.pure.u64(authorAmount),
-      tx.pure.u64(treasuryAmount),
-    ])
-    tx.transferObjects([authorPayment],  tx.pure.address(opts.authorAddress!))
-    tx.transferObjects([treasuryPayment], tx.pure.address(ADDRESSES.TREASURY))
+  const usdcCoinObj = tx.object(coins.data[0].coinObjectId)
+
+  // If we have on-chain Harbor/Vessel objects use relay::process
+  if (opts.harborId && opts.harborCapId && opts.vesselCapId) {
+    const [feeCoin] = tx.splitCoins(usdcCoinObj, [tx.pure.u64(totalAmount)])
+
+    // relay::process draws from Harbor, issues receipt
+    tx.moveCall({
+      target:    `${PACKAGE}::relay::process`,
+      arguments: [
+        tx.object(opts.harborId),
+        tx.object(opts.harborCapId),
+        tx.object(opts.vesselId),
+        tx.object(opts.vesselCapId),
+        tx.pure.u64(totalAmount),
+        tx.object(CLOCK),
+      ],
+    })
+
+    // Author payment
+    if (hasAuthor && authorAmount > 0) {
+      const [authorPayment, abyssPayment] = tx.splitCoins(feeCoin, [
+        tx.pure.u64(authorAmount),
+        tx.pure.u64(treasuryAmount),
+      ])
+      tx.transferObjects([authorPayment], tx.pure.address(opts.authorAddress!))
+      tx.moveCall({
+        target:    `${PACKAGE}::abyss::receive_read`,
+        arguments: [tx.object(ABYSS), abyssPayment, tx.object(CLOCK)],
+      })
+    } else {
+      tx.moveCall({
+        target:    `${PACKAGE}::abyss::receive_read`,
+        arguments: [tx.object(ABYSS), feeCoin, tx.object(CLOCK)],
+      })
+    }
+
   } else {
-    const [usdcPayment] = tx.splitCoins(usdcCoinObj, [tx.pure.u64(totalAmount)])
-    tx.transferObjects([usdcPayment], tx.pure.address(ADDRESSES.TREASURY))
+    // Fallback — direct USDC transfer without relay
+    if (hasAuthor && authorAmount > 0) {
+      const [authorPayment, treasuryPayment] = tx.splitCoins(usdcCoinObj, [
+        tx.pure.u64(authorAmount),
+        tx.pure.u64(treasuryAmount),
+      ])
+      tx.transferObjects([authorPayment],  tx.pure.address(opts.authorAddress!))
+      tx.transferObjects([treasuryPayment], tx.pure.address(ADDRESSES.TREASURY))
+    } else {
+      const [usdcPayment] = tx.splitCoins(usdcCoinObj, [tx.pure.u64(totalAmount)])
+      tx.transferObjects([usdcPayment], tx.pure.address(ADDRESSES.TREASURY))
+    }
   }
 
   tx.setSender(session.address)
-
-  // Get sponsored gas from Cloudflare Worker
-  const { sponsoredBytes, sponsorSig } = await sponsorTx(tx, session.address)
-
-  // Sign with zkLogin or wallet
-  const { bytes, signature } = await signTx(sponsoredBytes)
-
-  // Execute with both signatures — user + sponsor
-  const result = await client.executeTransactionBlock({
-    transactionBlock: bytes,
-    signature:        [signature, sponsorSig],
-    options:          { showEffects: true },
-  })
-
-  if (result.effects?.status?.status !== 'success') {
-    throw new Error('Transaction failed: ' + JSON.stringify(result.effects?.status))
-  }
-
+  const result = await executeTx(tx, session.address)
   return result.digest
 }
 
-export function getStatus() {
-  return {
-    network:  NETWORK,
-    package:  PACKAGES.CONK,
-    treasury: ADDRESSES.TREASURY,
-    gas:      'self-hosted',
-    sui_rpc:  SUI_RPC,
-  }
-}
+// ── Sound a Cast on-chain ─────────────────────────────────────
+export async function soundCast(opts: {
+  hook:         string
+  body:         string
+  mode:         number  // 0=open, 1=sealed, 2=eyes_only, 3=ghost
+  duration:     number  // 1=24h, 2=48h, 3=72h, 4=7d
+  price:        number  // microUSDC
+  vesselId:     string
+  vesselCapId:  string
+}): Promise<string> {
+  const session = getSession()
+  if (!session) throw new Error('No session')
 
-export function isReady(): boolean {
-  return !!PACKAGES.CONK
-}
+  const { Transaction } = await import('@mysten/sui/transactions')
+  const client = await getSuiClient()
+  const tx     = new Transaction()
 
-// ── Read on-chain USDC balance ────────────────────────────────
-// Goes through Cloudflare Worker proxy — address never sent to third-party RPC
-export async function getUsdcBalance(address: string): Promise<number> {
-  try {
-    const client = await getSuiClient()
-    const coins  = await client.getCoins({ owner: address, coinType: USDC_TYPE })
-    const total  = coins.data.reduce((sum, c) => sum + Number(c.balance), 0)
-    // Convert microUSDC to cents for the store (microUSDC / 10000 = cents)
-    return Math.floor(total / 10000)
-  } catch (e) {
-    console.warn('Balance read failed:', e)
-    return 0
-  }
+  const coins = await client.getCoins({ owner: session.address, coinType: USDC_TYPE })
+  if (!coins.data.length) throw new Error('No USDC — fund your Harbor first')
+
+  const [feeCoin] = tx.splitCoins(
+    tx.object(coins.data[0].coinObjectId),
+    [tx.pure.u64(1000)] // $0.001 sound fee
+  )
+
+  tx.moveCall({
+    target:    `${PACKAGE}::cast::sound`,
+    arguments: [
+      feeCoin,
+      tx.object(ABYSS),
+      tx.object(opts.vesselId),
+      tx.pure.u8(0), // vessel_tier — ghost
+      tx.pure.vector('u8', Array.from(new TextEncoder().encode(opts.hook))),
+      tx.pure.vector('u8', Array.from(new TextEncoder().encode(opts.body))),
+      tx.pure.option('vector<u8>', null), // no media
+      tx.pure.u8(opts.mode),
+      tx.pure.address(session.address), // recipient
+      tx.pure.u8(opts.duration),
+      tx.pure.u64(opts.price),
+      tx.object(CLOCK),
+    ],
+  })
+
+  tx.setSender(session.address)
+  const result = await executeTx(tx, session.address)
+  return result.digest
 }
 
 // ── Withdraw Harbor — 100% to user, no protocol fee ──────────
@@ -157,35 +313,34 @@ export async function withdrawHarbor(opts: {
   if (!session) throw new Error('No session — please connect')
 
   const { Transaction } = await import('@mysten/sui/transactions')
-  const { toB64 }       = await import('@mysten/sui/utils')
-  const client          = await getSuiClient()
-  const tx              = new Transaction()
+  const client = await getSuiClient()
+  const tx     = new Transaction()
 
-  // Get USDC coins
   const coins = await client.getCoins({ owner: session.address, coinType: USDC_TYPE })
   if (!coins.data.length) throw new Error('No USDC to withdraw')
 
-  const usdcCoinObj = tx.object(coins.data[0].coinObjectId)
-
-  // 100% to user — no split, no protocol fee
-  const [payment] = tx.splitCoins(usdcCoinObj, [tx.pure.u64(opts.amountUsdc)])
+  const [payment] = tx.splitCoins(
+    tx.object(coins.data[0].coinObjectId),
+    [tx.pure.u64(opts.amountUsdc)]
+  )
   tx.transferObjects([payment], tx.pure.address(opts.toAddress))
-
   tx.setSender(session.address)
 
-  // Sponsored gas — user never pays
-  const { sponsoredBytes, sponsorSig } = await sponsorTx(tx, session.address)
-  const { bytes, signature }           = await signTx(sponsoredBytes)
-
-  const result = await client.executeTransactionBlock({
-    transactionBlock: bytes,
-    signature:        [signature, sponsorSig],
-    options:          { showEffects: true },
-  })
-
-  if (result.effects?.status?.status !== 'success') {
-    throw new Error('Withdrawal failed: ' + JSON.stringify(result.effects?.status))
-  }
-
+  const result = await executeTx(tx, session.address)
   return result.digest
+}
+
+export function getStatus() {
+  return {
+    network:  NETWORK,
+    package:  PACKAGES.CONK,
+    treasury: ADDRESSES.TREASURY,
+    abyss:    ADDRESSES.ABYSS,
+    gas:      'self-hosted',
+    sui_rpc:  SUI_RPC,
+  }
+}
+
+export function isReady(): boolean {
+  return !!PACKAGES.CONK
 }
