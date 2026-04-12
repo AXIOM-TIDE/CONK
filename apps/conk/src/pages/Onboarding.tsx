@@ -6,6 +6,7 @@
  */
 import { useState } from 'react'
 import { useStore } from '../store/store'
+import { ZkLoginButton } from '../components/ZkLoginButton'
 import { openHarbor, launchVessel, getUsdcBalance } from '../sui/client'
 import { getAddress, isLoggedIn } from '../sui/zklogin'
 import { isWalletSession } from '../sui/walletSession'
@@ -111,6 +112,9 @@ export function Onboarding() {
               ))}
             </div>
 
+            <div style={{marginBottom:'12px'}}>
+              <ZkLoginButton/>
+            </div>
             <button data-testid="onboard-continue" className="btn btn-primary btn-full" onClick={() => setStep('what')} style={{height:'46px',fontSize:'13px'}}>
               Enter the tide →
             </button>
