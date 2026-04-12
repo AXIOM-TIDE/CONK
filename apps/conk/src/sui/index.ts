@@ -1,40 +1,36 @@
 /**
- * CONK Sui Integration Layer — STEP 6
+ * CONK Sui Integration Layer
+ * Deployed to Sui Mainnet — April 12, 2026
+ * Package: 0x8cde30c2af7523193689e2f3eaca6dc4fadf6fd486471a6c31b14bc9db5164b2
  * Treasury: 0xe0117fba317d2267b8d90adca1fe79eceeec756bcf54edf04cc29ee5306ab32e
  * Axiom Tide LLC · Casper, Wyoming
  */
 
-const IS_PROD = typeof window !== 'undefined' && window.location.hostname !== 'localhost'
-const PROXY = 'https://axiom-tide-production.up.railway.app'
+const PROXY = 'https://conk-zkproxy-v2.italktonumbers.workers.dev'
+
+export const NETWORK = import.meta.env.VITE_NETWORK || 'mainnet'
 
 export const ADDRESSES = {
-  TREASURY:    import.meta.env.VITE_TREASURY_ADDRESS || (
-    import.meta.env.VITE_NETWORK === 'mainnet'
-      ? '0xe0117fba317d2267b8d90adca1fe79eceeec756bcf54edf04cc29ee5306ab32e'  // mainnet — ELLIPAL cold wallet
-      : '0x1d67c64a405aaca736e5a1c45e7251e37a634e5c32b15cb875ee83e4cd6ec204'  // testnet — development treasury
-  ),
-  RELAY_POOL:  import.meta.env.VITE_RELAY_POOL_ADDRESS || '' as string,
-  ABYSS:       import.meta.env.VITE_ABYSS_ADDRESS || '0xdce0b9ce76ec0f4ad1026fa58eeb0fb837be30b84a4b89fcb547fb5963c86277',
-  DRIFT:       import.meta.env.VITE_DRIFT_ADDRESS || '0xfd89573b1948caacd9356a0272bcf73d7f361cb00bdf8fc59f012216ab038bc0',
-  WALRUS_AGG:  'https://aggregator.walrus-testnet.walrus.space',
-  WALRUS_PUB:  'https://publisher.walrus-testnet.walrus.space',
-  SEAL_SERVER: 'https://seal-dev.mystenlabs.com',
+  TREASURY:    '0xe0117fba317d2267b8d90adca1fe79eceeec756bcf54edf04cc29ee5306ab32e',
+  ABYSS:       '0x22d066f6337d68848e389402926b4a10424d9728744efb9e6dd0d0ca1c5921c7',
+  DRIFT:       '0x95520350968d56b3552521d3ea508934517dde94ad30bb43209aa4fc3cec21de',
+  WALRUS_AGG:  'https://aggregator.walrus.site',
+  WALRUS_PUB:  'https://publisher.walrus.site',
+  SEAL_SERVER: 'https://seal.mystenlabs.com',
 }
 
 export const PACKAGES = {
-  CONK:  import.meta.env.VITE_CONK_PACKAGE_ID || '0x135f21155784b0533a9d4565245f67e3e38e32fb9710ec9acf6ea15503f344bf',
-  RELAY: import.meta.env.VITE_CONK_PACKAGE_ID || '0x135f21155784b0533a9d4565245f67e3e38e32fb9710ec9acf6ea15503f344bf',
+  CONK:  '0x8cde30c2af7523193689e2f3eaca6dc4fadf6fd486471a6c31b14bc9db5164b2',
+  RELAY: '0x8cde30c2af7523193689e2f3eaca6dc4fadf6fd486471a6c31b14bc9db5164b2',
 }
 
-const SHINAMI_KEY = import.meta.env.VITE_SHINAMI_KEY || ''
+export const USDC_TYPE = '0xdba34672e30cb065b1f93e3ab55318768fd6fef66c15942c9f7cb846e2f900e7::usdc::USDC'
 
 export const RPC = {
-  SHINAMI_KEY,
-  SHINAMI_RPC:  IS_PROD ? `${PROXY}/api/sui` : `https://api.us1.shinami.com/sui/node/v1/${SHINAMI_KEY}`,
-  SHINAMI_WSS:  `wss://api.us1.shinami.com/sui/node/v1/${SHINAMI_KEY}`,
-  SHINAMI_GAS:  IS_PROD ? `${PROXY}/api/gas` : 'https://api.us1.shinami.com/gas/v1',
-  TESTNET_RPC:  IS_PROD ? `${PROXY}/api/sui` : 'https://fullnode.testnet.sui.io:443',
-  MAINNET_RPC:  'https://fullnode.mainnet.sui.io:443',
+  MAINNET_RPC: 'https://fullnode.mainnet.sui.io:443',
+  PROXY,
 }
+
+export const SUI_RPC = RPC.MAINNET_RPC
 
 export const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || '628835024151-6u8eqr51da1ldcteub2986451sg69kpo.apps.googleusercontent.com'
