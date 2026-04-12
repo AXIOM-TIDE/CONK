@@ -12,7 +12,7 @@
 
 import { useState, useCallback } from 'react'
 import { useStore } from '../store/store'
-import { crossPaywall } from '../sui/client'
+import { crossPaywall, soundCast } from '../sui/client'
 import { isLoggedIn, hasProof } from '../sui/zklogin'
 
 export type PaymentStatus = 'idle' | 'pending' | 'success' | 'error' | 'insufficient' | 'no_session'
@@ -60,12 +60,15 @@ export function use402(options: Use402Options = {}) {
     setStatus('pending')
 
     try {
-      // Real Sui transaction via zkLogin + Shinami gas sponsorship
+      // Real Sui transaction — passes on-chain IDs for relay::process
       const result = await crossPaywall({
-        vesselId:      vessel.id,
+        vesselId:      vessel.onChainId ?? vessel.id,
         castId:        castId,
         amountUsdc:    amount,
         authorAddress: authorAddress,
+        harborId:      harbor.onChainId,
+        harborCapId:   harbor.harborCapId,
+        vesselCapId:   vessel.vesselCapId,
       })
 
       const txDigest = typeof result === 'string' ? result : result.txDigest
@@ -130,18 +133,23 @@ export function useSoundCast() {
       setStatus('pending')
 
       try {
-        // Real Sui transaction for cast creation
+        // Real Sui transaction — calls cast::sound on deployed contract
         const castPrice = payload.price ?? 1000
-        const result = await crossPaywall({
-          vesselId:      vessel.id,
-          castId:        `cast_${Date.now()}`,
-          amountUsdc:    castPrice,
-          authorAddress: vessel.id,
-          price:         castPrice,
+        const harbor    = useStore.getState().harbor
+        const modeMap: Record<string, number> = { open: 0, sealed: 1, eyes_only: 2, burn: 3 }
+        const durMap:  Record<string, number> = { '24h': 1, '48h': 2, '72h': 3, '7d': 4 }
+
+        const castTxDigest = await soundCast({
+          hook:        payload.hook,
+          body:        payload.body,
+          mode:        modeMap[payload.mode] ?? 0,
+          duration:    durMap[payload.duration] ?? 1,
+          price:       castPrice,
+          vesselId:    vessel.onChainId ?? vessel.id,
+          vesselCapId: vessel.vesselCapId ?? '',
         })
 
-        const castTxDigest = typeof result === 'string' ? result : result.txDigest
-        console.log('Cast payment confirmed on Sui:', castTxDigest)
+        console.log('Cast sounded on Sui:', castTxDigest)
 
         const durationMs: Record<string, number> = {
           '24h': 86400000,
