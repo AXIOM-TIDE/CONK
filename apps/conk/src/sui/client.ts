@@ -132,3 +132,18 @@ export function getStatus() {
 export function isReady(): boolean {
   return !!PACKAGES.CONK
 }
+
+// ── Read on-chain USDC balance ────────────────────────────────
+// Goes through Cloudflare Worker proxy — address never sent to third-party RPC
+export async function getUsdcBalance(address: string): Promise<number> {
+  try {
+    const client = await getSuiClient()
+    const coins  = await client.getCoins({ owner: address, coinType: USDC_TYPE })
+    const total  = coins.data.reduce((sum, c) => sum + Number(c.balance), 0)
+    // Convert microUSDC to cents for the store (microUSDC / 10000 = cents)
+    return Math.floor(total / 10000)
+  } catch (e) {
+    console.warn('Balance read failed:', e)
+    return 0
+  }
+}

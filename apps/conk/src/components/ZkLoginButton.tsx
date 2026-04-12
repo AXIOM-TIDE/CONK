@@ -9,6 +9,7 @@
  */
 import { useState, useEffect } from 'react'
 import { startZkLogin, handleZkLoginCallback, getSession, clearSession, isLoggedIn, getAddress } from '../sui/zklogin'
+import { getUsdcBalance } from '../sui/client'
 import { getAvailableWallets, connectWallet, clearWalletSession, isWalletSession } from '../sui/walletSession'
 import { useStore } from '../store/store'
 
@@ -32,7 +33,8 @@ export function ZkLoginButton() {
           if (session) {
             setAddress(session.address)
             setShowFund(true)
-            setHarbor({ balance: 0, tier: 1, lastMovement: Date.now(), expiresAt: Date.now() + 365*24*60*60*1000 })
+            const bal = await getUsdcBalance(session.address)
+            setHarbor({ balance: bal, tier: 1, lastMovement: Date.now(), expiresAt: Date.now() + 365*24*60*60*1000 })
           }
         } catch (e: any) {
           setError(e.message)
@@ -71,7 +73,8 @@ export function ZkLoginButton() {
       const addr = await connectWallet(walletObj, walletName)
       setAddress(addr)
       setShowFund(true)
-      setHarbor({ balance: 0, tier: 1, lastMovement: Date.now(), expiresAt: Date.now() + 365*24*60*60*1000 })
+      const bal = await getUsdcBalance(addr)
+      setHarbor({ balance: bal, tier: 1, lastMovement: Date.now(), expiresAt: Date.now() + 365*24*60*60*1000 })
     } catch (e: any) {
       setError(e.message)
     } finally {

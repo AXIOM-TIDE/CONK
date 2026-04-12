@@ -11,6 +11,8 @@ import { ArcMeter } from '../components/FuelMeter'
 import { TreasuryStrip } from '../components/TreasuryStrip'
 import { DecayBadge } from '../components/DecayBadge'
 import { ZkLoginButton } from '../components/ZkLoginButton'
+import { getUsdcBalance } from '../sui/client'
+import { getAddress } from '../sui/zklogin'
 
 interface Props {
   onEnterVessel: () => void
@@ -31,6 +33,21 @@ export function HarborHome({ onEnterVessel }: Props) {
   const [withdrawAmt, setWithdrawAmt] = useState(0)
   const [withdrawing, setWithdrawing] = useState(false)
   const [withdrawDone, setWithdrawDone] = useState(false)
+
+  // Sync Harbor balance from chain on mount and every 30 seconds
+  useEffect(() => {
+    const sync = async () => {
+      const address = getAddress()
+      if (!address || !harbor) return
+      const bal = await getUsdcBalance(address)
+      if (bal !== harbor.balance) {
+        setHarbor({ ...harbor, balance: bal })
+      }
+    }
+    sync()
+    const interval = setInterval(sync, 30000)
+    return () => clearInterval(interval)
+  }, [harbor?.balance])
 
   // Live tide
   useEffect(() => {
@@ -103,7 +120,7 @@ export function HarborHome({ onEnterVessel }: Props) {
 
           {/* Arc meter */}
           <div style={{ padding:'20px 16px 8px', display:'flex', flexDirection:'column', alignItems:'center', borderBottom:'1px solid var(--border)' }}>
-            <ArcMeter value={harbor?.balance ?? 0} max={1000} size={130} label={`$${bal}`} sublabel="USDC"/>
+            <ArcMeter value={harbor?.balance ?? 0} max={Math.max(1000, (harbor?.balance ?? 0) * 1.2)} size={130} label={`$${bal}`} sublabel="USDC"/>
             <div style={{ fontFamily:'var(--font-mono)', fontSize:'9px', color:'var(--text-off)', marginTop:'4px', textAlign:'center' }}>
               ~{Math.floor((harbor?.balance ?? 0) / 0.1).toLocaleString()} reads remaining
             </div>
