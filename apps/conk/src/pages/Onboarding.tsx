@@ -7,7 +7,8 @@
 import { useState } from 'react'
 import { useStore } from '../store/store'
 import { openHarbor, launchVessel, getUsdcBalance } from '../sui/client'
-import { getAddress } from '../sui/zklogin'
+import { getAddress, isLoggedIn } from '../sui/zklogin'
+import { isWalletSession } from '../sui/walletSession'
 
 type Step = 'welcome' | 'what' | 'harbor' | 'vessel' | 'launching' | 'done'
 
@@ -23,6 +24,13 @@ export function Onboarding() {
     setStep('launching')
     setLaunchError(null)
     const now = Date.now()
+
+    // Verify session exists before hitting contracts
+    if (!isLoggedIn() && !isWalletSession()) {
+      setLaunchError('No session — please connect with Google or a Sui wallet first')
+      setStep('vessel')
+      return
+    }
 
     try {
       // Step 1 — Open Harbor on-chain
