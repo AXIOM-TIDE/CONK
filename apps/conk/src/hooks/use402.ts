@@ -13,6 +13,7 @@
 import { useState, useCallback } from 'react'
 import { useStore } from '../store/store'
 import { crossPaywall, soundCast } from '../sui/client'
+import { getSession } from '../sui/zklogin'
 import { isLoggedIn, hasProof } from '../sui/zklogin'
 
 export type PaymentStatus = 'idle' | 'pending' | 'success' | 'error' | 'insufficient' | 'no_session'
@@ -41,6 +42,7 @@ export function use402(options: Use402Options = {}) {
   const vessel  = useStore((s) => s.vessel)
 
   const pay = useCallback(async (castId: string = 'read'): Promise<PaymentReceipt | null> => {
+    const session = getSession()
     if (!harbor || !vessel) {
       setStatus('error')
       onError?.('No Harbor or Vessel active')
@@ -61,11 +63,13 @@ export function use402(options: Use402Options = {}) {
 
     try {
       // Real Sui transaction — passes on-chain IDs for relay::process
+      const { getAddress } = await import('../sui/zklogin')
+      const senderAddress = getAddress() ?? session?.address
       const result = await crossPaywall({
-        vesselId:      vessel.onChainId ?? vessel.id,
+        vesselId:      vessel.onChainId ?? senderAddress ?? vessel.id,
         castId:        castId,
         amountUsdc:    amount,
-        authorAddress: authorAddress,
+        authorAddress: authorAddress ?? senderAddress,
         harborId:      harbor.onChainId,
         harborCapId:   harbor.harborCapId,
         vesselCapId:   vessel.vesselCapId,
@@ -139,14 +143,16 @@ export function useSoundCast() {
         const modeMap: Record<string, number> = { open: 0, sealed: 1, eyes_only: 2, burn: 3 }
         const durMap:  Record<string, number> = { '24h': 1, '48h': 2, '72h': 3, '7d': 4 }
 
+        const { getAddress: getAddr } = await import('../sui/zklogin')
+        const senderAddr = getAddr() ?? ''
         const castTxDigest = await soundCast({
           hook:        payload.hook,
           body:        payload.body,
           mode:        modeMap[payload.mode] ?? 0,
           duration:    durMap[payload.duration] ?? 1,
           price:       castPrice,
-          vesselId:    vessel.onChainId ?? vessel.id,
-          vesselCapId: vessel.vesselCapId ?? '',
+          vesselId:    vessel.onChainId ?? senderAddr,
+          vesselCapId: vessel.vesselCapId ?? senderAddr,
         })
 
         console.log('Cast sounded on Sui:', castTxDigest)
