@@ -33,7 +33,9 @@ export async function getSuiClient() {
 async function signTx(txBytes: string): Promise<{ bytes: string; signature: string }> {
   const session = getSession()
   if (!session) throw new Error('No session — please connect')
-  if (isWalletSession()) return signWithWallet(txBytes)
+  // Check authType directly from session — not from sessionStorage wallet_name
+  const authType = (session as any).authType
+  if (authType === 'wallet') return signWithWallet(txBytes)
   return signWithZkLogin(txBytes, session)
 }
 
