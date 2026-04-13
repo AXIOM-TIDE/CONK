@@ -113,8 +113,7 @@ export async function openHarbor(tier: number = 1): Promise<{ harborId: string; 
   const tx     = new Transaction()
 
   // Get USDC for harbor open fee (TIER_1_COST + MINIMUM_BALANCE = 50000 + 100000 = 150000 microUSDC = $0.15)
-  const coins = await client.getCoins({ owner: session.address, coinType: USDC_TYPE })
-  if (!coins.data.length) throw new Error('No USDC — fund your Harbor address first')
+  const coins = { data: await getUsdcCoins(session.address) }
 
   const [payment] = tx.splitCoins(tx.object(coins.data[0].coinObjectId), [tx.pure.u64(150000)])
 
