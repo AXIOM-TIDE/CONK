@@ -102,6 +102,7 @@ export async function signWithWallet(txBytes: string): Promise<{ bytes: string; 
       return { bytes: result.transactionBlockBytes ?? txBytes, signature: result.signature }
     }
   } catch (e: any) {
+    console.error('[signWithWallet] full error:', e)
     throw new Error('Wallet signing failed: ' + e.message)
   }
 
