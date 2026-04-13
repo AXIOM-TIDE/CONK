@@ -77,8 +77,7 @@ export async function sponsorTx(tx: unknown, sender: string): Promise<{ sponsore
   const client          = await getSuiClient()
 
   const txBytes = await (tx as InstanceType<typeof Transaction>).build({
-    client:              client as any,
-    onlyTransactionKind: true,
+    client: client as any,
   })
 
   const response = await fetch(`${PROXY}/gas`, {
