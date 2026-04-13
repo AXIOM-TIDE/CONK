@@ -76,8 +76,10 @@ export async function sponsorTx(tx: unknown, sender: string): Promise<{ sponsore
   const { toB64 }       = await import('@mysten/sui/utils')
   const client          = await getSuiClient()
 
+  // Build transaction kind only — worker adds gas
   const txBytes = await (tx as InstanceType<typeof Transaction>).build({
-    client: client as any,
+    client:              client as any,
+    onlyTransactionKind: true,
   })
 
   const response = await fetch(`${PROXY}/gas`, {
