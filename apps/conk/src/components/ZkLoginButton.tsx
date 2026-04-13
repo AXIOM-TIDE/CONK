@@ -270,20 +270,9 @@ export function ZkLoginButton() {
               <div style={{fontFamily:'var(--font-mono)',fontSize:'9px',color:'var(--text-dim)'}}>Anonymous · no seed phrase</div>
             </div>
           </button>
-          <button onClick={handleShowWallets}
-            style={{display:'flex',alignItems:'center',gap:'10px',padding:'12px 16px',background:'var(--surface2)',border:'1px solid var(--border)',borderRadius:'var(--radius-lg)',cursor:'pointer',transition:'all 0.15s'}}
-            onMouseEnter={e => (e.currentTarget as HTMLElement).style.borderColor='var(--teal)'}
-            onMouseLeave={e => (e.currentTarget as HTMLElement).style.borderColor='var(--border)'}>
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
-              <rect x="2" y="6" width="20" height="14" rx="2" stroke="var(--teal)" strokeWidth="1.5"/>
-              <path d="M16 13a1 1 0 1 0 0-2 1 1 0 0 0 0 2z" fill="var(--teal)"/>
-              <path d="M2 10h20" stroke="var(--teal)" strokeWidth="1.5"/>
-            </svg>
-            <div style={{textAlign:'left'}}>
-              <div style={{fontFamily:'var(--font-mono)',fontSize:'11px',fontWeight:600,color:'var(--text)',letterSpacing:'0.04em'}}>Connect Sui Wallet</div>
-              <div style={{fontFamily:'var(--font-mono)',fontSize:'9px',color:'var(--text-dim)'}}>Slush · Sui Wallet · any Sui wallet</div>
-            </div>
-          </button>
+          <div style={{padding:'10px 12px',background:'var(--surface2)',border:'1px solid var(--border)',borderRadius:'var(--radius-lg)',fontFamily:'var(--font-mono)',fontSize:'10px',color:'var(--text-dim)',lineHeight:1.7}}>
+            <span style={{color:'var(--teal)'}}>Fund via any Sui wallet</span> — after connecting with Google, send USDC to your Harbor address from Slush or any Sui wallet.
+          </div>
         </div>
         <button onClick={() => setShowAuthModal(false)}
           style={{width:'100%',padding:'8px',background:'none',border:'none',color:'var(--text-off)',fontFamily:'var(--font-mono)',fontSize:'10px',cursor:'pointer'}}>
