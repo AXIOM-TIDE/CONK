@@ -203,8 +203,7 @@ export async function crossPaywall(opts: {
   const client = await getSuiClient()
   const tx     = new Transaction()
 
-  const coins = await client.getCoins({ owner: session.address, coinType: USDC_TYPE })
-  if (!coins.data.length) throw new Error('No USDC — fund your Harbor first')
+  const coins = { data: await getUsdcCoins(session.address) }
 
   const totalAmount    = opts.amountUsdc
   const authorAmount   = Math.floor(totalAmount * 0.97)
@@ -285,8 +284,7 @@ export async function soundCast(opts: {
   const client = await getSuiClient()
   const tx     = new Transaction()
 
-  const coins = await client.getCoins({ owner: session.address, coinType: USDC_TYPE })
-  if (!coins.data.length) throw new Error('No USDC — fund your Harbor first')
+  const coins = { data: await getUsdcCoins(session.address) }
 
   const [feeCoin] = tx.splitCoins(
     tx.object(coins.data[0].coinObjectId),
@@ -328,8 +326,7 @@ export async function withdrawHarbor(opts: {
   const client = await getSuiClient()
   const tx     = new Transaction()
 
-  const coins = await client.getCoins({ owner: session.address, coinType: USDC_TYPE })
-  if (!coins.data.length) throw new Error('No USDC to withdraw')
+  const coins = { data: await getUsdcCoins(session.address) }
 
   const [payment] = tx.splitCoins(
     tx.object(coins.data[0].coinObjectId),
