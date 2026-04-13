@@ -60,10 +60,6 @@ export function CastPanel({ onClose }: { onClose: () => void }) {
 
   const handleSend = async () => {
     setError('')
-    if (lowFuel) { setError('Vessel fuel too low. Draw fuel from Harbor first.'); return }
-    const harborBalance = harbor?.balance ?? 0
-    const maxPrice = Math.min(1000000000, Math.floor(harborBalance * 10000 * 0.10))
-    if (price > maxPrice) { setError('Price exceeds 10% of Harbor balance. Add more USDC to Harbor first.'); return }
     const ok = await sound({
       hook: hook.trim(),
       body: body.trim() || hook.trim(),

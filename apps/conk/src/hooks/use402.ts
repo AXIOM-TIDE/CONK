@@ -52,12 +52,7 @@ export function use402(options: Use402Options = {}) {
     // Check zkLogin session — skip in test/mock mode
     const hasSession = isLoggedIn() && hasProof()
 
-    // Check balance
-    if (harbor.balance < 0.1) {
-      setStatus('insufficient')
-      onError?.('Insufficient Harbor balance — top up USDC')
-      return null
-    }
+    // Balance check happens on-chain — blockchain is source of truth
 
     setStatus('pending')
 
