@@ -62,7 +62,11 @@ async function signTx(txBytes: string): Promise<{ bytes: string; signature: stri
   const session = getSession()
   if (!session) throw new Error('No session — please connect')
   const authType = (session as any).authType
-  if (authType === 'wallet') return signWithWallet(txBytes)
+  const walletName = sessionStorage.getItem('wallet_name')
+  console.log('[signTx] authType:', authType, 'wallet_name:', walletName)
+  if (authType === 'wallet' && walletName) return signWithWallet(txBytes)
+  // Clear any stale wallet_name
+  sessionStorage.removeItem('wallet_name')
   return signWithZkLogin(txBytes, session)
 }
 
