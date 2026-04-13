@@ -80,13 +80,15 @@ export async function signWithWallet(txBytes: string): Promise<{ bytes: string; 
 
     if (!walletObj) throw new Error('Wallet not found — please reconnect')
 
-    // Pass bytes directly to wallet
+    // Build Transaction object for Slush
+    const { Transaction } = await import('@mysten/sui/transactions')
     const { fromB64 } = await import('@mysten/sui/utils')
     const txBytesUint8 = fromB64(txBytes)
+    const txObj = Transaction.from(txBytesUint8)
 
     if (walletObj?.features?.['sui:signTransaction']) {
       const result = await (walletObj.features['sui:signTransaction'] as any).signTransaction({
-        transaction: { kind: 'bytes', bytes: txBytesUint8 },
+        transaction: txObj,
         chain: 'sui:mainnet',
       })
       return { bytes: result.bytes ?? txBytes, signature: result.signature }
@@ -94,7 +96,7 @@ export async function signWithWallet(txBytes: string): Promise<{ bytes: string; 
 
     if (walletObj?.features?.['sui:signTransactionBlock']) {
       const result = await (walletObj.features['sui:signTransactionBlock'] as any).signTransactionBlock({
-        transactionBlock: txBytesUint8,
+        transactionBlock: txObj,
         chain: 'sui:mainnet',
       })
       return { bytes: result.transactionBlockBytes ?? txBytes, signature: result.signature }
