@@ -41,8 +41,9 @@ export function ZkLoginButton() {
         } finally {
           setLoading(false)
         }
-      } else if (isLoggedIn()) {
-        setAddress(getAddress())
+      } else if (isLoggedIn() || isWalletSession()) {
+        const addr = getAddress() ?? JSON.parse(sessionStorage.getItem("zklogin_session") || "{}").address
+        if (addr) setAddress(addr)
       }
     }
     init()
