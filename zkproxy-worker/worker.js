@@ -1,13 +1,10 @@
 /**
  * CONK ZK Proxy + Self-Hosted Gas Station
  * Cloudflare Worker — conk-zkproxy-v2
- * 
- * Routes:
- *   /zkproof → Enoki ZK proof generation
- *   /gas     → Self-hosted gas sponsorship (no Shinami)
- *   /sui     → Sui mainnet RPC
- *   /health  → Health check
  */
+
+import { Ed25519Keypair } from '@mysten/sui/keypairs/ed25519'
+import { Transaction } from '@mysten/sui/transactions'
 
 const CORS = {
   'Access-Control-Allow-Origin':  '*',
@@ -15,8 +12,27 @@ const CORS = {
   'Access-Control-Allow-Headers': '*',
 }
 
-const SUI_MAINNET_RPC = 'https://fullnode.mainnet.sui.io/'
-const ENOKI_URL       = 'https://api.enoki.mystenlabs.com/v1/zklogin/zkp'
+const SUI_RPC   = 'https://fullnode.mainnet.sui.io/'
+const ENOKI_URL = 'https://api.enoki.mystenlabs.com/v1/zklogin/zkp'
+
+function toB64(bytes) {
+  return btoa(String.fromCharCode(...bytes))
+}
+
+function fromB64(str) {
+  return Uint8Array.from(atob(str), c => c.charCodeAt(0))
+}
+
+async function rpc(method, params) {
+  const resp = await fetch(SUI_RPC, {
+    method:  'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body:    JSON.stringify({ jsonrpc: '2.0', id: 1, method, params }),
+  })
+  const json = await resp.json()
+  if (json.error) throw new Error('RPC error: ' + JSON.stringify(json.error))
+  return json.result
+}
 
 export default {
   async fetch(request, env) {
@@ -28,11 +44,8 @@ export default {
       const path = new URL(request.url).pathname
       const body = await request.text()
 
-      console.log('HIT:', path)
-
       if (path === '/health') return new Response('ok', { headers: CORS })
 
-      // ── ZK PROOF via Enoki ──────────────────────────────────
       if (path.includes('zkproof')) {
         const req  = JSON.parse(body)
         const resp = await fetch(ENOKI_URL, {
@@ -43,7 +56,7 @@ export default {
             'Authorization': `Bearer ${env.ENOKI_KEY}`,
           },
           body: JSON.stringify({
-            network:          'mainnet',
+            network:            'mainnet',
             ephemeralPublicKey: req.ephemeralPublicKey,
             maxEpoch:           req.maxEpoch,
             randomness:         req.randomness,
@@ -57,7 +70,6 @@ export default {
         })
       }
 
-      // ── SELF-HOSTED GAS SPONSORSHIP ─────────────────────────
       if (path.includes('gas')) {
         const { txBytes, sender } = JSON.parse(body)
         if (!txBytes || !sender) {
@@ -69,35 +81,36 @@ export default {
         const privateKey = env.GAS_PRIVATE_KEY
         if (!privateKey) throw new Error('GAS_PRIVATE_KEY not set')
 
-        // Import Sui SDK from esm.sh
-        const { Ed25519Keypair } = await import('https://esm.sh/@mysten/sui@1.19.0/keypairs/ed25519')
-        const { Transaction }    = await import('https://esm.sh/@mysten/sui@1.19.0/transactions')
-        const { SuiClient }      = await import('https://esm.sh/@mysten/sui@1.19.0/client')
-        const { fromBase64 }     = await import('https://esm.sh/@mysten/sui@1.19.0/utils')
+        const keypair = Ed25519Keypair.fromSecretKey(privateKey)
+        const gasAddr = keypair.getPublicKey().toSuiAddress()
 
-        const client   = new SuiClient({ url: SUI_MAINNET_RPC })
-        const keypair  = Ed25519Keypair.fromSecretKey(privateKey)
-        const gasAddr  = keypair.getPublicKey().toSuiAddress()
+        // Get gas coins via raw RPC
+        const coinsResult = await rpc('suix_getCoins', [gasAddr, '0x2::sui::SUI', null, 1])
+        if (!coinsResult.data?.length) throw new Error('Gas wallet empty — top up SUI')
 
-        // Get gas coins
-        const coins = await client.getCoins({ owner: gasAddr, coinType: '0x2::sui::SUI' })
-        if (!coins.data.length) throw new Error('Gas wallet empty — top up SUI')
+        const coin = coinsResult.data[0]
+
+        // Get reference gas price
+        const refGasPrice = await rpc('suix_getReferenceGasPrice', [])
 
         // Build sponsored transaction
-        const tx = Transaction.from(fromBase64(txBytes))
+        const tx = Transaction.from(fromB64(txBytes))
         tx.setSender(sender)
         tx.setGasOwner(gasAddr)
-        tx.setGasPayment(coins.data.slice(0, 1).map(c => ({
-          objectId: c.coinObjectId,
-          version:  c.version,
-          digest:   c.digest,
-        })))
+        tx.setGasPrice(Number(refGasPrice))
+        tx.setGasBudget(10000000)
+        tx.setGasPayment([{
+          objectId: coin.coinObjectId,
+          version:  coin.version,
+          digest:   coin.digest,
+        }])
 
-        const sponsoredBytes = await tx.build({ client })
-        const { signature }  = await keypair.signTransaction(sponsoredBytes)
+        // Build and sign
+        const builtBytes = await tx.build()
+        const { signature } = await keypair.signTransaction(builtBytes)
 
         return new Response(JSON.stringify({
-          sponsoredBytes: Buffer.from(sponsoredBytes).toString('base64'),
+          sponsoredBytes: toB64(builtBytes),
           sponsorSig:     signature,
         }), {
           status:  200,
@@ -105,9 +118,8 @@ export default {
         })
       }
 
-      // ── SUI MAINNET RPC ─────────────────────────────────────
       if (path.includes('sui')) {
-        const resp = await fetch(SUI_MAINNET_RPC, {
+        const resp = await fetch(SUI_RPC, {
           method:  'POST',
           headers: { 'Content-Type': 'application/json' },
           body,
