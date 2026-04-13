@@ -26,7 +26,7 @@ export async function startZkLogin(): Promise<void> {
   const randomness = generateRandomness()
 
   // Use CORS-friendly RPC directly for epoch (proxy blocks outbound)
-  const epochRes = await fetch('https://sui-testnet-rpc.publicnode.com', {
+  const epochRes = await fetch('https://sui-mainnet-rpc.publicnode.com', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'suix_getLatestSuiSystemState', params: [] })
@@ -102,7 +102,7 @@ export async function handleZkLoginCallback(): Promise<ZkLoginSession | null> {
       method: 'POST',
       headers,
       body: JSON.stringify({
-        network: 'testnet',
+        network: 'mainnet',
         ephemeralPublicKey: extendedKeyB64,
         maxEpoch: maxEpoch,
         randomness: randomness,

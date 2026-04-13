@@ -1,10 +1,10 @@
 /**
  * CONK Walrus Storage — Upload files/images anonymously
- * Uses Walrus testnet publisher. Returns blobId for retrieval.
+ * Uses Walrus mainnet publisher. Returns blobId for retrieval.
  */
 
-const PUBLISHER = 'https://publisher.walrus-testnet.walrus.space'
-const AGGREGATOR = 'https://aggregator.walrus-testnet.walrus.space'
+const PUBLISHER = 'https://publisher.walrus.site'
+const AGGREGATOR = 'https://aggregator.walrus.site'
 
 export interface WalrusUploadResult {
   blobId: string
