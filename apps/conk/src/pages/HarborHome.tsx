@@ -11,6 +11,8 @@ import { ArcMeter } from '../components/FuelMeter'
 import { TreasuryStrip } from '../components/TreasuryStrip'
 import { DecayBadge } from '../components/DecayBadge'
 import { ZkLoginButton } from '../components/ZkLoginButton'
+import { clearSession } from '../sui/zklogin'
+import { clearWalletSession, isWalletSession } from '../sui/walletSession'
 import { getUsdcBalance } from '../sui/client'
 import { getAddress } from '../sui/zklogin'
 
@@ -100,7 +102,7 @@ export function HarborHome({ onEnterVessel }: Props) {
           <span className="topbar-wordmark">CONK</span>
         </div>
 
-        {/* Balance */}
+        {/* Balance + Disconnect */}
         <div style={{ marginLeft:'auto', display:'flex', alignItems:'center', gap:'10px' }}>
           <ZkLoginButton/>
           <div style={{ display:'flex', alignItems:'center', gap:'7px', padding:'5px 12px', background:'rgba(0,184,230,0.05)', border:'1px solid var(--border2)', borderRadius:'var(--radius-lg)' }}>
@@ -108,6 +110,18 @@ export function HarborHome({ onEnterVessel }: Props) {
             <span style={{ fontFamily:'var(--font-mono)', fontSize:'13px', fontWeight:600, color:'var(--teal)' }}>${bal}</span>
             <span style={{ fontFamily:'var(--font-mono)', fontSize:'10px', color:'var(--text-dim)' }}>USDC</span>
           </div>
+          <button
+            onClick={() => {
+              if (isWalletSession()) clearWalletSession()
+              else clearSession()
+              window.location.reload()
+            }}
+            title="Disconnect"
+            style={{ background:'none', border:'1px solid var(--border)', borderRadius:'var(--radius)', padding:'4px 8px', color:'var(--text-off)', fontFamily:'var(--font-mono)', fontSize:'9px', cursor:'pointer', letterSpacing:'0.04em' }}
+            onMouseEnter={e => (e.currentTarget as HTMLElement).style.borderColor='var(--burn)'}
+            onMouseLeave={e => (e.currentTarget as HTMLElement).style.borderColor='var(--border)'}>
+            disconnect
+          </button>
         </div>
       </div>
 
