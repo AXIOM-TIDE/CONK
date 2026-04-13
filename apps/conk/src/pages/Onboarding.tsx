@@ -26,46 +26,36 @@ export function Onboarding() {
     setLaunchError(null)
     const now = Date.now()
 
-    // Verify session exists before hitting contracts
     if (!isLoggedIn() && !isWalletSession()) {
-      setLaunchError('No session — please connect with Google or a Sui wallet first')
+      setLaunchError('No session — please connect first')
       setStep('vessel')
       return
     }
 
     try {
-      // Step 1 — Open Harbor on-chain
-      const { harborId, harborCapId } = await openHarbor(1)
-
-      // Step 2 — Read real USDC balance
+      // Read real on-chain USDC balance
       const address = getAddress()
       const balance = address ? await getUsdcBalance(address) : 0
 
-      // Step 3 — Launch Vessel on-chain
-      const { vesselId, vesselCapId } = await launchVessel(harborId, harborCapId, false)
-
-      // Step 4 — Store in app state with on-chain IDs
+      // Create local vessel — on-chain Harbor/Vessel created lazily when USDC arrives
+      const vesselId = `v_${Math.random().toString(36).slice(2,10)}`
       addVessel({
-        id:           vesselId,
-        class:        'vessel',
-        tempOrPerm:   'perm',
-        createdAt:    now,
-        lastCastAt:   null,
-        expiresAt:    now + yr,
-        fuel:         0,
-        fuelDrawing:  true,
-        autoBurn:     true,
-        onChainId:    vesselId,
-        vesselCapId:  vesselCapId,
+        id:          vesselId,
+        class:       'vessel',
+        tempOrPerm:  'perm',
+        createdAt:   now,
+        lastCastAt:  null,
+        expiresAt:   now + yr,
+        fuel:        0,
+        fuelDrawing: true,
+        autoBurn:    true,
       })
 
       setHarbor({
-        balance:     balance,
-        tier:        1,
+        balance:      balance,
+        tier:         1,
         lastMovement: now,
-        expiresAt:   now + yr,
-        onChainId:   harborId,
-        harborCapId: harborCapId,
+        expiresAt:    now + yr,
       })
 
       setOnboarded(true)
