@@ -83,9 +83,19 @@ async function executeTx(tx: unknown, sender: string): Promise<any> {
 // ── Read on-chain USDC balance ────────────────────────────────
 export async function getUsdcBalance(address: string): Promise<number> {
   try {
-    const client = await getSuiClient()
-    const coins  = await client.getCoins({ owner: address, coinType: USDC_TYPE })
-    const total  = coins.data.reduce((sum, c) => sum + Number(c.balance), 0)
+    const resp = await fetch(`${PROXY}/sui`, {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body:    JSON.stringify({
+        jsonrpc: '2.0',
+        id:      1,
+        method:  'suix_getBalance',
+        params:  [address, USDC_TYPE],
+      }),
+    })
+    const json = await resp.json()
+    const total = Number(json.result?.totalBalance ?? 0)
+    // microUSDC (6 decimals) → cents: divide by 10000
     return Math.floor(total / 10000)
   } catch (e) {
     console.warn('Balance read failed:', e)
