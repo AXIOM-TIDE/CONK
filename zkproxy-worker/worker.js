@@ -1,6 +1,6 @@
 /**
  * CONK ZK Proxy + Self-Hosted Gas Station
- * Cloudflare Worker — conk-zkproxy-v2
+ * Uses Sui's sponsored transaction pattern correctly.
  */
 
 import { Ed25519Keypair } from '@mysten/sui/keypairs/ed25519'
@@ -30,7 +30,7 @@ async function rpc(method, params) {
     body:    JSON.stringify({ jsonrpc: '2.0', id: 1, method, params }),
   })
   const json = await resp.json()
-  if (json.error) throw new Error('RPC error: ' + JSON.stringify(json.error))
+  if (json.error) throw new Error('RPC: ' + JSON.stringify(json.error))
   return json.result
 }
 
@@ -84,17 +84,17 @@ export default {
         const keypair = Ed25519Keypair.fromSecretKey(privateKey)
         const gasAddr = keypair.getPublicKey().toSuiAddress()
 
-        // Get gas coins via raw RPC
-        const coinsResult = await rpc('suix_getCoins', [gasAddr, '0x2::sui::SUI', null, 1])
-        if (!coinsResult.data?.length) throw new Error('Gas wallet empty — top up SUI')
+        // Get gas coins and reference gas price
+        const [coinsResult, refGasPrice] = await Promise.all([
+          rpc('suix_getCoins', [gasAddr, '0x2::sui::SUI', null, 1]),
+          rpc('suix_getReferenceGasPrice', []),
+        ])
 
+        if (!coinsResult.data?.length) throw new Error('Gas wallet empty — top up SUI at ' + gasAddr)
         const coin = coinsResult.data[0]
 
-        // Get reference gas price
-        const refGasPrice = await rpc('suix_getReferenceGasPrice', [])
-
-        // Build sponsored transaction
-        const tx = Transaction.from(fromB64(txBytes))
+        // Build full sponsored transaction from kind bytes
+        const tx = Transaction.fromKind(fromB64(txBytes))
         tx.setSender(sender)
         tx.setGasOwner(gasAddr)
         tx.setGasPrice(Number(refGasPrice))
