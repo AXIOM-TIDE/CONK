@@ -43,6 +43,12 @@ export function CastPanel({ onClose }: { onClose: () => void }) {
   const [useFuture,setUseFuture]= useState(false)
   const [futureHrs,setFutureHrs]= useState(6)
   const [media, setMedia] = useState<WalrusUploadResult | null>(null)
+  const [pendingFile, setPendingFile]       = useState<File | null>(null)
+  const [storageFee,  setStorageFee]        = useState(0)
+  const [showFeeConfirm, setShowFeeConfirm] = useState(false)
+  const [uploading, setUploading]           = useState(false)
+  const [uploadError, setUploadError]       = useState('')
+  const setHarborStore = useStore((s) => s.setHarbor)
   const [price, setPrice] = useState<number>(1000) // default $0.001
   const [castType, setCastType] = useState<'standard'|'subscription'|'timelocked'>('standard')
   const [subInterval, setSubInterval] = useState<'daily'|'weekly'|'monthly'>('weekly')
@@ -57,6 +63,41 @@ export function CastPanel({ onClose }: { onClose: () => void }) {
   const modeInfo  = MODES.find(m => m.id === mode)!
   const fuel      = vessel?.fuel ?? 0
   const lowFuel   = fuel < 10
+
+  const calcStorageFee = (bytes: number): number => {
+    const mb = bytes / (1024 * 1024)
+    if (mb <= 1)   return 1
+    if (mb <= 5)   return 5
+    if (mb <= 25)  return 20
+    if (mb <= 100) return 75
+    return 200
+  }
+  const formatFee = (cents: number) => `$${(cents / 100).toFixed(2)}`
+
+  const handleFileSelect = (file: File) => {
+    setPendingFile(file); setStorageFee(calcStorageFee(file.size))
+    setShowFeeConfirm(true); setUploadError('')
+  }
+
+  const handleConfirmUpload = async () => {
+    if (!pendingFile || !harbor) return
+    if (harbor.balance < storageFee) {
+      setUploadError(`Need ${formatFee(storageFee)}, have $${(harbor.balance/100).toFixed(2)}.`); return
+    }
+    setUploading(true); setUploadError('')
+    const prev = harbor.balance
+    setHarborStore({ ...harbor, balance: harbor.balance - storageFee })
+    try {
+      const { uploadToWalrus } = await import('../sui/walrus')
+      const result = await uploadToWalrus(pendingFile)
+      setMedia(result); setShowFeeConfirm(false); setPendingFile(null)
+    } catch(e: any) {
+      setHarborStore({ ...harbor, balance: prev })
+      setUploadError(e.message || 'Upload failed — Harbor not charged')
+    } finally { setUploading(false) }
+  }
+
+  const handleCancelUpload = () => { setShowFeeConfirm(false); setPendingFile(null); setUploadError('') }
 
   const handleSend = async () => {
     setError('')
