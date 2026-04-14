@@ -1,9 +1,11 @@
 /**
  * CONK Walrus Storage — Upload files/images anonymously
- * Uses Walrus mainnet publisher. Returns blobId for retrieval.
+ * Routes through Cloudflare proxy to avoid CORS.
  */
 
-const PUBLISHER = 'https://publisher.walrus.site'
+import { RPC } from './index'
+
+const PROXY      = RPC.PROXY
 const AGGREGATOR = 'https://aggregator.walrus.site'
 
 export interface WalrusUploadResult {
@@ -13,7 +15,7 @@ export interface WalrusUploadResult {
 }
 
 export async function uploadToWalrus(file: File | Blob): Promise<WalrusUploadResult> {
-  const resp = await fetch(`${PUBLISHER}/v1/blobs?epochs=5`, {
+  const resp = await fetch(`${PROXY}/walrus-upload?epochs=5`, {
     method: 'PUT',
     body: file,
     headers: { 'Content-Type': file.type || 'application/octet-stream' },

@@ -42,6 +42,24 @@ export default {
       }
 
       const path = new URL(request.url).pathname
+
+      // ── Walrus upload — binary body, must intercept before request.text() ──
+      if (path.includes('walrus-upload')) {
+        const epochs = new URL(request.url).searchParams.get('epochs') ?? '5'
+        const ct = request.headers.get('Content-Type') || 'application/octet-stream'
+        const bytes = await request.arrayBuffer()
+        const resp = await fetch(`https://publisher.walrus.site/v1/blobs?epochs=${epochs}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': ct },
+          body: bytes,
+        })
+        const text = await resp.text()
+        return new Response(text, {
+          status: resp.status,
+          headers: { ...CORS, 'Content-Type': 'application/json' },
+        })
+      }
+
       const body = await request.text()
 
       if (path === '/health') return new Response('ok', { headers: CORS })
