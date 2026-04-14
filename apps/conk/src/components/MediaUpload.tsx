@@ -8,6 +8,7 @@ import { uploadToWalrus, formatFileSize, type WalrusUploadResult } from '../sui/
 interface MediaUploadProps {
   onUpload: (result: WalrusUploadResult) => void
   onRemove: () => void
+  onFileSelect?: (file: File) => void  // intercept before upload for fee system
   uploaded?: WalrusUploadResult | null
   accept?: string
   label?: string
@@ -27,6 +28,11 @@ export function MediaUpload({
     setError('')
     if (file.size > maxMB * 1024 * 1024) {
       setError(`File too large. Max ${maxMB}MB.`)
+      return
+    }
+    // If parent wants to intercept for fee confirmation, hand off
+    if (onFileSelect) {
+      onFileSelect(file)
       return
     }
     setUploading(true)
