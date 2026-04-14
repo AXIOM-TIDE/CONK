@@ -48,7 +48,7 @@ export default {
         const epochs = new URL(request.url).searchParams.get('epochs') ?? '5'
         const ct = request.headers.get('Content-Type') || 'application/octet-stream'
         const bytes = await request.arrayBuffer()
-        const resp = await fetch(`https://publisher.walrus.site/v1/blobs?epochs=${epochs}`, {
+        const resp = await fetch(`https://walrus-mainnet-publisher-1.staketab.org/v1/blobs?epochs=${epochs}`, {
           method: 'PUT',
           headers: { 'Content-Type': ct },
           body: bytes,
