@@ -1,7 +1,7 @@
 /**
  * Harbor Home — the public face of CONK.
  * Beautiful read-only drift. No interaction.
- * Balance visible. Vessel list. 
+ * Balance visible. Vessel list.
  * Every element nudges toward launching or entering a vessel.
  */
 import { useEffect, useRef, useState } from 'react'
@@ -30,11 +30,20 @@ export function HarborHome({ onEnterVessel }: Props) {
   const setOnboarded = useStore((s) => s.setOnboarded)
   const feedRef = useRef<HTMLDivElement>(null)
   const [filter, setFilter] = useState<'all'|CastMode>('all')
+
+  // Withdraw state
   const [showWithdraw, setShowWithdraw] = useState(false)
   const [withdrawAddr, setWithdrawAddr] = useState('')
-  const [withdrawAmt, setWithdrawAmt] = useState(0)
-  const [withdrawing, setWithdrawing] = useState(false)
+  const [withdrawAmt, setWithdrawAmt]   = useState(0)
+  const [withdrawing, setWithdrawing]   = useState(false)
   const [withdrawDone, setWithdrawDone] = useState(false)
+
+  // Sweep state
+  const [showSweep, setShowSweep]       = useState(false)
+  const [sweepAddr, setSweepAddr]       = useState('')
+  const [sweeping, setSweeping]         = useState(false)
+  const [sweepDone, setSweepDone]       = useState(false)
+  const [sweepConfirm, setSweepConfirm] = useState(false)
 
   // Sync Harbor balance from chain on mount and every 30 seconds
   useEffect(() => {
@@ -62,7 +71,7 @@ export function HarborHome({ onEnterVessel }: Props) {
     return () => clearInterval(iv)
   }, [])
 
-  const bal     = harbor ? (harbor.balance / 100).toFixed(2) : '0.00'
+  const bal = harbor ? (harbor.balance / 100).toFixed(2) : '0.00'
 
   const handleWithdraw = async () => {
     if (!withdrawAddr.trim() || !withdrawAmt || !harbor) return
@@ -88,6 +97,31 @@ export function HarborHome({ onEnterVessel }: Props) {
       setWithdrawing(false)
     }
   }
+
+  const handleSweep = async () => {
+    if (!sweepAddr.trim() || !harbor || harbor.balance <= 0) return
+    setSweeping(true)
+    try {
+      const { withdrawHarbor } = await import('../sui/client')
+      // harbor.balance is in cents (e.g. 100 = $1.00)
+      // withdrawHarbor expects USDC base units (6 decimals)
+      const amountUsdc = harbor.balance * 10000
+      await withdrawHarbor({ toAddress: sweepAddr.trim(), amountUsdc })
+      setHarbor({ ...harbor, balance: 0 })
+      setSweepDone(true)
+      setTimeout(() => {
+        setShowSweep(false)
+        setSweepDone(false)
+        setSweepAddr('')
+        setSweepConfirm(false)
+      }, 2500)
+    } catch(e: any) {
+      console.error('Sweep failed:', e)
+    } finally {
+      setSweeping(false)
+    }
+  }
+
   const filtered = filter === 'all' ? casts : casts.filter(c => c.mode === filter)
 
   return (
@@ -195,10 +229,10 @@ export function HarborHome({ onEnterVessel }: Props) {
             ))}
           </div>
 
-          {/* Withdraw */}
-          <div style={{padding:'12px 12px 8px'}}>
+          {/* ── Withdraw (partial) ── */}
+          <div style={{padding:'12px 12px 6px'}}>
             {!showWithdraw ? (
-              <button onClick={() => setShowWithdraw(true)}
+              <button onClick={() => { setShowWithdraw(true); setShowSweep(false) }}
                 style={{width:'100%',padding:'8px',background:'var(--surface)',border:'1px solid var(--border)',borderRadius:'var(--radius-lg)',color:'var(--text-dim)',fontFamily:'var(--font-mono)',fontSize:'10px',cursor:'pointer',letterSpacing:'0.04em'}}>
                 ↑ Withdraw USDC
               </button>
@@ -239,6 +273,121 @@ export function HarborHome({ onEnterVessel }: Props) {
             )}
           </div>
 
+          {/* ── Sweep Harbor (full balance out) ── */}
+          <div style={{padding:'0 12px 12px'}}>
+            {!showSweep ? (
+              <button
+                onClick={() => { setShowSweep(true); setShowWithdraw(false) }}
+                disabled={!harbor || harbor.balance <= 0}
+                style={{
+                  width:'100%', padding:'8px',
+                  background:'rgba(255,60,60,0.04)',
+                  border:'1px solid rgba(255,60,60,0.22)',
+                  borderRadius:'var(--radius-lg)',
+                  color: !harbor || harbor.balance <= 0 ? 'var(--text-off)' : 'rgba(255,110,110,0.85)',
+                  fontFamily:'var(--font-mono)', fontSize:'10px',
+                  cursor: !harbor || harbor.balance <= 0 ? 'default' : 'pointer',
+                  letterSpacing:'0.04em',
+                  opacity: !harbor || harbor.balance <= 0 ? 0.4 : 1,
+                }}>
+                ⚡ Sweep all funds
+              </button>
+            ) : (
+              <div style={{
+                background:'rgba(255,40,40,0.04)',
+                border:'1px solid rgba(255,60,60,0.28)',
+                borderRadius:'var(--radius-lg)', padding:'12px'
+              }}>
+                <div style={{
+                  fontFamily:'var(--font-mono)', fontSize:'10px', fontWeight:600,
+                  color:'rgba(255,110,110,0.9)', marginBottom:'6px',
+                  display:'flex', alignItems:'center', gap:'6px'
+                }}>
+                  ⚡ Sweep Harbor
+                  <span style={{fontSize:'9px', color:'var(--text-off)', fontWeight:400}}>
+                    full balance out
+                  </span>
+                </div>
+
+                <div style={{
+                  fontFamily:'var(--font-mono)', fontSize:'9px',
+                  color:'var(--text-off)', lineHeight:1.6,
+                  background:'rgba(255,60,60,0.05)',
+                  border:'1px solid rgba(255,60,60,0.14)',
+                  borderRadius:'var(--radius)', padding:'8px', marginBottom:'8px'
+                }}>
+                  Sends your entire balance of{' '}
+                  <span style={{color:'rgba(255,140,140,0.95)', fontWeight:600}}>${bal} USDC</span>{' '}
+                  to the address below. Harbor will be empty. Cannot be undone.
+                </div>
+
+                <input
+                  placeholder="Destination Sui address (0x...)"
+                  value={sweepAddr}
+                  onChange={e => { setSweepAddr(e.target.value); setSweepConfirm(false) }}
+                  style={{
+                    width:'100%', boxSizing:'border-box',
+                    background:'var(--surface2)',
+                    border:'1px solid rgba(255,60,60,0.22)',
+                    borderRadius:'var(--radius)', padding:'7px 9px',
+                    fontFamily:'var(--font-mono)', fontSize:'9px',
+                    color:'var(--text)', outline:'none', marginBottom:'8px'
+                  }}
+                />
+
+                {/* Step 1: arm */}
+                {sweepAddr.trim() && !sweepConfirm && !sweepDone && (
+                  <button
+                    onClick={() => setSweepConfirm(true)}
+                    style={{
+                      width:'100%', padding:'8px', marginBottom:'6px',
+                      background:'rgba(255,60,60,0.08)',
+                      border:'1px solid rgba(255,60,60,0.4)',
+                      borderRadius:'var(--radius)',
+                      color:'rgba(255,130,130,0.95)',
+                      fontFamily:'var(--font-mono)', fontSize:'10px',
+                      fontWeight:600, cursor:'pointer', letterSpacing:'0.04em'
+                    }}>
+                    I understand — sweep ${bal} USDC →
+                  </button>
+                )}
+
+                {/* Step 2: confirm */}
+                {sweepConfirm && (
+                  <button
+                    onClick={handleSweep}
+                    disabled={sweeping || sweepDone}
+                    style={{
+                      width:'100%', padding:'9px', marginBottom:'6px',
+                      background: sweepDone ? 'rgba(80,200,80,0.12)' : 'rgba(255,40,40,0.16)',
+                      border: `1px solid ${sweepDone ? 'rgba(80,200,80,0.5)' : 'rgba(255,60,60,0.65)'}`,
+                      borderRadius:'var(--radius)',
+                      color: sweepDone ? '#7EE07E' : 'rgba(255,130,130,1)',
+                      fontFamily:'var(--font-mono)', fontSize:'10px',
+                      fontWeight:700,
+                      cursor: sweeping ? 'wait' : 'pointer',
+                      letterSpacing:'0.04em'
+                    }}>
+                    {sweeping ? 'sweeping…' : sweepDone ? '✓ swept — Harbor empty' : '⚡ CONFIRM SWEEP'}
+                  </button>
+                )}
+
+                {!sweepDone && (
+                  <button
+                    onClick={() => { setShowSweep(false); setSweepAddr(''); setSweepConfirm(false) }}
+                    style={{
+                      width:'100%', padding:'6px',
+                      background:'none', border:'1px solid var(--border)',
+                      borderRadius:'var(--radius)', color:'var(--text-off)',
+                      fontFamily:'var(--font-mono)', fontSize:'9px', cursor:'pointer'
+                    }}>
+                    cancel
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
+
           {/* Dev reset */}
           <div style={{ padding:'12px', marginTop:'auto' }}>
             <button onClick={() => { setVessel(null); setHarbor(null); setOnboarded(false) }}
@@ -267,7 +416,7 @@ export function HarborHome({ onEnterVessel }: Props) {
             </div>
           </div>
 
-          {/* Public feed — hooks only, no read button */}
+          {/* Public feed */}
           <div ref={feedRef} style={{ flex:1, overflowY:'auto', scrollbarWidth:'thin', scrollbarColor:'var(--border) transparent' }}>
             {filtered.map((cast, i) => (
               <PublicCastRow key={cast.id} cast={cast} index={i} onNudge={onEnterVessel}/>
@@ -304,7 +453,7 @@ export function HarborHome({ onEnterVessel }: Props) {
   )
 }
 
-// ── Public cast row — hooks only, beautiful, no interaction ──
+// ── Public cast row ──
 
 function PublicCastRow({ cast, index, onNudge }: { cast: any; index: number; onNudge: () => void; key?: string }) {
   const isBurn  = cast.mode === 'burn'
@@ -316,7 +465,6 @@ function PublicCastRow({ cast, index, onNudge }: { cast: any; index: number; onN
 
   return (
     <div style={{ borderBottom:'1px solid var(--border)' }}>
-      {/* Hook row — tap to expand */}
       <div
         onClick={() => setTapped(t => !t)}
         style={{ display:'flex', gap:'12px', padding:'16px 18px', cursor:'pointer', transition:'background 0.15s', background: tapped ? 'var(--surface)' : 'transparent', animationDelay:`${Math.min(index,8)*40}ms` }}
@@ -366,7 +514,6 @@ function PublicCastRow({ cast, index, onNudge }: { cast: any; index: number; onN
         </div>
       </div>
 
-      {/* Expanded nudge — vessel required */}
       {tapped && (
         <div style={{ padding:'12px 18px 16px', background:'var(--surface)', borderTop:'1px solid var(--border)' }}>
           <div style={{ display:'flex', alignItems:'center', gap:'10px', padding:'10px 12px', background:'rgba(0,184,230,0.04)', border:'1px solid var(--border2)', borderRadius:'var(--radius-lg)', marginBottom:'10px' }}>
