@@ -383,6 +383,68 @@ export function CastPanel({ onClose }: { onClose: () => void }) {
 
       {lowFuel && <div style={{padding:'8px 10px',background:'var(--burn-dim)',border:'1px solid var(--burn-line)',borderRadius:'var(--radius)',fontFamily:'var(--font-mono)',fontSize:'11px',color:'var(--burn)',marginBottom:'10px'}}>Vessel fuel empty. Draw fuel from Harbor first.</div>}
 
+      {/* Auto-response / Cascade */}
+      <div style={{marginBottom:'14px',padding:'12px',background:'var(--surface)',border:'1px solid var(--border)',borderRadius:'var(--radius-lg)'}}>
+        <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:useCascade?'12px':'0'}}>
+          <div>
+            <div style={{fontFamily:'var(--font-mono)',fontSize:'10px',color:'var(--text-dim)'}}>
+              Auto-response <span style={{color:'var(--teal)',fontSize:'9px'}}>optional · commerce</span>
+            </div>
+            <div style={{fontFamily:'var(--font-mono)',fontSize:'9px',color:'var(--text-off)',marginTop:'1px'}}>
+              Send a message to every reader after they pay. Use for receipts, delivery info, or contact details.
+            </div>
+          </div>
+          <button onClick={() => setUseCascade(!useCascade)}
+            style={{width:'36px',height:'20px',borderRadius:'100px',background:useCascade?'var(--teal)':'var(--surface3)',border:`1px solid ${useCascade?'var(--teal)':'var(--border)'}`,position:'relative',cursor:'pointer',transition:'all 0.2s',flexShrink:0,padding:0}}>
+            <div style={{width:'14px',height:'14px',background:useCascade?'var(--bg)':'var(--text-dim)',borderRadius:'50%',position:'absolute',top:'2px',left:useCascade?'19px':'2px',transition:'all 0.2s'}}/>
+          </button>
+        </div>
+        {useCascade && (
+          <>
+            <div className="field" style={{marginBottom:'8px'}}>
+              <label className="field-label">
+                Message to reader <span style={{color:'var(--text-off)',fontWeight:400,fontSize:'9px',textTransform:'none',letterSpacing:0}}>sent after every read</span>
+              </label>
+              <textarea className="input" rows={3}
+                placeholder={"Thank you for your purchase.\nFor delivery or support, contact: agent@seller.com\nYour order will be fulfilled within 24 hours."}
+                value={cascadeBody} onChange={e => setCascadeBody(e.target.value)}/>
+            </div>
+            <div className="field" style={{marginBottom:'8px'}}>
+              <label className="field-label">
+                Subject / Hook <span style={{color:'var(--text-off)',fontWeight:400,fontSize:'9px',textTransform:'none',letterSpacing:0}}>reader sees this first</span>
+              </label>
+              <input className="input" style={{height:'34px'}}
+                placeholder="Order confirmed ✓"
+                value={cascadeHook} onChange={e => setCascadeHook(e.target.value)}/>
+            </div>
+            <div className="field">
+              <label className="field-label">
+                Trigger <span style={{color:'var(--text-off)',fontWeight:400,fontSize:'9px',textTransform:'none',letterSpacing:0}}>when to send</span>
+              </label>
+              <div style={{display:'flex',gap:'5px',flexWrap:'wrap'}}>
+                {[
+                  {label:'Every read', value:1},
+                  {label:'At 10 reads', value:10},
+                  {label:'At 100 reads', value:100},
+                  {label:'At 1,000 reads', value:1000},
+                ].map(t => (
+                  <button key={t.value} onClick={() => setCascadeThreshold(t.value)}
+                    className={`chip ${cascadeThreshold===t.value?'active':''}`}
+                    style={{fontSize:'10px'}}>
+                    {t.label}
+                  </button>
+                ))}
+              </div>
+              <div style={{fontFamily:'var(--font-mono)',fontSize:'9px',color:'var(--text-off)',marginTop:'6px',lineHeight:1.6}}>
+                {cascadeThreshold === 1
+                  ? '→ Every reader receives your message after paying. Best for commerce and receipts.'
+                  : `→ Fires once when your cast reaches ${cascadeThreshold.toLocaleString()} reads. Best for milestones and announcements.`}
+              </div>
+            </div>
+          </>
+        )}
+      </div>
+
       <button data-testid="cast-review-btn" className="btn btn-primary btn-full" onClick={() => { if (!hook.trim()) return; setStep('confirm') }} disabled={!hook.trim()||lowFuel||(useSecQ&&(!secQ.trim()||!secA.trim()))}>
         Review →
       </button>
