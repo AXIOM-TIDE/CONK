@@ -16,7 +16,7 @@ interface MediaUploadProps {
 
 export function MediaUpload({
   onUpload, onRemove, uploaded, accept = 'image/*,application/pdf,.txt,.md',
-  label = 'Attach file', maxMB = 10
+  label = 'Attach file', maxMB = 1
 }: MediaUploadProps) {
   const [dragging, setDragging] = useState(false)
   const [uploading, setUploading] = useState(false)
