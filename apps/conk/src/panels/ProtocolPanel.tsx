@@ -1,3 +1,4 @@
+import React from 'react'
 /**
  * ProtocolPanel — Sprint 4 Protocol Depth Features
  * Tide Index · Signal Futures · Dead Man's Switch · Harbor Inheritance · Void Receipt

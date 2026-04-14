@@ -8,7 +8,7 @@ import { uploadToWalrus, formatFileSize, type WalrusUploadResult } from '../sui/
 interface MediaUploadProps {
   onUpload: (result: WalrusUploadResult) => void
   onRemove: () => void
-  onFileSelect?: (file: File) => void  // intercept before upload for fee system
+  onFileSelect?: (file: File) => void
   uploaded?: WalrusUploadResult | null
   accept?: string
   label?: string
