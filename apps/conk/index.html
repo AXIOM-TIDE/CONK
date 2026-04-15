@@ -15,6 +15,8 @@
     <meta property="og:title" content="CONK" />
     <meta property="og:description" content="The protocol where vessels cast into the tide, the masses decide what is true, truth earns permanence, and everything else crumbles." />
     <meta property="og:site_name" content="CONK" />
+    <meta property="og:image" content="https://conk.app/conk-logo.png" />
+    <meta name="twitter:image" content="https://conk.app/conk-logo.png" />
 
     <!-- Twitter -->
     <meta name="twitter:card" content="summary" />
@@ -52,7 +54,7 @@
             '<div style="font-size:40px;margin-bottom:20px">&#128058;</div>' +
             '<div style="font-size:18px;font-weight:700;color:#00B8E6;margin-bottom:12px">Open in your browser</div>' +
             '<div style="font-size:12px;color:rgba(255,255,255,0.5);line-height:1.7;margin-bottom:28px;max-width:280px">CONK uses Google sign-in which requires Safari or Chrome. Tap below to continue.</div>' +
-            '<a href="' + url + '" target="_blank" rel="noopener" style="display:block;padding:14px 28px;background:rgba(0,184,230,0.1);border:1px solid rgba(0,184,230,0.4);border-radius:8px;color:#00B8E6;font-size:13px;font-weight:600;text-decoration:none;width:100%;max-width:280px;box-sizing:border-box">Open in Browser</div>' +
+            '<button onclick="(function(){try{navigator.clipboard.writeText(\'' + url + '\');alert(\'URL copied! Paste it in Safari or Chrome to open CONK.\');}catch(e){alert(\'Open Safari and go to conk.app\');}})()" style="display:block;padding:14px 28px;background:rgba(0,184,230,0.1);border:1px solid rgba(0,184,230,0.4);border-radius:8px;color:#00B8E6;font-size:13px;font-weight:600;cursor:pointer;width:100%;max-width:280px;box-sizing:border-box">Copy Link — Open in Safari</button>' +
             '<div style="margin-top:16px;font-size:10px;color:rgba(255,255,255,0.3)">conk.app</div>' +
             '</div>';
         });
