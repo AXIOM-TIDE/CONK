@@ -7,7 +7,84 @@ interface Props {
   onConnect: () => Promise<void>;
 }
 
+// Detect in-app browsers (LinkedIn, Instagram, Facebook, Twitter) that block Google OAuth
+function isWebView(): boolean {
+  const ua = navigator.userAgent || ''
+  return (
+    /LinkedIn/i.test(ua) ||
+    /FBAN|FBAV|FB_IAB/i.test(ua) ||
+    /Instagram/i.test(ua) ||
+    /Twitter/i.test(ua) ||
+    /wv/.test(ua) ||
+    (/iPhone|iPod|iPad/.test(ua) && !/Safari/.test(ua) && /AppleWebKit/.test(ua))
+  )
+}
+
+function openInBrowser() {
+  const url = window.location.href
+  // iOS — try to open in Safari
+  if (/iPhone|iPod|iPad/.test(navigator.userAgent)) {
+    window.location.href = `x-safari-${url}`
+    setTimeout(() => { window.location.href = url }, 500)
+  } else {
+    // Android — intent to open in Chrome
+    window.location.href = `intent://${url.replace(/^https?:\/\//, '')}#Intent;scheme=https;package=com.android.chrome;end`
+    setTimeout(() => { window.location.href = url }, 500)
+  }
+}
+
 export function ConkHomeScreen({ onConnect }: Props) {
+  // Block OAuth attempts in webviews — Google will reject them
+  if (isWebView()) {
+    return (
+      <div style={{
+        minHeight: '100dvh', background: '#000810',
+        display: 'flex', flexDirection: 'column',
+        alignItems: 'center', justifyContent: 'center',
+        padding: '32px 24px', textAlign: 'center'
+      }}>
+        <div style={{fontSize: '40px', marginBottom: '20px'}}>🐚</div>
+        <div style={{
+          fontFamily: 'var(--font-mono)', fontSize: '18px',
+          fontWeight: 700, color: '#00B8E6', marginBottom: '12px'
+        }}>
+          Open in your browser
+        </div>
+        <div style={{
+          fontFamily: 'var(--font-mono)', fontSize: '12px',
+          color: 'rgba(255,255,255,0.5)', lineHeight: 1.7,
+          marginBottom: '28px', maxWidth: '280px'
+        }}>
+          CONK uses Google sign-in which requires a real browser.
+          Tap below to open in Safari or Chrome.
+        </div>
+        <button
+          onClick={openInBrowser}
+          style={{
+            padding: '14px 28px',
+            background: 'rgba(0,184,230,0.1)',
+            border: '1px solid rgba(0,184,230,0.4)',
+            borderRadius: '8px',
+            color: '#00B8E6',
+            fontFamily: 'var(--font-mono)',
+            fontSize: '13px',
+            fontWeight: 600,
+            cursor: 'pointer',
+            marginBottom: '16px',
+            width: '100%',
+            maxWidth: '280px'
+          }}>
+          Open in Browser →
+        </button>
+        <div style={{
+          fontFamily: 'var(--font-mono)', fontSize: '10px',
+          color: 'rgba(255,255,255,0.3)'
+        }}>
+          conk.app · anonymous communication protocol
+        </div>
+      </div>
+    )
+  }
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const animRef   = useRef<number>(0);
 
