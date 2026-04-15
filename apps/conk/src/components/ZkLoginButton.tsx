@@ -220,16 +220,33 @@ export function ZkLoginButton() {
   // ── CONNECTED ─────────────────────────────────────────────────
   if (address) {
     return (
-      <div style={{display:'flex',alignItems:'center',gap:'6px'}}>
+      <div style={{display:'flex',alignItems:'center',gap:'6px',padding:'4px 6px 4px 10px',background:'rgba(0,184,230,0.06)',border:'1px solid var(--border3)',borderRadius:'var(--radius-lg)'}}>
+        {/* Live pulse */}
+        <div style={{width:'6px',height:'6px',borderRadius:'50%',background:'#00E676',boxShadow:'0 0 6px #00E676',animation:'livePulse 2s ease-in-out infinite',flexShrink:0}}/>
+        {/* Systems go label */}
+        <span style={{fontFamily:'var(--font-mono)',fontSize:'8px',fontWeight:700,color:'#00E676',letterSpacing:'0.12em',textTransform:'uppercase',flexShrink:0}}>
+          live
+        </span>
+        {/* Divider */}
+        <div style={{width:'1px',height:'12px',background:'var(--border)',flexShrink:0}}/>
+        {/* Address */}
+        <span style={{fontFamily:'var(--font-mono)',fontSize:'10px',color:'var(--teal)',letterSpacing:'0.02em'}}>
+          {address.slice(0,6)}…{address.slice(-4)}
+        </span>
+        {/* Divider */}
+        <div style={{width:'1px',height:'12px',background:'var(--border)',flexShrink:0}}/>
+        {/* Fund Harbor copy button */}
         <button
           onClick={copyAddress}
-          style={{padding:'5px 10px',background:copied?'rgba(0,200,100,0.1)':'rgba(0,184,230,0.08)',border:`1px solid ${copied?'rgba(0,200,100,0.4)':'var(--border3)'}`,borderRadius:'var(--radius-lg)',cursor:'pointer',fontFamily:'var(--font-mono)',fontSize:'10px',color:copied?'#4CAF50':'var(--teal)',transition:'all 0.15s',whiteSpace:'nowrap'}}>
-          {copied ? '✓ copied' : '⛽ Fund Harbor'}
+          title="Copy address to fund Harbor"
+          style={{padding:'3px 8px',background:copied?'rgba(0,230,118,0.1)':'rgba(0,184,230,0.1)',border:`1px solid ${copied?'rgba(0,230,118,0.4)':'rgba(0,184,230,0.3)'}`,borderRadius:'var(--radius)',cursor:'pointer',fontFamily:'var(--font-mono)',fontSize:'9px',color:copied?'#00E676':'var(--teal)',transition:'all 0.15s',whiteSpace:'nowrap',flexShrink:0}}>
+          {copied ? '✓ copied' : '⛽ fund'}
         </button>
+        {/* Disconnect */}
         <button
           onClick={handleDisconnect}
           title="Disconnect"
-          style={{padding:'5px 8px',background:'none',border:'1px solid var(--border)',borderRadius:'var(--radius-lg)',color:'var(--text-off)',cursor:'pointer',fontFamily:'var(--font-mono)',fontSize:'10px'}}>
+          style={{background:'none',border:'none',color:'var(--text-off)',cursor:'pointer',fontFamily:'var(--font-mono)',fontSize:'13px',padding:'0 2px',lineHeight:1,flexShrink:0}}>
           ×
         </button>
       </div>
