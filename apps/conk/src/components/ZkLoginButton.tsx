@@ -220,15 +220,16 @@ export function ZkLoginButton() {
   // ── CONNECTED ─────────────────────────────────────────────────
   if (address) {
     return (
-      <div style={{display:'flex',alignItems:'center',gap:'8px',padding:'6px 12px',background:'rgba(0,184,230,0.08)',border:'1px solid var(--border3)',borderRadius:'var(--radius-lg)'}}>
-        <div style={{width:'6px',height:'6px',borderRadius:'50%',background:'var(--teal)',boxShadow:'0 0 4px var(--teal)',flexShrink:0}}/>
-        <span style={{fontFamily:'var(--font-mono)',fontSize:'10px',color:'var(--teal)',userSelect:'none'}}>
-          {address.slice(0,6)}…{address.slice(-4)}
-        </span>
+      <div style={{display:'flex',alignItems:'center',gap:'6px'}}>
         <button
-          onClick={(e) => { e.stopPropagation(); handleDisconnect() }}
+          onClick={copyAddress}
+          style={{padding:'5px 10px',background:copied?'rgba(0,200,100,0.1)':'rgba(0,184,230,0.08)',border:`1px solid ${copied?'rgba(0,200,100,0.4)':'var(--border3)'}`,borderRadius:'var(--radius-lg)',cursor:'pointer',fontFamily:'var(--font-mono)',fontSize:'10px',color:copied?'#4CAF50':'var(--teal)',transition:'all 0.15s',whiteSpace:'nowrap'}}>
+          {copied ? '✓ copied' : '⛽ Fund Harbor'}
+        </button>
+        <button
+          onClick={handleDisconnect}
           title="Disconnect"
-          style={{background:'none',border:'none',color:'var(--text-off)',cursor:'pointer',fontFamily:'var(--font-mono)',fontSize:'13px',padding:'0 0 0 2px',lineHeight:1,flexShrink:0}}>
+          style={{padding:'5px 8px',background:'none',border:'1px solid var(--border)',borderRadius:'var(--radius-lg)',color:'var(--text-off)',cursor:'pointer',fontFamily:'var(--font-mono)',fontSize:'10px'}}>
           ×
         </button>
       </div>
