@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { getSession } from '../sui/zklogin'
 import { useStore } from '../store/store'
 import { ArcMeter } from '../components/FuelMeter'
 import { IconBurn } from '../components/Icons'
@@ -53,6 +54,31 @@ export function HarborPanel() {
             </div>
           )}
         </div>
+
+        {/* Copy address */}
+        {(() => {
+          const session = getSession()
+          const addr = session?.address
+          if (!addr) return null
+          return (
+            <div
+              onClick={() => {
+                navigator.clipboard.writeText(addr)
+                  .then(() => {
+                    const el = document.getElementById('addr-copy-label')
+                    if (el) { el.textContent = 'Copied ✓'; setTimeout(() => { el.textContent = addr.slice(0,6) + '…' + addr.slice(-4) }, 1500) }
+                  })
+              }}
+              style={{ marginTop:'10px', display:'flex', alignItems:'center', gap:'6px', padding:'6px 10px', background:'var(--surface)', border:'1px solid var(--border)', borderRadius:'var(--radius)', cursor:'pointer' }}
+            >
+              <span style={{ fontFamily:'var(--font-mono)', fontSize:'9px', color:'var(--text-off)', letterSpacing:'0.06em', textTransform:'uppercase' }}>Address</span>
+              <span id="addr-copy-label" style={{ fontFamily:'var(--font-mono)', fontSize:'9px', color:'var(--teal)', flex:1 }}>
+                {addr.slice(0,6)}…{addr.slice(-4)}
+              </span>
+              <span style={{ fontFamily:'var(--font-mono)', fontSize:'9px', color:'var(--text-off)' }}>copy ⎘</span>
+            </div>
+          )
+        })()}
 
         {low && (
           <div style={{ marginTop: '10px', padding: '6px 12px', background: 'var(--burn-dim)', border: '1px solid rgba(255,58,92,0.2)', borderRadius: 'var(--radius)', fontFamily: 'var(--font-mono)', fontSize: '10px', color: 'var(--burn)', letterSpacing: '0.04em' }}>
