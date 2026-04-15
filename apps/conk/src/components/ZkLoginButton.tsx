@@ -220,13 +220,19 @@ export function ZkLoginButton() {
   // ── CONNECTED ─────────────────────────────────────────────────
   if (address) {
     return (
-      <div style={{display:'flex',alignItems:'center',gap:'8px',padding:'6px 12px',background:'rgba(0,184,230,0.08)',border:'1px solid var(--border3)',borderRadius:'var(--radius-lg)'}}>
+      <div style={{display:'flex',alignItems:'center',gap:'4px',padding:'4px 6px 4px 10px',background:'rgba(0,184,230,0.08)',border:'1px solid var(--border3)',borderRadius:'var(--radius-lg)'}}>
         <div style={{width:'6px',height:'6px',borderRadius:'50%',background:'var(--teal)',boxShadow:'0 0 4px var(--teal)',flexShrink:0}}/>
-        <span style={{fontFamily:'var(--font-mono)',fontSize:'10px',color:'var(--teal)'}}>
-          {address.slice(0,8)}…{address.slice(-4)}
-        </span>
+        <button
+          onClick={copyAddress}
+          title="Copy address"
+          style={{background:'none',border:'none',cursor:'pointer',fontFamily:'var(--font-mono)',fontSize:'10px',color:copied?'#4CAF50':'var(--teal)',padding:'2px 4px',borderRadius:'4px',transition:'all 0.15s'}}
+        >
+          {copied ? '✓ copied' : address.slice(0,6)+'…'+address.slice(-4)}
+        </button>
+        <div style={{width:'1px',height:'12px',background:'var(--border)',margin:'0 2px'}}/>
         <button onClick={handleDisconnect}
-          style={{background:'none',border:'none',color:'var(--text-off)',cursor:'pointer',fontFamily:'var(--font-mono)',fontSize:'9px',padding:'0 0 0 4px'}}>
+          title="Disconnect"
+          style={{background:'none',border:'none',color:'var(--text-off)',cursor:'pointer',fontFamily:'var(--font-mono)',fontSize:'11px',padding:'2px 4px',lineHeight:1}}>
           ×
         </button>
       </div>
