@@ -178,7 +178,9 @@ export function HarborHome({ onEnterVessel }: Props) {
               return (
                 <button
                   id="harbor-addr-btn"
-                  onClick={() => {
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    e.preventDefault()
                     navigator.clipboard.writeText(addr).then(() => {
                       const btn = document.getElementById('harbor-addr-btn')
                       if (btn) {
@@ -209,11 +211,13 @@ export function HarborHome({ onEnterVessel }: Props) {
                     transition:'all 0.15s'
                   }}
                   onMouseEnter={e => {
-                    (e.currentTarget as HTMLElement).style.borderColor = 'var(--teal)'
+                    e.stopPropagation()
+                    ;(e.currentTarget as HTMLElement).style.borderColor = 'var(--teal)'
                     ;(e.currentTarget as HTMLElement).style.color = 'var(--teal)'
                   }}
                   onMouseLeave={e => {
-                    (e.currentTarget as HTMLElement).style.borderColor = ''
+                    e.stopPropagation()
+                    ;(e.currentTarget as HTMLElement).style.borderColor = ''
                     ;(e.currentTarget as HTMLElement).style.color = ''
                   }}
                 >
