@@ -170,6 +170,57 @@ export function HarborHome({ onEnterVessel }: Props) {
             <div style={{ fontFamily:'var(--font-mono)', fontSize:'9px', color:'var(--text-off)', marginTop:'4px', textAlign:'center' }}>
               ~{Math.floor((harbor?.balance ?? 0) / 0.1).toLocaleString()} reads remaining
             </div>
+
+            {/* Copy Sui address */}
+            {(() => {
+              const addr = getAddress()
+              if (!addr) return null
+              return (
+                <button
+                  id="harbor-addr-btn"
+                  onClick={() => {
+                    navigator.clipboard.writeText(addr).then(() => {
+                      const btn = document.getElementById('harbor-addr-btn')
+                      if (btn) {
+                        btn.textContent = 'Copied ✓'
+                        btn.style.color = 'var(--teal)'
+                        btn.style.borderColor = 'var(--teal)'
+                        setTimeout(() => {
+                          btn.textContent = addr.slice(0,8) + '…' + addr.slice(-6)
+                          btn.style.color = ''
+                          btn.style.borderColor = ''
+                        }, 1500)
+                      }
+                    })
+                  }}
+                  style={{
+                    marginTop:'8px',
+                    width:'100%',
+                    padding:'7px 10px',
+                    background:'var(--surface)',
+                    border:'1px solid var(--border2)',
+                    borderRadius:'var(--radius)',
+                    fontFamily:'var(--font-mono)',
+                    fontSize:'9px',
+                    color:'var(--text-dim)',
+                    cursor:'pointer',
+                    letterSpacing:'0.04em',
+                    textAlign:'center',
+                    transition:'all 0.15s'
+                  }}
+                  onMouseEnter={e => {
+                    (e.currentTarget as HTMLElement).style.borderColor = 'var(--teal)'
+                    ;(e.currentTarget as HTMLElement).style.color = 'var(--teal)'
+                  }}
+                  onMouseLeave={e => {
+                    (e.currentTarget as HTMLElement).style.borderColor = ''
+                    ;(e.currentTarget as HTMLElement).style.color = ''
+                  }}
+                >
+                  {addr.slice(0,8)}…{addr.slice(-6)}
+                </button>
+              )
+            })()}
           </div>
 
           {/* Vessel list */}
