@@ -7,6 +7,7 @@
 import { useState } from 'react'
 import { useStore } from '../store/store'
 import { FuelBar } from '../components/FuelMeter'
+import { AnalyticsPanel } from '../components/AnalyticsPanel'
 
 type DockType = 'feed' | 'datastream' | 'taskqueue' | 'knowledge'
 
@@ -61,7 +62,7 @@ export function DockPanel() {
   const [newName,   setNewName]     = useState('')
   const [newType,   setNewType]     = useState<DockType>('feed')
   const [newDesc,   setNewDesc]     = useState('')
-  const [filter,    setFilter]      = useState<'all' | DockType>('all')
+  const [filter,    setFilter]      = useState<'all' | DockType| 'analytics'>('all')
 
   const fuel    = vessel?.fuel ?? 0
   const noFuel  = fuel < 0.1
@@ -78,6 +79,7 @@ export function DockPanel() {
   }
 
   const filtered = filter === 'all' ? SEED_DOCKS : SEED_DOCKS.filter(d => d.type === filter)
+  if (filter === 'analytics') return <div style={{padding:'12px'}}><AnalyticsPanel/></div>
 
   return (
     <div style={{display:'flex',flexDirection:'column',gap:'12px'}}>
@@ -102,7 +104,7 @@ export function DockPanel() {
 
       {/* Filter */}
       <div style={{display:'flex',gap:'6px',flexWrap:'wrap'}}>
-        {(['all','feed','datastream','taskqueue','knowledge'] as const).map(f => (
+        {(['all','feed','datastream','taskqueue','knowledge','analytics'] as const).map(f => (
           <button key={f} onClick={() => setFilter(f)}
             style={{padding:'4px 10px',background:filter===f?'rgba(0,184,230,0.1)':'var(--surface)',border:`1px solid ${filter===f?'var(--border3)':'var(--border)'}`,borderRadius:'var(--radius)',color:filter===f?'var(--teal)':'var(--text-dim)',fontFamily:'var(--font-mono)',fontSize:'9px',cursor:'pointer',letterSpacing:'0.04em'}}>
             {f === 'all' ? 'All' : TYPE_LABELS[f]}
