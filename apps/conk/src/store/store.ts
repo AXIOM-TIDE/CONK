@@ -49,6 +49,18 @@ export interface Shore {
   daemonId?: string        // linked daemon vessel id
 }
 
+export interface VesselSubscription {
+  id:            string
+  vesselId:      string
+  subscriberId:  string
+  displayName?:  string
+  interval:      'daily' | 'weekly' | 'monthly' | 'yearly'
+  priceUsdc:     number
+  startedAt:     number
+  renewsAt:      number
+  active:        boolean
+  txDigest:      string
+}
 export interface Cast {
   id: string
   hook: string
@@ -135,6 +147,7 @@ export interface AppState {
   driftFilter:    'all' | CastMode
   driftSearch:    string
   sirens:         Siren[]
+  subscriptions:      VesselSubscription[]
   lighthouses:    Lighthouse[]
   chart:          ChartEntry[]
   relayPool:      RelayEntry[]
@@ -165,6 +178,8 @@ export interface AppState {
   setDriftFilter:   (f: 'all' | CastMode) => void
   setDriftSearch:   (q: string) => void
   addSiren:         (s: Siren) => void
+  addSubscription:    (s: VesselSubscription) => void
+  cancelSubscription: (id: string) => void
   respondToSiren:   (id: string) => void
   visitLighthouse:  (id: string) => void
   addChartEntry:    (e: ChartEntry) => void
@@ -291,6 +306,7 @@ export const useStore = create<AppState>()(
       driftFilter:    'all',
       driftSearch:    '',
       sirens:         SEED_SIRENS,
+      subscriptions:      [],
       lighthouses:    SEED_LIGHTHOUSES,
       chart:          [],
       relayPool:      [],
@@ -438,6 +454,14 @@ export const useStore = create<AppState>()(
       visitLighthouse: (id) => set((s) => ({
         lighthouses: s.lighthouses.map(l => l.id === id ? { ...l, tideCount: l.tideCount + 1 } : l),
       })),
+      addSubscription: (s) => set((state) => ({
+      subscriptions: [...(state.subscriptions ?? []), s],
+    })),
+    cancelSubscription: (id) => set((state) => ({
+      subscriptions: (state.subscriptions ?? []).map(s =>
+        s.id === id ? { ...s, active: false } : s
+      ),
+    })),
 
       addChartEntry: (e) => set((s) => ({
         chart: [e, ...s.chart.filter(x => x.id !== e.id)],
