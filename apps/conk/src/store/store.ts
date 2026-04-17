@@ -26,6 +26,8 @@ export interface Vessel {
   // On-chain object IDs — set after vessel::launch
   onChainId?:    string
   vesselCapId?:  string
+  displayName?:  string
+  avatarColor?:  string
 }
 
 export interface Harbor {
@@ -142,6 +144,7 @@ export interface AppState {
   addVessel:        (v: Vessel) => void
   setActiveVessel:  (id: string) => void
   burnVessel:       (id: string) => void
+  setVesselName:    (id: string, name: string, color?: string) => void
   compromiseVessel: (id: string) => void   // identity exposed — auto-burn
   toggleAutoBurn:   () => void
   setHarbor:        (h: Harbor | null) => void
@@ -320,6 +323,14 @@ export const useStore = create<AppState>()(
           : s.harbor
         return { vessels: rem, vessel: rem[0] ?? null, activeVesselId: rem[0]?.id ?? null, harbor: updatedHarbor }
       }),
+      setVesselName: (id, name, color) => set((s) => ({
+      vessels: s.vessels?.map(v =>
+        v.id === id ? { ...v, displayName: name, avatarColor: color ?? v.avatarColor } : v
+      ),
+      vessel: s.vessel?.id === id
+        ? { ...s.vessel, displayName: name, avatarColor: color ?? s.vessel.avatarColor }
+        : s.vessel,
+    })),
 
       // Identity exposed — vessel marked compromised then auto-burned
       compromiseVessel: (id) => set((s) => {
