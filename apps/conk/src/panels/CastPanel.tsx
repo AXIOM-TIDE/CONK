@@ -5,6 +5,10 @@ import { IconCast, IconOpen, IconEye, IconFlame, IconDock } from '../components/
 import { FuelBar } from '../components/FuelMeter'
 import { MediaUpload } from '../components/MediaUpload'
 import type { WalrusUploadResult } from '../sui/walrus'
+import { encryptForCast, buildSealMetadata } from '../sui/seal'
+import { getAddress } from '../sui/zklogin'
+import { encryptForCast, buildSealMetadata } from '../sui/seal'
+import { getAddress } from '../sui/zklogin'
 
 const MODES: { id: CastMode; icon: React.ReactNode; label: string; desc: string; note?: string }[] = [
   { id:'open',      icon:<IconOpen size={13}  color="var(--teal)"/>,   label:'Open',      desc:'Anyone reads · can earn Lighthouse' },
@@ -100,10 +104,27 @@ export function CastPanel({ onClose }: { onClose: () => void }) {
   const handleCancelUpload = () => { setShowFeeConfirm(false); setPendingFile(null); setUploadError('') }
 
   const handleSend = async () => {
+    // SEAL encrypt if mode is sealed and media exists
+    let sealBody = body.trim() || hook.trim()
+    let sealAttachment = media?.blobId
+    if (mode === 'sealed' && media) {
+      try {
+        const senderAddr = getAddress() ?? ''
+        const result = await encryptForCast(media.data ?? new Uint8Array(), {
+          castId:        `pending_${Date.now()}`,
+          authorAddress: senderAddr,
+        })
+        sealAttachment = result.encryptedBlobId
+        sealBody = sealBody + '\n\n' + JSON.stringify(buildSealMetadata(result))
+      } catch(e: any) {
+        setError('SEAL encryption failed: ' + e.message)
+        return
+      }
+    }
     setError('')
     const ok = await sound({
       hook: hook.trim(),
-      body: body.trim() || hook.trim(),
+      body: finalBody,
       price,
       mode, duration: dur,
       securityQuestion: useSecQ && secQ.trim() ? secQ.trim() : undefined,
