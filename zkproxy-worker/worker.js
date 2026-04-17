@@ -1,27 +1,94 @@
 /**
- * CONK ZK Proxy + Self-Hosted Gas Station
- * Uses Sui's sponsored transaction pattern correctly.
+ * CONK ZK Proxy + Self-Hosted Gas Station — HARDENED
+ * Axiom Tide LLC · April 2026
+ *
+ * Security layers:
+ *   1. Origin validation — only conk.app and localhost
+ *   2. Per-IP rate limiting via Cloudflare KV
+ *   3. Circuit breaker — pauses if SUI balance < 0.5 SUI
+ *   4. Request size limits
+ *   5. Address validation
+ *   6. Secure CORS — no more wildcard
+ *   7. Error sanitization
  */
 
 import { Ed25519Keypair } from '@mysten/sui/keypairs/ed25519'
-import { Transaction } from '@mysten/sui/transactions'
-
-const CORS = {
-  'Access-Control-Allow-Origin':  '*',
-  'Access-Control-Allow-Methods': 'GET, POST, PUT, OPTIONS',
-  'Access-Control-Allow-Headers': '*',
-}
+import { Transaction }    from '@mysten/sui/transactions'
 
 const SUI_RPC   = 'https://fullnode.mainnet.sui.io/'
 const ENOKI_URL = 'https://api.enoki.mystenlabs.com/v1/zklogin/zkp'
 
-function toB64(bytes) {
-  return btoa(String.fromCharCode(...bytes))
+const GAS_FLOOR_MIST          = 500_000_000n  // 0.5 SUI
+const MAX_GAS_PER_IP_PER_HOUR = 50
+const MAX_ZKP_PER_IP_PER_HOUR = 30
+const MAX_RPC_PER_IP_PER_HOUR = 200
+const MAX_WALRUS_PER_HOUR     = 20
+const MAX_BODY_SIZE           = 64 * 1024      // 64KB
+
+const ALLOWED_ORIGINS = new Set([
+  'https://conk.app',
+  'https://www.conk.app',
+  'https://staging.conk.app',
+  'http://localhost:5173',
+  'http://localhost:3000',
+])
+
+// ─── CORS ─────────────────────────────────────────────────────────────────────
+
+function corsHeaders(origin) {
+  const allowed = ALLOWED_ORIGINS.has(origin) ? origin : 'https://conk.app'
+  return {
+    'Access-Control-Allow-Origin':  allowed,
+    'Access-Control-Allow-Methods': 'GET, POST, PUT, OPTIONS',
+    'Access-Control-Allow-Headers': 'Content-Type, Authorization, zklogin-jwt',
+    'Access-Control-Max-Age':       '86400',
+    'Vary':                         'Origin',
+  }
 }
 
-function fromB64(str) {
-  return Uint8Array.from(atob(str), c => c.charCodeAt(0))
+function jsonResponse(data, status, origin) {
+  return new Response(JSON.stringify(data), {
+    status: status || 200,
+    headers: { ...corsHeaders(origin || 'https://conk.app'), 'Content-Type': 'application/json' },
+  })
 }
+
+function errResponse(message, status, origin) {
+  return jsonResponse({ error: message }, status, origin)
+}
+
+// ─── Rate limiter ─────────────────────────────────────────────────────────────
+
+async function checkRateLimit(kv, key, max) {
+  const windowMs = 3_600_000
+  const now      = Date.now()
+  const kvKey    = 'rl:' + key + ':' + Math.floor(now / windowMs)
+
+  let count = 0
+  try {
+    const current = await kv.get(kvKey)
+    count = current ? parseInt(current) : 0
+  } catch (e) {
+    // KV read failed — allow through, don't block legitimate users
+    return { allowed: true, remaining: max }
+  }
+
+  if (count >= max) {
+    return { allowed: false, remaining: 0 }
+  }
+
+  try {
+    await kv.put(kvKey, String(count + 1), {
+      expirationTtl: Math.ceil(windowMs / 1000) + 60,
+    })
+  } catch (e) {
+    // KV write failed — allow through
+  }
+
+  return { allowed: true, remaining: max - count - 1 }
+}
+
+// ─── RPC helper ───────────────────────────────────────────────────────────────
 
 async function rpc(method, params) {
   const resp = await fetch(SUI_RPC, {
@@ -34,44 +101,106 @@ async function rpc(method, params) {
   return json.result
 }
 
+// ─── B64 helpers ──────────────────────────────────────────────────────────────
+
+function toB64(bytes) {
+  return btoa(String.fromCharCode(...bytes))
+}
+
+function fromB64(str) {
+  return Uint8Array.from(atob(str), c => c.charCodeAt(0))
+}
+
+// ─── Circuit breaker ──────────────────────────────────────────────────────────
+
+async function checkGasBalance(keypair) {
+  const address = keypair.getPublicKey().toSuiAddress()
+  try {
+    const result = await rpc('suix_getBalance', [address, '0x2::sui::SUI'])
+    const balance = BigInt(result.totalBalance)
+    return { ok: balance >= GAS_FLOOR_MIST, balance, address }
+  } catch (e) {
+    return { ok: false, balance: 0n, address }
+  }
+}
+
+// ─── Main handler ─────────────────────────────────────────────────────────────
+
 export default {
   async fetch(request, env) {
+    const origin = request.headers.get('Origin') || 'https://conk.app'
+    const ip     = request.headers.get('CF-Connecting-IP') || 'unknown'
+    const url    = new URL(request.url)
+    const path   = url.pathname
+
+    // Preflight
+    if (request.method === 'OPTIONS') {
+      return new Response(null, { status: 204, headers: corsHeaders(origin) })
+    }
+
+    // Health check
+    if (path === '/health') {
+      return new Response(JSON.stringify({ ok: true, ts: Date.now() }), {
+        headers: { ...corsHeaders(origin), 'Content-Type': 'application/json' },
+      })
+    }
+
+    // Origin check
+    if (!ALLOWED_ORIGINS.has(origin) && !origin.includes('localhost')) {
+      console.warn('[SECURITY] Blocked origin: ' + origin + ' from IP: ' + ip)
+      return errResponse('Forbidden', 403, origin)
+    }
+
     try {
-      if (request.method === 'OPTIONS') {
-        return new Response(null, { status: 204, headers: CORS })
-      }
 
-      const path = new URL(request.url).pathname
-
-      // ── Walrus upload — binary body, must intercept before request.text() ──
+      // ── Walrus upload ─────────────────────────────────────────────────────
       if (path.includes('walrus-upload')) {
-        const epochs = new URL(request.url).searchParams.get('epochs') ?? '5'
-        const ct = request.headers.get('Content-Type') || 'application/octet-stream'
+        const limit = await checkRateLimit(env.RATE_LIMITER, 'walrus:' + ip, MAX_WALRUS_PER_HOUR)
+        if (!limit.allowed) {
+          return errResponse('Upload rate limit exceeded — try again later', 429, origin)
+        }
+
+        const ct    = request.headers.get('Content-Type') || 'application/octet-stream'
         const bytes = await request.arrayBuffer()
-        const resp = await fetch(`https://cmdosswalrus-production-d0b0.up.railway.app/v1/blobs?epochs=${epochs}`, {
-          method: 'PUT',
-          headers: { 'Content-Type': ct },
-          body: bytes,
-        })
+
+        if (bytes.byteLength > 500 * 1024 * 1024) {
+          return errResponse('File too large — maximum 500 MB', 413, origin)
+        }
+
+        const epochs = url.searchParams.get('epochs') || '5'
+        const resp   = await fetch(
+          'https://publisher.walrus.site/v1/store?epochs=' + epochs,
+          { method: 'PUT', headers: { 'Content-Type': ct }, body: bytes },
+        )
         const text = await resp.text()
         return new Response(text, {
-          status: resp.status,
-          headers: { ...CORS, 'Content-Type': 'application/json' },
+          status:  resp.status,
+          headers: { ...corsHeaders(origin), 'Content-Type': 'application/json' },
         })
       }
 
-      const body = await request.text()
+      // All other routes — read body
+      const rawBody = await request.text()
 
-      if (path === '/health') return new Response('ok', { headers: CORS })
+      if (rawBody.length > MAX_BODY_SIZE) {
+        return errResponse('Request too large', 413, origin)
+      }
 
+      // ── ZK proof ──────────────────────────────────────────────────────────
       if (path.includes('zkproof')) {
-        const req  = JSON.parse(body)
+        const limit = await checkRateLimit(env.RATE_LIMITER, 'zkp:' + ip, MAX_ZKP_PER_IP_PER_HOUR)
+        if (!limit.allowed) {
+          console.warn('[SECURITY] ZKP rate limit: ' + ip)
+          return errResponse('Rate limit exceeded — slow down', 429, origin)
+        }
+
+        const req  = JSON.parse(rawBody)
         const resp = await fetch(ENOKI_URL, {
           method:  'POST',
           headers: {
             'Content-Type':  'application/json',
             'zklogin-jwt':   req.jwt,
-            'Authorization': `Bearer ${env.ENOKI_KEY}`,
+            'Authorization': 'Bearer ' + env.ENOKI_KEY,
           },
           body: JSON.stringify({
             network:            'mainnet',
@@ -84,80 +213,94 @@ export default {
         const text = await resp.text()
         return new Response(text, {
           status:  resp.status,
-          headers: { ...CORS, 'Content-Type': 'application/json' },
+          headers: { ...corsHeaders(origin), 'Content-Type': 'application/json' },
         })
       }
 
+      // ── Gas sponsorship ───────────────────────────────────────────────────
       if (path.includes('gas')) {
-        const { txBytes, sender } = JSON.parse(body)
+        const limit = await checkRateLimit(env.RATE_LIMITER, 'gas:' + ip, MAX_GAS_PER_IP_PER_HOUR)
+        if (!limit.allowed) {
+          console.warn('[SECURITY] Gas rate limit: ' + ip)
+          return errResponse('Gas rate limit exceeded — try again later', 429, origin)
+        }
+
+        const { txBytes, sender } = JSON.parse(rawBody)
         if (!txBytes || !sender) {
-          return new Response(JSON.stringify({ error: 'missing txBytes or sender' }), {
-            status: 400, headers: { ...CORS, 'Content-Type': 'application/json' },
-          })
+          return errResponse('Missing txBytes or sender', 400, origin)
+        }
+
+        if (!/^0x[0-9a-fA-F]{64}$/.test(sender)) {
+          return errResponse('Invalid sender address', 400, origin)
         }
 
         const privateKey = env.GAS_PRIVATE_KEY
         if (!privateKey) throw new Error('GAS_PRIVATE_KEY not set')
 
         const keypair = Ed25519Keypair.fromSecretKey(privateKey)
-        const gasAddr = keypair.getPublicKey().toSuiAddress()
 
-        // Get gas coins and reference gas price
+        // Circuit breaker
+        const balanceCheck = await checkGasBalance(keypair)
+        if (!balanceCheck.ok) {
+          console.error('[CIRCUIT BREAKER] Gas wallet low: ' + balanceCheck.balance + ' at ' + balanceCheck.address)
+          return errResponse('Gas sponsorship temporarily paused — network maintenance', 503, origin)
+        }
+
+        const gasAddr = balanceCheck.address
+
         const [coinsResult, refGasPrice] = await Promise.all([
           rpc('suix_getCoins', [gasAddr, '0x2::sui::SUI', null, 1]),
           rpc('suix_getReferenceGasPrice', []),
         ])
 
         if (!coinsResult.data?.length) throw new Error('Gas wallet empty — top up SUI at ' + gasAddr)
-        const coin = coinsResult.data[0]
 
-        // Build full sponsored transaction from kind bytes
-        const tx = Transaction.fromKind(fromB64(txBytes))
+        const coin = coinsResult.data[0]
+        const tx   = Transaction.fromKind(fromB64(txBytes))
+
         tx.setSender(sender)
         tx.setGasOwner(gasAddr)
         tx.setGasPrice(Number(refGasPrice))
-        tx.setGasBudget(10000000)
+        tx.setGasBudget(10_000_000)
         tx.setGasPayment([{
           objectId: coin.coinObjectId,
           version:  coin.version,
           digest:   coin.digest,
         }])
 
-        // Build and sign
-        const builtBytes = await tx.build()
+        const builtBytes    = await tx.build()
         const { signature } = await keypair.signTransaction(builtBytes)
 
-        return new Response(JSON.stringify({
+        return jsonResponse({
           sponsoredBytes: toB64(builtBytes),
           sponsorSig:     signature,
-        }), {
-          status:  200,
-          headers: { ...CORS, 'Content-Type': 'application/json' },
-        })
+        }, 200, origin)
       }
 
+      // ── Sui RPC proxy ─────────────────────────────────────────────────────
       if (path.includes('sui')) {
+        const limit = await checkRateLimit(env.RATE_LIMITER, 'rpc:' + ip, MAX_RPC_PER_IP_PER_HOUR)
+        if (!limit.allowed) {
+          return errResponse('RPC rate limit exceeded', 429, origin)
+        }
+
         const resp = await fetch(SUI_RPC, {
           method:  'POST',
           headers: { 'Content-Type': 'application/json' },
-          body,
+          body:    rawBody,
         })
         const text = await resp.text()
         return new Response(text, {
           status:  resp.status,
-          headers: { ...CORS, 'Content-Type': 'application/json' },
+          headers: { ...corsHeaders(origin), 'Content-Type': 'application/json' },
         })
       }
 
-      return new Response(JSON.stringify({ error: 'not found', path }), {
-        status: 404, headers: { ...CORS, 'Content-Type': 'application/json' },
-      })
+      return errResponse('Not found', 404, origin)
 
-    } catch(e) {
-      console.error('ERROR:', e.message, e.stack)
-      return new Response(JSON.stringify({ error: e.message }), {
-        status: 500, headers: { ...CORS, 'Content-Type': 'application/json' },
-      })
+    } catch (e) {
+      console.error('[ERROR]', e.message)
+      return errResponse('Internal error', 500, origin)
     }
   }
 }
