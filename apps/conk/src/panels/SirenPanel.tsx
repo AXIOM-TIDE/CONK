@@ -539,10 +539,10 @@ export function SirenPanel() {
                   Price per play · {audioPrice === 0 ? `sample` : `$${audioPrice.toFixed(3)}`}
                 </div>
                 <div style={{ display:'flex', gap:'6px', flexWrap:'wrap' }}>
-                  {[0, 0.001, 0.01, 0.05, 0.10, 0.50].map(p => (
+                  {[0, 0.001, 0.01, 0.10, 1, 5, 25, 100].map(p => (
                     <button key={p} onClick={() => setAudioPrice(p)}
                       style={{ padding:'5px 10px', background:audioPrice===p?'rgba(0,184,230,0.1)':'var(--surface2)', border:`1px solid ${audioPrice===p?'var(--border3)':'var(--border)'}`, borderRadius:'var(--radius)', color:audioPrice===p?'var(--teal)':'var(--text)', fontFamily:'var(--font-mono)', fontSize:'9px', fontWeight:600, cursor:'pointer' }}>
-                      {p === 0 ? `sample` : `$${p.toFixed(3)}`}
+                      {p === 0 ? 'sample' : p < 0.01 ? `$${p.toFixed(3)}` : p < 1 ? `$${p.toFixed(2)}` : `$${p}`}
                     </button>
                   ))}
                 </div>
