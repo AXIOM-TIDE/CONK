@@ -4,6 +4,54 @@
 [move]
 version = 4
 
+[pinned.mainnet.MoveStdlib]
+source = { git = "https://github.com/MystenLabs/sui.git", subdir = "crates/sui-framework/packages/move-stdlib", rev = "7565830eeebb96a6ae4a7782fe088c89d8aaaea1" }
+use_environment = "mainnet"
+manifest_digest = "C4FE4C91DE74CBF223B2E380AE40F592177D21870DC2D7EB6227D2D694E05363"
+deps = {}
+
+[pinned.mainnet.MoveStdlib_1]
+source = { git = "https://github.com/MystenLabs/sui.git", subdir = "crates/sui-framework/packages/move-stdlib", rev = "a4185da5659d8d299d34e1bb2515ff1f7e32a20a" }
+use_environment = "mainnet"
+manifest_digest = "C4FE4C91DE74CBF223B2E380AE40F592177D21870DC2D7EB6227D2D694E05363"
+deps = {}
+
+[pinned.mainnet.Sui]
+source = { git = "https://github.com/MystenLabs/sui.git", subdir = "crates/sui-framework/packages/sui-framework", rev = "7565830eeebb96a6ae4a7782fe088c89d8aaaea1" }
+use_environment = "mainnet"
+manifest_digest = "CD547CB1ACCE0880C835DAED2D8FFCB91D56C833AE5240D3AA5B918398263195"
+deps = { MoveStdlib = "MoveStdlib" }
+
+[pinned.mainnet.Sui_1]
+source = { git = "https://github.com/MystenLabs/sui.git", subdir = "crates/sui-framework/packages/sui-framework", rev = "a4185da5659d8d299d34e1bb2515ff1f7e32a20a" }
+use_environment = "mainnet"
+manifest_digest = "CD547CB1ACCE0880C835DAED2D8FFCB91D56C833AE5240D3AA5B918398263195"
+deps = { MoveStdlib = "MoveStdlib_1" }
+
+[pinned.mainnet.axiom_tide]
+source = { root = true }
+use_environment = "mainnet"
+manifest_digest = "D09163316AF089662E8BFB18FF50AA44A1D1A9D0BEB9B059FA8B69D4F57D2C6B"
+deps = { Sui = "Sui", usdc = "usdc" }
+
+[pinned.mainnet.stablecoin]
+source = { git = "https://github.com/circlefin/stablecoin-sui.git", subdir = "packages/stablecoin", rev = "d0904aec1bbe46b38f811654070032363a5a2966" }
+use_environment = "mainnet"
+manifest_digest = "D1FE50C597BE535CA6E8A169082748AB89005284E0D8263275A45A017CFA40D9"
+deps = { Sui = "Sui_1", sui_extensions = "sui_extensions" }
+
+[pinned.mainnet.sui_extensions]
+source = { git = "https://github.com/circlefin/stablecoin-sui.git", subdir = "packages/sui_extensions", rev = "d0904aec1bbe46b38f811654070032363a5a2966" }
+use_environment = "mainnet"
+manifest_digest = "A441490BFF45892FF2D2F51A362331BAB479ECDAF138E673D20F5D457D2F65B9"
+deps = { Sui = "Sui_1" }
+
+[pinned.mainnet.usdc]
+source = { git = "https://github.com/circlefin/stablecoin-sui.git", subdir = "packages/usdc", rev = "d0904aec1bbe46b38f811654070032363a5a2966" }
+use_environment = "mainnet"
+manifest_digest = "BF0D9AE6518F5174EE87CBF91CFDB3F76B83EF440B11AC27486B1448973CD02B"
+deps = { Sui = "Sui_1", stablecoin = "stablecoin", sui_extensions = "sui_extensions" }
+
 [pinned.testnet.MoveStdlib]
 source = { git = "https://github.com/MystenLabs/sui.git", subdir = "crates/sui-framework/packages/move-stdlib", rev = "16bf4d124ac5d9fbe9314552d02cfdf55e30d377" }
 use_environment = "testnet"
