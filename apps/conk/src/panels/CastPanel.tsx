@@ -7,8 +7,6 @@ import { MediaUpload } from '../components/MediaUpload'
 import type { WalrusUploadResult } from '../sui/walrus'
 import { encryptForCast, buildSealMetadata } from '../sui/seal'
 import { getAddress } from '../sui/zklogin'
-import { encryptForCast, buildSealMetadata } from '../sui/seal'
-import { getAddress } from '../sui/zklogin'
 
 const MODES: { id: CastMode; icon: React.ReactNode; label: string; desc: string; note?: string }[] = [
   { id:'open',      icon:<IconOpen size={13}  color="var(--teal)"/>,   label:'Open',      desc:'Anyone reads · can earn Lighthouse' },
@@ -61,6 +59,8 @@ export function CastPanel({ onClose }: { onClose: () => void }) {
   const [cascadeThreshold, setCascadeThreshold] = useState(100)
   const [cascadeHook, setCascadeHook] = useState('')
   const [cascadeBody, setCascadeBody] = useState('')
+  const [flare,        setFlare]        = useState('')
+  const [useFlare,     setUseFlare]     = useState(false)
 
   const isSending = status === 'pending'
   const isDone    = status === 'success'
@@ -138,6 +138,7 @@ export function CastPanel({ onClose }: { onClose: () => void }) {
         hook: cascadeHook.trim(),
         body: cascadeBody.trim() || cascadeHook.trim(),
       } : undefined,
+      flare: useFlare && flare.trim() ? flare.trim() : undefined,
     })
     if (ok) { setHook(''); setBody(''); setStep('compose'); setTimeout(onClose, 300) }
     else setError('Failed. Check your Harbor balance.')
@@ -159,7 +160,13 @@ export function CastPanel({ onClose }: { onClose: () => void }) {
         </div>
         <div className="summary-row"><span>Duration</span><span className="summary-val">{dur}</span></div>
         <div className="summary-row"><span>Security gate</span><span className="summary-val">{useSecQ && secQ ? 'enabled' : 'none'}</span></div>
-        <div className="summary-row" style={{borderBottom:'none'}}><span>Read price</span><span className="summary-val">${(price/1000000).toFixed(3)}</span></div>
+        <div className="summary-row" style={{borderBottom:useFlare&&flare?undefined:'none'}}><span>Read price</span><span className="summary-val">${(price/1000000).toFixed(3)}</span></div>
+        {useFlare && flare && (
+          <div className="summary-row" style={{borderBottom:'none'}}>
+            <span>Flare to</span>
+            <span className="summary-val" style={{color:'var(--teal)'}}>{flare} <span style={{color:'var(--text-off)',fontSize:'9px'}}>· $0.05 fee</span></span>
+          </div>
+        )}
       </div>
 
       {/* Void notice */}
@@ -466,7 +473,40 @@ export function CastPanel({ onClose }: { onClose: () => void }) {
         )}
       </div>
 
-      <button data-testid="cast-review-btn" className="btn btn-primary btn-full" onClick={() => { if (!hook.trim()) return; setStep('confirm') }} disabled={!hook.trim()||lowFuel||(useSecQ&&(!secQ.trim()||!secA.trim()))}>
+      {/* Flare — send cast to email */}
+      <div style={{marginBottom:'14px',padding:'12px',background:'var(--surface)',border:'1px solid var(--border)',borderRadius:'var(--radius-lg)'}}>
+        <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:useFlare?'12px':'0'}}>
+          <div>
+            <div style={{fontFamily:'var(--font-mono)',fontSize:'10px',color:'var(--text-dim)'}}>
+              Flare <span style={{color:'var(--teal)',fontSize:'9px'}}>optional · $0.05</span>
+            </div>
+            <div style={{fontFamily:'var(--font-mono)',fontSize:'9px',color:'var(--text-off)',marginTop:'1px'}}>
+              Deliver this cast to an inbox. Reader still pays to read.
+            </div>
+          </div>
+          <button onClick={() => setUseFlare(!useFlare)}
+            style={{width:'36px',height:'20px',borderRadius:'100px',background:useFlare?'var(--teal)':'var(--surface3)',border:`1px solid ${useFlare?'var(--teal)':'var(--border)'}`,position:'relative',cursor:'pointer',transition:'all 0.2s',flexShrink:0,padding:0}}>
+            <div style={{width:'14px',height:'14px',background:useFlare?'var(--bg)':'var(--text-dim)',borderRadius:'50%',position:'absolute',top:'2px',left:useFlare?'19px':'2px',transition:'all 0.2s'}}/>
+          </button>
+        </div>
+        {useFlare && (
+          <>
+            <input
+              className="input"
+              type="email"
+              style={{height:'36px',marginBottom:'6px'}}
+              placeholder="customer@example.com"
+              value={flare}
+              onChange={e => setFlare(e.target.value)}
+            />
+            <div style={{fontFamily:'var(--font-mono)',fontSize:'9px',color:'var(--text-off)',lineHeight:1.6}}>
+              $0.05 charged to your Harbor at publish · reader funds their own Harbor to read · 97% of read price to you
+            </div>
+          </>
+        )}
+      </div>
+
+      <button data-testid="cast-review-btn" className="btn btn-primary btn-full" onClick={() => { if (!hook.trim()) return; setStep('confirm') }} disabled={!hook.trim()||lowFuel||(useSecQ&&(!secQ.trim()||!secA.trim()))||(useFlare&&!flare.trim())}>
         Review →
       </button>
     </>
