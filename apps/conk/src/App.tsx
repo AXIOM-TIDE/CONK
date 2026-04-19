@@ -28,6 +28,15 @@ export default function App() {
   }, [])
 
   useEffect(() => {
+    // Detect Flare deep link — /cast/:id
+    const flareMatch = window.location.pathname.match(/^\/cast\/(.+)$/)
+    if (flareMatch) {
+      sessionStorage.setItem('conk:pending_flare', flareMatch[1])
+      window.history.replaceState({}, '', '/')
+    }
+  }, [])
+
+  useEffect(() => {
     const init = async () => {
       // Handle OAuth callback
       if (window.location.hash.includes('id_token')) {

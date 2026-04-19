@@ -903,3 +903,93 @@ body::after{
 .back-btn:hover { color: var(--teal); }
 .back-btn svg { transition: transform 0.15s; }
 .back-btn:hover svg { transform: translateX(-2px); }
+
+/* ── Mobile improvements ──────────────────────────────────────────────── */
+@media(max-width:640px){
+
+  /* Tab bar — icon only on small screens, better scroll */
+  .nav-box{
+    min-width:40px !important;
+    padding:8px 2px !important;
+    flex:0 0 auto !important;
+  }
+  .nav-box .nav-label{
+    display:none;
+  }
+  .nav-box.active .nav-label{
+    display:block;
+    font-size:8px;
+  }
+  .sidebar{
+    -webkit-overflow-scrolling:touch;
+    scrollbar-width:none;
+    gap:1px !important;
+    padding:4px 6px !important;
+  }
+  .sidebar::-webkit-scrollbar{display:none}
+
+  /* Active tab — brighter indicator on mobile */
+  .nav-box.active{
+    background:rgba(0,184,230,0.12) !important;
+  }
+
+  /* Buttons — bigger touch targets */
+  .btn-full{
+    height:52px !important;
+    font-size:13px !important;
+  }
+  .btn{
+    min-height:44px;
+  }
+  .btn-sm{
+    min-height:36px;
+    padding:8px 14px !important;
+    font-size:11px !important;
+  }
+
+  /* Chips — bigger on mobile */
+  .chip{
+    min-height:36px !important;
+    padding:6px 12px !important;
+    font-size:11px !important;
+  }
+
+  /* Inputs — larger touch target */
+  .input{
+    min-height:44px !important;
+    font-size:14px !important;
+  }
+
+  /* Mode cards — full width stack */
+  .mode-cards{
+    grid-template-columns:1fr 1fr !important;
+  }
+
+  /* Summary rows — better spacing */
+  .summary-row{
+    padding:10px 0 !important;
+    font-size:12px !important;
+  }
+
+  /* Field labels — more readable */
+  .field-label{
+    font-size:11px !important;
+    margin-bottom:8px !important;
+  }
+
+  /* Top bar on mobile — slightly taller */
+  .shell [style*="height:52px"]{
+    height:56px !important;
+  }
+
+  /* Panel — more height on mobile */
+  .side-panel{
+    height:75dvh !important;
+  }
+
+  /* Cast panel textarea — readable font size */
+  .input[rows]{
+    font-size:14px !important;
+  }
+}
+

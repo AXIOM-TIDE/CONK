@@ -28,6 +28,7 @@ export function VesselHome({ onBack }: { onBack: () => void }) {
   const [tab,          setTab]          = useState<VesselTab>('drift')
   const [lhId,         setLhId]         = useState<string|null>(null)
   const [showDrawFuel, setShowDrawFuel] = useState(false)
+  const [pendingFlare,  setPendingFlare]  = useState<string|null>(() => sessionStorage.getItem('conk:pending_flare'))
 
   if (!vessel) return null
   if (lhId) return <LighthouseReader id={lhId} onClose={() => setLhId(null)}/>
