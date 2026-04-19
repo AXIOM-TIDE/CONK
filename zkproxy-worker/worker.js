@@ -296,6 +296,55 @@ export default {
         })
       }
 
+      // ── Flare email delivery ──────────────────────────────────────────────
+      if (path.includes('flare') && request.method === 'POST') {
+        const apiKey = env.RESEND_API_KEY
+        if (!apiKey) return errResponse('RESEND_API_KEY not configured', 503, origin)
+
+        let data
+        try { data = JSON.parse(rawBody) } catch { return errResponse('Bad JSON', 400, origin) }
+
+        const { to, hook, body, price, castUrl, castId } = data
+        if (!to || !hook || !castUrl) return errResponse('Missing fields', 400, origin)
+
+        const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"><style>
+          body{background:#000208;color:#a8ccdc;font-family:monospace;margin:0;padding:32px}
+          .card{background:#020b18;border:1px solid rgba(0,212,255,0.2);padding:28px 32px;max-width:560px;margin:0 auto}
+          .label{font-size:11px;letter-spacing:0.3em;text-transform:uppercase;color:rgba(0,212,255,0.5);margin-bottom:8px}
+          .hook{font-size:22px;font-weight:700;color:#d0eef8;margin-bottom:16px;line-height:1.3}
+          .body{font-size:14px;color:rgba(168,204,220,0.7);line-height:1.8;margin-bottom:24px;white-space:pre-wrap}
+          .price{font-size:13px;color:#00d4ff;margin-bottom:24px}
+          .btn{display:inline-block;background:#00d4ff;color:#000208;padding:14px 32px;font-family:monospace;font-size:12px;font-weight:700;letter-spacing:0.2em;text-decoration:none;text-transform:uppercase}
+          .footer{margin-top:24px;font-size:10px;color:rgba(168,204,220,0.25);letter-spacing:0.1em;line-height:1.8}
+        </style></head><body><div class="card">
+          <div class="label">// CONK Flare</div>
+          <div class="hook">${hook}</div>
+          <div class="body">${String(body||'').replace(/</g,'&lt;').replace(/>/g,'&gt;')}</div>
+          <div class="price">$${Number(price||0).toFixed(3)} USDC to read &middot; instant settlement</div>
+          <a href="${castUrl}" class="btn">Read Cast &rarr;</a>
+          <div class="footer">
+            Cast: ${castId||''}<br>
+            Powered by CONK Protocol &middot; Sui Mainnet &middot; Axiom Tide LLC<br>
+            Fund a Harbor at conk.app &middot; No account required
+          </div>
+        </div></body></html>`
+
+        const res = await fetch('https://api.resend.com/emails', {
+          method: 'POST',
+          headers: { 'Authorization': `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ from: 'CONK Flare <flare@conk.app>', to: [to], subject: hook, html }),
+        })
+
+        if (!res.ok) {
+          const err = await res.text().catch(() => String(res.status))
+          return errResponse(err, 502, origin)
+        }
+
+        return new Response(JSON.stringify({ ok: true }), {
+          headers: { ...corsHeaders(origin), 'Content-Type': 'application/json' }
+        })
+      }
+
       return errResponse('Not found', 404, origin)
 
     } catch (e) {

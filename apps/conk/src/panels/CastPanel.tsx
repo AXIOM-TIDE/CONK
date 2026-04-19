@@ -124,7 +124,7 @@ export function CastPanel({ onClose }: { onClose: () => void }) {
     setError('')
     const ok = await sound({
       hook: hook.trim(),
-      body: finalBody,
+      body: sealBody,
       price,
       mode, duration: dur,
       securityQuestion: useSecQ && secQ.trim() ? secQ.trim() : undefined,
