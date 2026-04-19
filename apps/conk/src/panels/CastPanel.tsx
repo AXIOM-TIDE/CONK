@@ -286,7 +286,7 @@ export function CastPanel({ onClose }: { onClose: () => void }) {
             min="0.001"
             max="1000"
             step="0.001"
-            value={(price/1000000).toFixed(price<1000?3:price<10000?2:price<100000?1:0)}
+            value={(price/1000000).toFixed(price<=1000?3:price<=10000?2:price<=100000?1:0)}
             onChange={e => {
               const dollars = parseFloat(e.target.value)
               if (!isNaN(dollars) && dollars >= 0.001 && dollars <= 1000) {

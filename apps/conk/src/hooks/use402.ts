@@ -124,6 +124,7 @@ export function useSoundCast() {
       securityAnswer?:   string
       keywords?:         string[]
       unlocksAt?:        number
+      flare?:            string
     }): Promise<boolean> => {
       if (!vessel) return false
 
@@ -151,6 +152,23 @@ export function useSoundCast() {
         })
 
         console.log('Cast sounded on Sui:', castTxDigest)
+
+        // Flare — deliver cast link to email via worker
+        if (payload.flare?.trim()) {
+          const castUrl = `https://conk.app/cast/${castTxDigest}`
+          fetch('https://conk-zkproxy-v2.italktonumbers.workers.dev/flare', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              to:      payload.flare.trim(),
+              hook:    payload.hook,
+              body:    payload.body,
+              price:   (payload.price ?? 1000) / 1_000_000,
+              castUrl,
+              castId:  castTxDigest,
+            }),
+          }).catch(e => console.warn('[Flare] email delivery failed:', e.message))
+        }
 
         const durationMs: Record<string, number> = {
           '24h': 86400000,
