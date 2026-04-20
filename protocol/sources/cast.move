@@ -18,6 +18,9 @@ module axiom_tide::cast {
     const E_CAST_EXPIRED:    u64 = 1;
     const E_WRONG_RECIPIENT: u64 = 2;
     const E_ALREADY_BURNED:  u64 = 3;
+    const E_PRICE_TOO_LOW:   u64 = 4;
+
+    const MIN_PAID_PRICE:    u64 = 100_000;
 
     const MODE_OPEN:      u8 = 0;
     const MODE_SEALED:    u8 = 1;
@@ -155,7 +158,20 @@ module axiom_tide::cast {
         if (cast.mode == MODE_SEALED || cast.mode == MODE_EYES_ONLY) {
             assert!(reader == cast.recipient, E_WRONG_RECIPIENT);
         };
-        abyss::receive_read(abyss, fee_coin, clock, ctx);
+        // Price-aware routing: free casts → 100% Abyss; paid casts → 97% author / 3% Abyss
+        let paid_amount = sui::coin::value(&fee_coin);
+        if (cast.fee_paid == 0) {
+            // Free cast — full fee to Abyss
+            abyss::receive_read(abyss, fee_coin, clock, ctx);
+        } else {
+            // Paid cast — validate minimum
+            assert!(paid_amount >= MIN_PAID_PRICE, E_PRICE_TOO_LOW);
+            let author_amount = (paid_amount * 97) / 100;
+            let mut coin_mut = fee_coin;
+            let author_payment = sui::coin::split(&mut coin_mut, author_amount, ctx);
+            transfer::public_transfer(author_payment, cast.recipient);
+            abyss::receive_read(abyss, coin_mut, clock, ctx);
+        };
         cast.read_count = cast.read_count + 1;
         event::emit(CastRead {
             cast_id:    object::id_to_address(&object::id(cast)),

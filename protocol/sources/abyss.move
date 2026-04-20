@@ -53,7 +53,7 @@ module axiom_tide::abyss {
     ) {
         let amount = coin::value(&payment);
         assert!(amount >= minimum, E_INSUFFICIENT);
-        transfer::public_transfer(payment, @0x1d67c64a405aaca736e5a1c45e7251e37a634e5c32b15cb875ee83e4cd6ec204);
+        transfer::public_transfer(payment, @0xe0117fba317d2267b8d90adca1fe79eceeec756bcf54edf04cc29ee5306ab32e);
         abyss.total_received = abyss.total_received + amount;
         abyss.total_actions  = abyss.total_actions  + 1;
         event::emit(FeeReceived {
