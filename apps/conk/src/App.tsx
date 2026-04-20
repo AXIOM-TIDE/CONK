@@ -57,8 +57,7 @@ export default function App() {
     const check = () => setConnected(isLoggedIn() || isWalletSession())
     window.addEventListener('storage', check)
     // Poll every second for session changes
-    const iv = setInterval(check, 1000)
-    return () => { window.removeEventListener('storage', check); clearInterval(iv) }
+    return () => window.removeEventListener('storage', check)
   }, [])
 
   if (checking) return null
