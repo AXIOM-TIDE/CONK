@@ -3,22 +3,15 @@ import { useStore } from '../store/store'
 import { DriftFeed } from '../components/DriftFeed'
 import { CastPanel } from '../panels/CastPanel'
 import { DockPanel } from '../panels/DockPanel'
-import { SirenPanel } from '../panels/SirenPanel'
 import { LighthouseFeed } from '../components/LighthouseFeed'
 import { LighthouseReader } from '../components/LighthouseReader'
 import { FuelBar } from '../components/FuelMeter'
-import { DaemonPanel } from '../panels/DaemonPanel'
-import { GatewayPanel } from '../panels/GatewayPanel'
-import { ChannelPanel } from '../panels/ChannelPanel'
-import { BountyPanel } from '../panels/BountyPanel'
-import { ProtocolPanel } from '../panels/ProtocolPanel'
 import { TreasuryStrip } from '../components/TreasuryStrip'
 import { DrawFuelModal } from '../components/DrawFuelModal'
 import { BackButton } from '../components/BackButton'
 import { IconCast, IconDock, IconSiren, IconLighthouse, IconHarbor } from '../components/Icons'
-import { BeaconPanel } from '../panels/BeaconPanel'
 
-type VesselTab = 'drift' | 'cast' | 'dock' | 'siren' | 'lighthouse' | 'stored' | 'daemon' | 'gateway' | 'channel' | 'bounty' | 'protocol'| 'beacon'
+type VesselTab = 'drift' | 'cast' | 'dock' | 'stored'
 
 export function VesselHome({ onBack }: { onBack: () => void }) {
   const vessel     = useStore((s) => s.vessel)
@@ -49,18 +42,10 @@ export function VesselHome({ onBack }: { onBack: () => void }) {
     : 'stable'
 
   const TABS: { id:VesselTab; icon:React.ReactNode; label:string; locked:boolean }[] = [
-    { id:'drift',      icon:<IconCast size={16} color="currentColor"/>,       label:'Drift',      locked:false },
-    { id:'cast',       icon:<IconCast size={16} color="currentColor"/>,       label:'Cast',       locked:noFuel },
-    { id:'dock',       icon:<IconDock size={16} color="currentColor"/>,       label:'Dock',       locked:noFuel },
-    { id:'siren',      icon:<IconSiren size={16} color="currentColor"/>,      label:'Siren',      locked:noFuel },
-    { id:'lighthouse', icon:<IconLighthouse size={16} color="currentColor"/>, label:'Light',      locked:noFuel },
-    { id:'stored',     icon:<span style={{fontSize:'13px'}}>⊕</span>,         label:'Stored',     locked:false  },
-    { id:'daemon',     icon:<span style={{fontSize:'13px'}}>⚙</span>,         label:'Daemon',     locked:false  },
-    { id:'gateway',    icon:<span style={{fontSize:'13px'}}>⊛</span>,         label:'Gateway',    locked:false  },
-    { id:'channel',    icon:<span style={{fontSize:'13px'}}>◌◌</span>,        label:'Channels',   locked:false  },
-    { id:'bounty',     icon:<span style={{fontSize:'13px'}}>⊕</span>,         label:'Bounties',   locked:false  },
-    { id:'protocol',   icon:<span style={{fontSize:'13px'}}>⚡</span>,         label:'Protocol',   locked:false  },
-    { id:'beacon', icon:<span style={{fontSize:'13px'}}>⚓</span>, label:'Beacon', locked:false },
+    { id:'drift',  icon:<IconCast size={16} color="currentColor"/>,       label:'Drift',  locked:false },
+    { id:'cast',   icon:<IconCast size={16} color="currentColor"/>,       label:'Cast',   locked:noFuel },
+    { id:'dock',   icon:<IconDock size={16} color="currentColor"/>,       label:'Dock',   locked:noFuel },
+    { id:'stored', icon:<span style={{fontSize:'13px'}}>⊕</span>,         label:'Stored', locked:false },
   ]
 
   const handleTabClick = (t: typeof TABS[0]) => {
@@ -220,15 +205,7 @@ export function VesselHome({ onBack }: { onBack: () => void }) {
           {tab==='drift'      && <DriftFeed/>}
           {tab==='cast'       && <FuelGate noFuel={noFuel} onDraw={()=>setShowDrawFuel(true)} onBack={()=>setTab('drift')}><CastPanel onClose={()=>setTab('drift')}/></FuelGate>}
           {tab==='dock'       && <FuelGate noFuel={noFuel} onDraw={()=>setShowDrawFuel(true)} onBack={()=>setTab('drift')}><DockPanel/></FuelGate>}
-          {tab==='siren'      && <FuelGate noFuel={noFuel} onDraw={()=>setShowDrawFuel(true)} onBack={()=>setTab('drift')}><SirenPanel/></FuelGate>}
-          {tab==='lighthouse' && <FuelGate noFuel={noFuel} onDraw={()=>setShowDrawFuel(true)} onBack={()=>setTab('drift')}><LighthouseFeed onOpen={setLhId} onBack={()=>setTab('drift')}/></FuelGate>}
           {tab==='stored'     && <StoredPanel vesselId={vessel.id} onBack={()=>setTab('drift')}/>}
-          {tab==='daemon'     && <FuelGate noFuel={false} onDraw={()=>setShowDrawFuel(true)} onBack={()=>setTab('drift')}><DaemonPanel/></FuelGate>}
-          {tab==='gateway'    && <GatewayPanel onBack={()=>setTab('daemon')}/>}
-          {tab==='channel'    && <ChannelPanel onBack={()=>setTab('drift')}/>}
-          {tab==='bounty'     && <BountyPanel onBack={()=>setTab('drift')}/>}
-          {tab==='protocol'   && <ProtocolPanel onBack={()=>setTab('drift')}/>}
-          {tab==='beacon'   && <BeaconPanel/>}
         </div>
       </div>
 
