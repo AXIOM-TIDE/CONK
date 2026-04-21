@@ -9,10 +9,9 @@ import { encryptForCast, buildSealMetadata } from '../sui/seal'
 import { getAddress } from '../sui/zklogin'
 
 const MODES: { id: CastMode; icon: React.ReactNode; label: string; desc: string; note?: string }[] = [
-  { id:'open',      icon:<IconOpen size={13}  color="var(--teal)"/>,   label:'Open',      desc:'Anyone reads · can earn Lighthouse' },
-  { id:'eyes_only', icon:<IconEye size={13}   color="var(--eyes)"/>,   label:'Eyes Only', desc:'Reader must provide a Dock map',    note:'Reader must know the Dock map to unlock.' },
-  { id:'burn',      icon:<IconFlame size={13} color="var(--burn)"/>,   label:'Burn',      desc:'Anyone reads once · gone forever',  note:'Cannot earn a Lighthouse. Permanently deleted after first read.' },
-  { id:'sealed',    icon:<IconDock size={13}  color="var(--sealed)"/>, label:'Sealed',    desc:'Specific vessel only · encrypted' },
+  { id:'open',      icon:<IconOpen size={13}  color="var(--teal)"/>,   label:'Open',  desc:'Public · anyone can read' },
+  { id:'eyes_only', icon:<IconEye size={13}   color="var(--eyes)"/>,   label:'Flare', desc:'Private · delivered via email', note:'Only the email recipient can read this cast.' },
+  { id:'burn',      icon:<IconFlame size={13} color="var(--burn)"/>,   label:'Burn',  desc:'Anyone reads once · gone forever', note:'Permanently deleted after first read.' },
 ]
 
 function FuelStrip({ fuel }: { fuel: number }) {
