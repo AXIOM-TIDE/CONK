@@ -17,10 +17,9 @@ function formatPrice(microUsdc: number): string {
 
 
 const MODE_FILTERS: { id: 'all'|CastMode; label: string }[] = [
-  { id:'all',       label:'all'       },
-  { id:'open',      label:'open'      },
-  { id:'eyes_only', label:'eyes only' },
-  { id:'burn',      label:'burn'      },
+  { id:'all',  label:'all'  },
+  { id:'open', label:'open' },
+  { id:'burn', label:'burn' },
 ]
 
 export function DriftFeed() {
@@ -56,6 +55,7 @@ export function DriftFeed() {
   const filtered = casts
     .filter(c => !c.burned)
     .filter(c => !vesselId || !(c.burnedBy ?? []).includes(vesselId))
+    .filter(c => c.mode !== 'eyes_only')  // Flares are private — never shown in Drift
     .filter(c => filter === 'all' ? true : c.mode === filter)
     .filter(c => {
       if (!searchQuery.trim()) return true

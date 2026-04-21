@@ -122,7 +122,8 @@ export function HarborHome({ onEnterVessel }: Props) {
     }
   }
 
-  const filtered = filter === 'all' ? casts : casts.filter(c => c.mode === filter)
+  const publicCasts = casts.filter(c => c.mode !== 'eyes_only')  // Flares never appear in public feeds
+  const filtered = filter === 'all' ? publicCasts : publicCasts.filter(c => c.mode === filter)
 
   return (
     <div className="shell" data-testid="harbor-home" style={{ background: 'var(--bg)' }}>
@@ -458,11 +459,11 @@ export function HarborHome({ onEnterVessel }: Props) {
           {/* Filter strip */}
           <div style={{ display:'flex', alignItems:'center', gap:'6px', padding:'8px 14px', borderBottom:'1px solid var(--border)', background:'rgba(1,6,8,0.6)', backdropFilter:'blur(8px)', flexShrink:0, overflowX:'auto', scrollbarWidth:'none' }}>
             <span style={{ fontFamily:'var(--font-mono)', fontSize:'9px', color:'var(--text-off)', letterSpacing:'0.12em', textTransform:'uppercase', flexShrink:0, marginRight:'4px' }}>DRIFT</span>
-            {(['all','open','eyes_only','burn'] as const).map(f => (
+            {(['all','open','burn'] as const).map(f => (
               <button key={f} className={`chip ${filter===f?'active':''}`}
                 style={{ fontSize:'10px', padding:'3px 9px', flexShrink:0 }}
                 onClick={() => setFilter(f)}>
-                {f === 'all' ? 'all' : f === 'open' ? 'open' : f === 'eyes_only' ? 'eyes only' : 'burn'}
+                {f === 'all' ? 'all' : f === 'open' ? 'open' : 'burn'}
               </button>
             ))}
             <div style={{ marginLeft:'auto', display:'flex', alignItems:'center', gap:'4px', fontFamily:'var(--font-mono)', fontSize:'9px', color:'var(--teal)', opacity:0.7, flexShrink:0 }}>
