@@ -204,7 +204,7 @@ export function VesselHome({ onBack }: { onBack: () => void }) {
         <div style={{flex:1,overflow:'hidden',display:'flex',flexDirection:'column'}}>
           {tab==='drift'      && <DriftFeed/>}
           {tab==='cast'       && <FuelGate noFuel={noFuel} onDraw={()=>setShowDrawFuel(true)} onBack={()=>setTab('drift')}><CastPanel onClose={()=>setTab('drift')}/></FuelGate>}
-          {tab==='dock'       && <FuelGate noFuel={noFuel} onDraw={()=>setShowDrawFuel(true)} onBack={()=>setTab('drift')}><DockPanel/></FuelGate>}
+          {tab==='dock'       && <FuelGate noFuel={noFuel} onDraw={()=>setShowDrawFuel(true)} onBack={()=>setTab('drift')}><DockPanel onViewStored={() => setTab("stored")}/></FuelGate>}
           {tab==='stored'     && <StoredPanel vesselId={vessel.id} onBack={()=>setTab('drift')}/>}
         </div>
       </div>
