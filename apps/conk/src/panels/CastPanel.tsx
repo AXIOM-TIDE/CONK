@@ -59,7 +59,6 @@ export function CastPanel({ onClose }: { onClose: () => void }) {
   const [cascadeHook, setCascadeHook] = useState('')
   const [cascadeBody, setCascadeBody] = useState('')
   const [flare,        setFlare]        = useState('')
-  const [useFlare,     setUseFlare]     = useState(false)
 
   const isSending = status === 'pending'
   const isDone    = status === 'success'
@@ -137,7 +136,7 @@ export function CastPanel({ onClose }: { onClose: () => void }) {
         hook: cascadeHook.trim(),
         body: cascadeBody.trim() || cascadeHook.trim(),
       } : undefined,
-      flare: useFlare && flare.trim() ? flare.trim() : undefined,
+      flare: mode === 'eyes_only' && flare.trim() ? flare.trim() : undefined,
     })
     if (ok) { setHook(''); setBody(''); setStep('compose'); setTimeout(onClose, 300) }
     else setError('Failed. Check your Harbor balance.')
@@ -159,8 +158,8 @@ export function CastPanel({ onClose }: { onClose: () => void }) {
         </div>
         <div className="summary-row"><span>Duration</span><span className="summary-val">{dur}</span></div>
         <div className="summary-row"><span>Security gate</span><span className="summary-val">{useSecQ && secQ ? 'enabled' : 'none'}</span></div>
-        <div className="summary-row" style={{borderBottom:useFlare&&flare?undefined:'none'}}><span>Read price</span><span className="summary-val">${(price/1000000).toFixed(3)}</span></div>
-        {useFlare && flare && (
+        <div className="summary-row" style={{borderBottom:mode==='eyes_only'&&flare?undefined:'none'}}><span>Read price</span><span className="summary-val">${(price/1000000).toFixed(3)}</span></div>
+        {mode === 'eyes_only' && flare && (
           <div className="summary-row" style={{borderBottom:'none'}}>
             <span>Flare to</span>
             <span className="summary-val" style={{color:'var(--teal)'}}>{flare} <span style={{color:'var(--text-off)',fontSize:'9px'}}>· $0.05 fee</span></span>
@@ -472,40 +471,32 @@ export function CastPanel({ onClose }: { onClose: () => void }) {
         )}
       </div>
 
-      {/* Flare — send cast to email */}
-      <div style={{marginBottom:'14px',padding:'12px',background:'var(--surface)',border:'1px solid var(--border)',borderRadius:'var(--radius-lg)'}}>
-        <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:useFlare?'12px':'0'}}>
-          <div>
+      {/* Flare email field — auto-shown when mode === eyes_only */}
+      {mode === 'eyes_only' && (
+        <div style={{marginBottom:'14px',padding:'12px',background:'var(--surface)',border:'1px solid var(--border)',borderRadius:'var(--radius-lg)'}}>
+          <div style={{marginBottom:'12px'}}>
             <div style={{fontFamily:'var(--font-mono)',fontSize:'10px',color:'var(--text-dim)'}}>
-              Flare <span style={{color:'var(--teal)',fontSize:'9px'}}>optional · $0.05</span>
+              Recipient email <span style={{color:'var(--teal)',fontSize:'9px'}}>required · $0.05</span>
             </div>
             <div style={{fontFamily:'var(--font-mono)',fontSize:'9px',color:'var(--text-off)',marginTop:'1px'}}>
-              Deliver this cast to an inbox. Reader still pays to read.
+              We'll send them a CONK Flare invitation. Only they can read this cast.
             </div>
           </div>
-          <button onClick={() => setUseFlare(!useFlare)}
-            style={{width:'36px',height:'20px',borderRadius:'100px',background:useFlare?'var(--teal)':'var(--surface3)',border:`1px solid ${useFlare?'var(--teal)':'var(--border)'}`,position:'relative',cursor:'pointer',transition:'all 0.2s',flexShrink:0,padding:0}}>
-            <div style={{width:'14px',height:'14px',background:useFlare?'var(--bg)':'var(--text-dim)',borderRadius:'50%',position:'absolute',top:'2px',left:useFlare?'19px':'2px',transition:'all 0.2s'}}/>
-          </button>
+          <input
+            className="input"
+            type="email"
+            style={{height:'36px',marginBottom:'6px'}}
+            placeholder="recipient@example.com"
+            value={flare}
+            onChange={e => setFlare(e.target.value)}
+          />
+          <div style={{fontFamily:'var(--font-mono)',fontSize:'9px',color:'var(--text-off)',lineHeight:1.6}}>
+            $0.05 charged to your Harbor at publish · reader funds their own Harbor to read · 97% of read price to you
+          </div>
         </div>
-        {useFlare && (
-          <>
-            <input
-              className="input"
-              type="email"
-              style={{height:'36px',marginBottom:'6px'}}
-              placeholder="customer@example.com"
-              value={flare}
-              onChange={e => setFlare(e.target.value)}
-            />
-            <div style={{fontFamily:'var(--font-mono)',fontSize:'9px',color:'var(--text-off)',lineHeight:1.6}}>
-              $0.05 charged to your Harbor at publish · reader funds their own Harbor to read · 97% of read price to you
-            </div>
-          </>
-        )}
-      </div>
+      )}
 
-      <button data-testid="cast-review-btn" className="btn btn-primary btn-full" onClick={() => { if (!hook.trim()) return; setStep('confirm') }} disabled={!hook.trim()||lowFuel||(useSecQ&&(!secQ.trim()||!secA.trim()))||(useFlare&&!flare.trim())}>
+      <button data-testid="cast-review-btn" className="btn btn-primary btn-full" onClick={() => { if (!hook.trim()) return; setStep('confirm') }} disabled={!hook.trim()||lowFuel||(useSecQ&&(!secQ.trim()||!secA.trim()))||(mode==='eyes_only'&&!flare.trim())}>
         Review →
       </button>
     </>
