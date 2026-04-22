@@ -141,7 +141,7 @@ export function useSoundCast() {
 
         const { getAddress: getAddr } = await import('../sui/zklogin')
         const senderAddr = getAddr() ?? ''
-        const castTxDigest = await soundCast({
+        const { digest: castTxDigest, castId } = await soundCast({
           hook:        payload.hook,
           body:        payload.body,
           mode:        modeMap[payload.mode] ?? 0,
@@ -151,11 +151,11 @@ export function useSoundCast() {
           vesselCapId: vessel.vesselCapId ?? senderAddr,
         })
 
-        console.log('Cast sounded on Sui:', castTxDigest)
+        console.log('Cast sounded on Sui:', { digest: castTxDigest, castId })
 
         // Flare — deliver cast link to email via worker
         if (payload.flare?.trim()) {
-          const castUrl = `https://conk.app/cast/${castTxDigest}`
+          const castUrl = `https://conk.app/cast/${castId || castTxDigest}`
           fetch('https://conk-zkproxy-v2.italktonumbers.workers.dev/flare', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },

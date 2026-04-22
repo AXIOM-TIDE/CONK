@@ -228,7 +228,7 @@ export async function soundCast(opts: {
   vesselCapId: string
   maxClaims?:       number  // v5: Dock seat count, default 1 (single-claim)
   dockDescription?: string  // v5: optional description shown in Dock invitation card
-}): Promise<string> {
+}): Promise<{ digest: string; castId: string }> {
   const session = getSession()
   if (!session) throw new Error('No session')
 
@@ -260,7 +260,18 @@ export async function soundCast(opts: {
 
   tx.setSender(session.address)
   const result = await executeTx(tx, session.address)
-  return result.digest
+
+  // v5: extract the created Cast object ID from the CastSounded event
+  const castSoundedEvent = result.events?.find((e: any) =>
+    e.type.endsWith('::cast::CastSounded')
+  )
+  const castId = (castSoundedEvent?.parsedJson as any)?.cast_id ?? ''
+
+  if (!castId) {
+    console.warn('[soundCast] Could not extract cast_id from events, returning digest only')
+  }
+
+  return { digest: result.digest, castId }
 }
 
 // ── Withdraw Harbor ───────────────────────────────────────────
