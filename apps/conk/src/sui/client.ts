@@ -226,6 +226,8 @@ export async function soundCast(opts: {
   price:       number
   vesselId:    string
   vesselCapId: string
+  maxClaims?:       number  // v5: Dock seat count, default 1 (single-claim)
+  dockDescription?: string  // v5: optional description shown in Dock invitation card
 }): Promise<string> {
   const session = getSession()
   if (!session) throw new Error('No session')
@@ -250,6 +252,8 @@ export async function soundCast(opts: {
       tx.pure.address(session.address),
       tx.pure.u8(opts.duration),
       tx.pure.u64(opts.price),
+      tx.pure.u64(opts.maxClaims ?? 1),
+      tx.pure.vector('u8', Array.from(new TextEncoder().encode(opts.dockDescription ?? ''))),
       tx.object(CLOCK),
     ],
   })
