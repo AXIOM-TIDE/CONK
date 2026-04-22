@@ -102,7 +102,7 @@ async function executeTx(tx: unknown, sender: string): Promise<any> {
   const result = await rpc('sui_executeTransactionBlock', [
     bytes,
     [signature, sponsorSig],
-    { showEffects: true, showObjectChanges: true },
+    { showEffects: true, showObjectChanges: true, showEvents: true },
     'WaitForLocalExecution',
   ])
 
