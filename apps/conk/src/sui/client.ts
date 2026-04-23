@@ -217,6 +217,48 @@ export async function crossPaywall(opts: {
   return result.digest
 }
 
+// ── Read a Cast on-chain (v5) ─────────────────────────────────
+// Calls the Move cast::read function directly. Contract handles:
+//   • 97/3 split routing (97% to cast.author, 3% to Abyss)
+//   • EYES_ONLY Dock gating (claims_used < max_claims)
+//   • read_count increment, CastRead event
+//   • DockClaimed event (for EYES_ONLY reads)
+//   • Burn-on-read for GHOST, burn-when-Dock-full for EYES_ONLY
+export async function readCast(opts: {
+  castId:     string  // Sui object ID of the Cast to read
+  amountUsdc: number  // Full payment amount (contract does 97/3 split)
+}): Promise<{ digest: string; castId: string }> {
+  const session = getSession()
+  if (!session) throw new Error('No session')
+
+  const { Transaction } = await import('@mysten/sui/transactions')
+  const { getAddress }  = await import('./zklogin')
+  const tx     = new Transaction()
+  const reader = getAddress() ?? session.address
+  const coins  = await getUsdcCoins(session.address)
+
+  // Split out exactly amountUsdc into a fresh Coin<USDC> for the contract.
+  // Contract will handle the split internally.
+  const [feeCoin] = tx.splitCoins(tx.object(coins[0].coinObjectId), [
+    tx.pure.u64(opts.amountUsdc),
+  ])
+
+  tx.moveCall({
+    target: `${PACKAGE}::cast::read`,
+    arguments: [
+      tx.object(opts.castId),     // &mut Cast
+      feeCoin,                    // Coin<USDC>
+      tx.object(ABYSS),           // &mut Abyss
+      tx.pure.address(reader),    // reader: address (for DockClaimed)
+      tx.object(CLOCK),           // &Clock
+    ],
+  })
+
+  tx.setSender(session.address)
+  const result = await executeTx(tx, session.address)
+  return { digest: result.digest, castId: opts.castId }
+}
+
 // ── Sound a Cast on-chain ─────────────────────────────────────
 export async function soundCast(opts: {
   hook:        string
