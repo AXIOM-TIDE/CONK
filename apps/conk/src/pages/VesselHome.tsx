@@ -5,6 +5,7 @@ import { CastPanel } from '../panels/CastPanel'
 import { DockPanel } from '../panels/DockPanel'
 import { LighthouseFeed } from '../components/LighthouseFeed'
 import { LighthouseReader } from '../components/LighthouseReader'
+import { FlareReader } from './FlareReader'
 import { FuelBar } from '../components/FuelMeter'
 import { TreasuryStrip } from '../components/TreasuryStrip'
 import { DrawFuelModal } from '../components/DrawFuelModal'
@@ -24,6 +25,7 @@ export function VesselHome({ onBack }: { onBack: () => void }) {
   const [pendingFlare,  setPendingFlare]  = useState<string|null>(() => sessionStorage.getItem('conk:pending_flare'))
 
   if (!vessel) return null
+  if (pendingFlare) return <FlareReader castId={pendingFlare} onClose={() => setPendingFlare(null)}/>
   if (lhId) return <LighthouseReader id={lhId} onClose={() => setLhId(null)}/>
 
   const fuel      = vessel.fuel
