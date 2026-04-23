@@ -259,6 +259,112 @@ export async function readCast(opts: {
   return { digest: result.digest, castId: opts.castId }
 }
 
+// ── Fetch a Cast object by ID and map to frontend shape (v5) ──
+// Used by the Flare reader to hydrate a cast from its URL into the store.
+// Returns null if the object doesn't exist, is the wrong type, or fetch fails.
+export interface OnChainCastView {
+  id:                 string
+  hook:               string
+  body:               string              // empty if sealed/eyes_only/burn and not yet read
+  mode:               'open' | 'sealed' | 'eyes_only' | 'burn'
+  duration:           '24h' | '48h' | '72h' | '7d'
+  createdAt:          number
+  expiresAt:          number
+  readCount:          number
+  burned:             boolean
+  isLighthouse:       boolean
+  feePaid:            number              // the cast's read price in microUSDC
+  author:             string              // v5: explicit author address
+  recipient:          string              // for SEALED casts
+  maxClaims:          number              // v5: Dock seat count
+  claimsUsed:         number              // v5: seats consumed so far
+  claimsRemaining:    number              // v5: derived
+  isDockFull:         boolean             // v5: derived
+  dockDescription:    string              // v5: optional Dock invitation text
+  vesselId:           string              // on-chain vessel reference
+  vesselTier:         number
+}
+
+export async function fetchCastById(castId: string): Promise<OnChainCastView | null> {
+  try {
+    const result = await rpc('sui_getObject', [
+      castId,
+      { showContent: true, showType: true },
+    ])
+
+    if (!result?.data?.content) {
+      console.warn('[fetchCastById] no content for', castId)
+      return null
+    }
+
+    const type = result.data.type as string
+    if (!type || !type.includes('::cast::Cast')) {
+      console.warn('[fetchCastById] object is not a Cast:', type)
+      return null
+    }
+
+    const f = result.data.content.fields as any
+
+    // Hook and body are stored as vector<u8> — decode to utf-8 string
+    const decodeBytes = (arr: any): string => {
+      if (!arr) return ''
+      // Already a string (some RPC shapes)
+      if (typeof arr === 'string') return arr
+      // Array of numbers
+      if (Array.isArray(arr)) {
+        try { return new TextDecoder().decode(new Uint8Array(arr)) } catch { return '' }
+      }
+      return ''
+    }
+
+    // Map Move enum u8 -> frontend string
+    const modeMap: Record<number, OnChainCastView['mode']> = {
+      0: 'open',
+      1: 'sealed',
+      2: 'eyes_only',
+      3: 'burn',
+    }
+    const durationMap: Record<number, OnChainCastView['duration']> = {
+      1: '24h',
+      2: '48h',
+      3: '72h',
+      4: '7d',
+    }
+
+    const modeNum     = Number(f.mode ?? 0)
+    const durationNum = Number(f.duration ?? 1)
+    const stateNum    = Number(f.state ?? 0)
+    const maxClaims   = Number(f.max_claims ?? 1)
+    const claimsUsed  = Number(f.claims_used ?? 0)
+
+    return {
+      id:              castId,
+      hook:            decodeBytes(f.hook),
+      body:            decodeBytes(f.content_blob),   // empty if already burned
+      mode:            modeMap[modeNum]          ?? 'open',
+      duration:        durationMap[durationNum]  ?? '24h',
+      createdAt:       Number(f.created_at ?? 0),
+      expiresAt:       Number(f.expires_at ?? 0),
+      readCount:       Number(f.read_count ?? 0),
+      burned:          stateNum === 1,
+      isLighthouse:    Boolean(f.is_lighthouse),
+      feePaid:         Number(f.fee_paid ?? 0),
+      author:          String(f.author ?? ''),
+      recipient:       String(f.recipient ?? ''),
+      maxClaims,
+      claimsUsed,
+      claimsRemaining: Math.max(0, maxClaims - claimsUsed),
+      isDockFull:      claimsUsed >= maxClaims,
+      dockDescription: decodeBytes(f.dock_description),
+      vesselId:        String(f.vessel_id ?? ''),
+      vesselTier:      Number(f.vessel_tier ?? 1),
+    }
+  } catch (err) {
+    console.error('[fetchCastById] fetch failed:', err)
+    return null
+  }
+}
+
 // ── Sound a Cast on-chain ─────────────────────────────────────
 export async function soundCast(opts: {
   hook:        string
