@@ -134,7 +134,7 @@ export function useSoundCast() {
 
       try {
         // Real Sui transaction — calls cast::sound on deployed contract
-        const castPrice = payload.price ?? 1000
+        const castPrice = payload.price ?? 100_000  // v6: $0.10 minimum read price
         const harbor    = useStore.getState().harbor
         const modeMap: Record<string, number> = { open: 0, sealed: 1, eyes_only: 2, burn: 3 }
         const durMap:  Record<string, number> = { '24h': 1, '48h': 2, '72h': 3, '7d': 4 }

@@ -158,7 +158,7 @@ export function CastPanel({ onClose }: { onClose: () => void }) {
         </div>
         <div className="summary-row"><span>Duration</span><span className="summary-val">{dur}</span></div>
         <div className="summary-row"><span>Security gate</span><span className="summary-val">{useSecQ && secQ ? 'enabled' : 'none'}</span></div>
-        <div className="summary-row" style={{borderBottom:mode==='eyes_only'&&flare?undefined:'none'}}><span>Read price</span><span className="summary-val">${(price/1000000).toFixed(3)}</span></div>
+        <div className="summary-row" style={{borderBottom:mode==='eyes_only'&&flare?undefined:'none'}}><span>Read price</span><span className="summary-val">${(price/1000000).toFixed(2)}</span></div>
         {mode === 'eyes_only' && flare && (
           <div className="summary-row" style={{borderBottom:'none'}}>
             <span>Flare to</span>
@@ -175,7 +175,7 @@ export function CastPanel({ onClose }: { onClose: () => void }) {
       {error && <div style={{padding:'8px 10px',background:'var(--burn-dim)',border:'1px solid var(--burn-line)',borderRadius:'var(--radius)',fontFamily:'var(--font-mono)',fontSize:'11px',color:'var(--burn)',marginBottom:'10px'}}>{error}</div>}
 
       <button data-testid="cast-sound-btn" className="btn btn-primary btn-full" onClick={handleSend} disabled={isSending||isDone||lowFuel}>
-        {isSending ? <><span className="spinner"/>Sounding…</> : isDone ? <span data-testid="cast-success">✓ cast sounded</span> : <><IconCast size={12} color="var(--text-inv)"/> Sound it · ${(price/1000000).toFixed(3)}</>}
+        {isSending ? <><span className="spinner"/>Sounding…</> : isDone ? <span data-testid="cast-success">✓ cast sounded</span> : <><IconCast size={12} color="var(--text-inv)"/> Sound it · ${(price/1000000).toFixed(2)}</>}
       </button>
       <button className="btn btn-ghost btn-full" style={{marginTop:'6px'}} onClick={() => setStep('compose')}>← edit</button>
     </>
