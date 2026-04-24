@@ -1,4 +1,4 @@
-/// AXIOM TIDE PROTOCOL · v5.0.0
+/// AXIOM TIDE PROTOCOL · v6.0.0
 /// PRIMITIVE 3 OF 7 · CAST
 /// The communication primitive. Everything is a cast.
 /// Open · Sealed · Eyes Only · Ghost.
@@ -23,10 +23,12 @@ module axiom_tide::cast {
     const E_DOCK_FULL:                u64 = 5;
     const E_INVALID_MAX_CLAIMS:       u64 = 6;
     const E_INSUFFICIENT_UPGRADE_FEE: u64 = 7;
+    const E_INSUFFICIENT_FLARE_FEE:   u64 = 8;  // v6: publish fee below Flare minimum
 
     const MIN_PAID_PRICE:    u64 = 100_000;
 
-    const DOCK_SLOT_PRICE:   u64 = 10_000;
+    const DOCK_SLOT_PRICE:        u64 = 10_000;
+    const MIN_FLARE_PUBLISH_FEE:  u64 = 10_000;  // v6: $0.01 minimum to send a Flare (EYES_ONLY)
     const MIN_MAX_CLAIMS:    u64 = 1;
     const MAX_MAX_CLAIMS:    u64 = 10_000;
 
@@ -141,6 +143,11 @@ module axiom_tide::cast {
         let dock_upgrade_fee = (max_claims - 1) * DOCK_SLOT_PRICE;
         let paid_amount = coin::value(&fee_coin);
         assert!(paid_amount >= dock_upgrade_fee, E_INSUFFICIENT_UPGRADE_FEE);
+
+        // v6: Flares require minimum publish fee
+        if (mode == MODE_EYES_ONLY) {
+            assert!(paid_amount >= MIN_FLARE_PUBLISH_FEE + dock_upgrade_fee, E_INSUFFICIENT_FLARE_FEE);
+        };
 
         let now     = clock::timestamp_ms(clock);
         let life_ms = if (duration == DUR_24H) MS_24H
