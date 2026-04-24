@@ -20,7 +20,7 @@ function FuelStrip({ fuel }: { fuel: number }) {
     <div style={{display:'flex',alignItems:'center',gap:'10px',padding:'7px 10px',background:low?'var(--burn-dim)':'var(--surface)',border:`1px solid ${low?'rgba(255,58,92,0.2)':'var(--border)'}`,borderRadius:'var(--radius)',marginBottom:'12px'}}>
       <FuelBar value={fuel} max={100} width={80}/>
       <span style={{fontFamily:'var(--font-mono)',fontSize:'9px',color:low?'var(--burn)':'var(--text-off)',marginLeft:'auto'}}>
-        {low ? 'low fuel — draw from Harbor' : 'vessel fuel · $0.001 to sound'}
+        {low ? 'low fuel — draw from Harbor' : 'vessel fuel · $0.001 to sound · $0.01 for Flares'}
       </span>
     </div>
   )
@@ -50,7 +50,7 @@ export function CastPanel({ onClose }: { onClose: () => void }) {
   const [uploading, setUploading]           = useState(false)
   const [uploadError, setUploadError]       = useState('')
   const setHarborStore = useStore((s) => s.setHarbor)
-  const [price, setPrice] = useState<number>(1000) // default $0.001
+  const [price, setPrice] = useState<number>(100000) // default $0.10 (v6 minimum paid read)
   const [castType, setCastType] = useState<'standard'|'subscription'|'timelocked'>('standard')
   const [subInterval, setSubInterval] = useState<'daily'|'weekly'|'monthly'>('weekly')
   const [lockHrs, setLockHrs] = useState<number>(24)
@@ -162,7 +162,7 @@ export function CastPanel({ onClose }: { onClose: () => void }) {
         {mode === 'eyes_only' && flare && (
           <div className="summary-row" style={{borderBottom:'none'}}>
             <span>Flare to</span>
-            <span className="summary-val" style={{color:'var(--teal)'}}>{flare} <span style={{color:'var(--text-off)',fontSize:'9px'}}>· $0.05 fee</span></span>
+            <span className="summary-val" style={{color:'var(--teal)'}}>{flare} <span style={{color:'var(--text-off)',fontSize:'9px'}}>· $0.01 fee</span></span>
           </div>
         )}
       </div>
@@ -254,7 +254,7 @@ export function CastPanel({ onClose }: { onClose: () => void }) {
       </div>
 
       <div className="field" style={{marginBottom:'11px'}}>
-        <label className="field-label">Body <span className="field-cost">$0.001 to read</span></label>
+        <label className="field-label">Body <span className="field-cost">$0.10 min · 97% to you</span></label>
         <textarea className="input" rows={4} placeholder="What the tide carries..." value={body} onChange={e=>setBody(e.target.value)}/>
         <div style={{fontFamily:'var(--font-mono)',fontSize:'9px',color:'var(--text-off)',textAlign:'right'}}>{body.length > 0 ? `${body.length} chars` : 'unlimited'}</div>
       </div>
@@ -264,11 +264,11 @@ export function CastPanel({ onClose }: { onClose: () => void }) {
         <label className="field-label">Read Price <span className="field-cost">readers pay this to unlock</span></label>
         <div style={{display:'flex',gap:'6px',flexWrap:'wrap',marginBottom:'6px'}}>
           {[
-            {label:'$0.001', value:1000},
-            {label:'$0.01',  value:10000},
             {label:'$0.10',  value:100000},
+            {label:'$0.50',  value:500000},
             {label:'$1.00',  value:1000000},
             {label:'$5.00',  value:5000000},
+            {label:'$10.00', value:10000000},
           ].map(p => (
             <button key={p.value} onClick={() => setPrice(p.value)}
               className={`chip ${price===p.value?'active':''}`}
@@ -281,13 +281,13 @@ export function CastPanel({ onClose }: { onClose: () => void }) {
           <span style={{fontFamily:'var(--font-mono)',fontSize:'11px',color:'var(--text-dim)'}}>$</span>
           <input
             type="number"
-            min="0.001"
+            min="0.10"
             max="1000"
-            step="0.001"
-            value={(price/1000000).toFixed(price<=1000?3:price<=10000?2:price<=100000?1:0)}
+            step="0.01"
+            value={(price/1000000).toFixed(price<100000?2:price<1000000?2:0)}
             onChange={e => {
               const dollars = parseFloat(e.target.value)
-              if (!isNaN(dollars) && dollars >= 0.001 && dollars <= 1000) {
+              if (!isNaN(dollars) && dollars >= 0.10 && dollars <= 1000) {
                 setPrice(Math.round(dollars * 1000000))
               }
             }}
@@ -295,7 +295,7 @@ export function CastPanel({ onClose }: { onClose: () => void }) {
             style={{width:'110px',fontFamily:'var(--font-mono)',fontSize:'12px',padding:'4px 8px'}}
           />
           <span style={{fontFamily:'var(--font-mono)',fontSize:'9px',color:'var(--text-off)'}}>
-            0.001 – 1,000.00
+            0.10 – 1,000.00
           </span>
         </div>
         {price > 100000000 && (
@@ -476,7 +476,7 @@ export function CastPanel({ onClose }: { onClose: () => void }) {
         <div style={{marginBottom:'14px',padding:'12px',background:'var(--surface)',border:'1px solid var(--border)',borderRadius:'var(--radius-lg)'}}>
           <div style={{marginBottom:'12px'}}>
             <div style={{fontFamily:'var(--font-mono)',fontSize:'10px',color:'var(--text-dim)'}}>
-              Recipient email <span style={{color:'var(--teal)',fontSize:'9px'}}>required · $0.05</span>
+              Recipient email <span style={{color:'var(--teal)',fontSize:'9px'}}>required · $0.01 to send</span>
             </div>
             <div style={{fontFamily:'var(--font-mono)',fontSize:'9px',color:'var(--text-off)',marginTop:'1px'}}>
               We'll send them a CONK Flare invitation. Only they can read this cast.
@@ -491,7 +491,7 @@ export function CastPanel({ onClose }: { onClose: () => void }) {
             onChange={e => setFlare(e.target.value)}
           />
           <div style={{fontFamily:'var(--font-mono)',fontSize:'9px',color:'var(--text-off)',lineHeight:1.6}}>
-            $0.05 charged to your Harbor at publish · reader funds their own Harbor to read · 97% of read price to you
+            $0.01 charged to your Harbor at publish · reader pays $0.10+ to unlock · 97% of read price to you
           </div>
         </div>
       )}
