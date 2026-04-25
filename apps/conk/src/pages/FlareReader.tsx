@@ -70,17 +70,12 @@ export function FlareReader({ castId, onClose }: Props) {
       // For free casts, contract still expects a payment coin — send $0.01
       // For paid casts, send the full fee_paid amount
       const payAmount = cast.feePaid > 0 ? cast.feePaid : 10000  // 10000 microUSDC = $0.01
+      // Capture body BEFORE read — single-claim Docks burn content on read
+      const preReadBody = cast.body
       await readCast({ castId: cast.id, amountUsdc: payAmount })
-      // Refetch to get the now-revealed body
-      const updated = await fetchCastById(cast.id)
-      if (updated) {
-        setBody(updated.body)
-        setCast(updated)
-        setState('revealed')
-      } else {
-        setError('Payment succeeded but failed to fetch revealed body')
-        setState('error')
-      }
+      // Use pre-read body since contract burns content when Dock fills
+      setBody(preReadBody)
+      setState('revealed')
     } catch (err: any) {
       console.error('[FlareReader] read failed:', err)
       setError(err?.message ?? 'Read failed — payment may have been refunded')
