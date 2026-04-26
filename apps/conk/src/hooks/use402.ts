@@ -153,6 +153,19 @@ export function useSoundCast() {
 
         console.log('Cast sounded on Sui:', { digest: castTxDigest, castId })
 
+        // Save Flare metadata for Dock panel (author-side visibility)
+        if (castId && payload.flare?.trim()) {
+          const flareLog = JSON.parse(localStorage.getItem('conk:sent_flares') || '[]')
+          flareLog.push({
+            castId,
+            recipient: payload.flare.trim(),
+            hook: payload.hook,
+            price: castPrice,
+            sentAt: Date.now(),
+          })
+          localStorage.setItem('conk:sent_flares', JSON.stringify(flareLog))
+        }
+
         // Flare — deliver cast link to email via worker
         if (payload.flare?.trim()) {
           const castUrl = `https://conk.app/cast/${castId || castTxDigest}`

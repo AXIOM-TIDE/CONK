@@ -365,6 +365,61 @@ export async function fetchCastById(castId: string): Promise<OnChainCastView | n
   }
 }
 
+// ── Query Flares sent by an author ─────────────────────────────
+// Returns CastSounded events where sender = authorAddress and mode = EYES_ONLY (2)
+export async function fetchSentFlares(authorAddress: string): Promise<Array<{
+  castId: string; hook: string; mode: number; createdAt: number; expiresAt: number
+}>> {
+  try {
+    const events = await rpc('suix_queryEvents', [
+      { MoveEventType: `${PACKAGE}::cast::CastSounded` },
+      null, 50, true,  // cursor, limit, descending
+    ])
+    if (!events?.data) return []
+    return events.data
+      .filter((e: any) => e.sender === authorAddress && e.parsedJson?.mode === 2)
+      .map((e: any) => ({
+        castId:    e.parsedJson.cast_id,
+        hook:      (() => {
+          const arr = e.parsedJson.hook
+          if (!arr || typeof arr === 'string') return arr ?? ''
+          try { return new TextDecoder().decode(new Uint8Array(arr)) } catch { return '' }
+        })(),
+        mode:      e.parsedJson.mode,
+        createdAt: Number(e.parsedJson.created_at ?? 0),
+        expiresAt: Number(e.parsedJson.expires_at ?? 0),
+      }))
+  } catch (err) {
+    console.error('[fetchSentFlares] failed:', err)
+    return []
+  }
+}
+
+// ── Query Docks claimed by a reader ───────────────────────────
+// Returns DockClaimed events where sender = readerAddress
+export async function fetchClaimedDocks(readerAddress: string): Promise<Array<{
+  castId: string; claimsUsed: number; maxClaims: number; claimedAt: number
+}>> {
+  try {
+    const events = await rpc('suix_queryEvents', [
+      { MoveEventType: `${PACKAGE}::cast::DockClaimed` },
+      null, 50, true,
+    ])
+    if (!events?.data) return []
+    return events.data
+      .filter((e: any) => e.sender === readerAddress)
+      .map((e: any) => ({
+        castId:     e.parsedJson.cast_id,
+        claimsUsed: Number(e.parsedJson.claims_used ?? 0),
+        maxClaims:  Number(e.parsedJson.max_claims ?? 0),
+        claimedAt:  Number(e.parsedJson.claimed_at ?? 0),
+      }))
+  } catch (err) {
+    console.error('[fetchClaimedDocks] failed:', err)
+    return []
+  }
+}
+
 // ── Sound a Cast on-chain ─────────────────────────────────────
 export async function soundCast(opts: {
   hook:        string
