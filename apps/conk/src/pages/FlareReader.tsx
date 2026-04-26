@@ -191,9 +191,25 @@ export function FlareReader({ castId, onClose }: Props) {
                 {body || '(no body content)'}
               </div>
             </div>
-            <button className="btn btn-ghost btn-full" onClick={handleClose}>
-              Close
-            </button>
+            <div style={{display:'flex',gap:'8px'}}>
+              <button className="btn btn-primary" style={{flex:1}} onClick={() => {
+                // Save reply context so CastPanel can pre-fill
+                sessionStorage.setItem('conk:reply_context', JSON.stringify({
+                  replyTo: cast.hook,
+                  authorAddress: cast.author,
+                  originalCastId: cast.id,
+                }))
+                sessionStorage.removeItem('conk:pending_flare')
+                // Signal VesselHome to switch to Cast tab in Flare mode
+                window.dispatchEvent(new CustomEvent('conk:reply_flare'))
+                onClose()
+              }}>
+                Reply with Flare
+              </button>
+              <button className="btn btn-ghost" style={{flex:1}} onClick={handleClose}>
+                Close
+              </button>
+            </div>
           </div>
         )}
 

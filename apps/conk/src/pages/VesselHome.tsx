@@ -24,6 +24,13 @@ export function VesselHome({ onBack }: { onBack: () => void }) {
   const [showDrawFuel, setShowDrawFuel] = useState(false)
   const [pendingFlare,  setPendingFlare]  = useState<string|null>(() => sessionStorage.getItem('conk:pending_flare'))
 
+  // Listen for reply_flare events from FlareReader
+  React.useEffect(() => {
+    const handler = () => { setTab('cast') }
+    window.addEventListener('conk:reply_flare', handler)
+    return () => window.removeEventListener('conk:reply_flare', handler)
+  }, [])
+
   if (!vessel) return null
   if (pendingFlare) return <FlareReader castId={pendingFlare} onClose={() => setPendingFlare(null)}/>
   if (lhId) return <LighthouseReader id={lhId} onClose={() => setLhId(null)}/>

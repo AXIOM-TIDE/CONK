@@ -60,6 +60,19 @@ export function CastPanel({ onClose }: { onClose: () => void }) {
   const [cascadeBody, setCascadeBody] = useState('')
   const [flare,        setFlare]        = useState('')
 
+  // Pick up reply context from FlareReader
+  React.useEffect(() => {
+    const raw = sessionStorage.getItem('conk:reply_context')
+    if (raw) {
+      try {
+        const ctx = JSON.parse(raw)
+        setMode('eyes_only')
+        setHook('Re: ' + (ctx.replyTo ?? ''))
+        sessionStorage.removeItem('conk:reply_context')
+      } catch {}
+    }
+  }, [])
+
   const isSending = status === 'pending'
   const isDone    = status === 'success'
   const modeInfo  = MODES.find(m => m.id === mode)!
