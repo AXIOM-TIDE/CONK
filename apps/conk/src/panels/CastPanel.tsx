@@ -68,6 +68,7 @@ export function CastPanel({ onClose }: { onClose: () => void }) {
         const ctx = JSON.parse(raw)
         setMode('eyes_only')
         setHook('Re: ' + (ctx.replyTo ?? ''))
+        setPrice(0)  // Replies default to free read — author can override to $0.10+
         sessionStorage.removeItem('conk:reply_context')
       } catch {}
     }
@@ -277,11 +278,11 @@ export function CastPanel({ onClose }: { onClose: () => void }) {
         <label className="field-label">Read Price <span className="field-cost">readers pay this to unlock</span></label>
         <div style={{display:'flex',gap:'6px',flexWrap:'wrap',marginBottom:'6px'}}>
           {[
+            {label:'Free',   value:0},
             {label:'$0.10',  value:100000},
             {label:'$0.50',  value:500000},
             {label:'$1.00',  value:1000000},
             {label:'$5.00',  value:5000000},
-            {label:'$10.00', value:10000000},
           ].map(p => (
             <button key={p.value} onClick={() => setPrice(p.value)}
               className={`chip ${price===p.value?'active':''}`}
@@ -294,13 +295,13 @@ export function CastPanel({ onClose }: { onClose: () => void }) {
           <span style={{fontFamily:'var(--font-mono)',fontSize:'11px',color:'var(--text-dim)'}}>$</span>
           <input
             type="number"
-            min="0.10"
+            min="0"
             max="1000"
             step="0.01"
             value={(price/1000000).toFixed(price<100000?2:price<1000000?2:0)}
             onChange={e => {
               const dollars = parseFloat(e.target.value)
-              if (!isNaN(dollars) && dollars >= 0.10 && dollars <= 1000) {
+              if (!isNaN(dollars) && dollars >= 0 && dollars <= 1000) {
                 setPrice(Math.round(dollars * 1000000))
               }
             }}
@@ -308,7 +309,7 @@ export function CastPanel({ onClose }: { onClose: () => void }) {
             style={{width:'110px',fontFamily:'var(--font-mono)',fontSize:'12px',padding:'4px 8px'}}
           />
           <span style={{fontFamily:'var(--font-mono)',fontSize:'9px',color:'var(--text-off)'}}>
-            0.10 – 1,000.00
+            Free or 0.10 – 1,000.00
           </span>
         </div>
         {price > 100000000 && (

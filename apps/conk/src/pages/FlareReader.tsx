@@ -159,7 +159,7 @@ export function FlareReader({ castId, onClose }: Props) {
               <span style={{color:'var(--text)'}}>{new Date(cast.expiresAt).toLocaleString()}</span>
             </div>
             <button className="btn btn-primary btn-full" onClick={handleEnterDock}>
-              Enter Dock · ${priceUsd}
+              {cast.feePaid > 0 ? `Enter Dock · ${priceUsd}` : 'Open Reply'}
             </button>
             <div style={{fontFamily:'var(--font-mono)',fontSize:'9px',color:'var(--text-off)',marginTop:'10px',lineHeight:1.6}}>
               97% of read price routes to the author · 3% to CONK treasury · cast burns when Dock fills
