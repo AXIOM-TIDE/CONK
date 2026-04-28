@@ -28,7 +28,7 @@ export function DriftFeed() {
   const setDriftCasts = useStore((s) => s.setDriftCasts)
 
   // Fetch Open casts from Sui on mount — populates Drift with real on-chain data
-  React.useEffect(() => {
+  useEffect(() => {
     fetchDriftCasts().then(onChain => {
       if (onChain.length === 0) return
       // Merge on-chain casts with local casts, deduplicate by id
