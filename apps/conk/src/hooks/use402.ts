@@ -158,8 +158,9 @@ export function useSoundCast() {
           const flareLog = JSON.parse(localStorage.getItem('conk:sent_flares') || '[]')
           flareLog.push({
             castId,
-            recipient: payload.flare.trim(),
+            recipient: payload.flare?.trim() ?? '',
             hook: payload.hook,
+            body: payload.body,
             price: castPrice,
             sentAt: Date.now(),
           })

@@ -19,6 +19,7 @@ import { getAddress } from '../sui/zklogin'
 interface SentFlare {
   castId: string
   hook: string
+  body?: string
   createdAt: number
   expiresAt: number
   recipient?: string
@@ -95,6 +96,7 @@ export function DockPanel() {
       enrichedSent.push({
         castId:     ev.castId,
         hook:       ev.hook,
+        body:       local?.body ?? cast?.body ?? '',
         createdAt:  ev.createdAt,
         expiresAt:  ev.expiresAt,
         recipient:  local?.recipient,
@@ -219,10 +221,11 @@ export function DockPanel() {
               </div>
             )}
             {sent.map(f => (
-              <div key={f.castId} style={{
+              <div key={f.castId} onClick={() => setExpandedId(expandedId === f.castId ? null : f.castId)} style={{
                 padding: '12px', marginBottom: '8px',
-                background: 'var(--surface)', border: '1px solid var(--border2)',
-                borderRadius: 'var(--radius-lg)',
+                background: 'var(--surface)', border: expandedId === f.castId ? '1px solid var(--teal)' : '1px solid var(--border2)',
+                borderRadius: 'var(--radius-lg)', cursor: 'pointer',
+                transition: 'border-color 0.2s',
               }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
                   <span style={{
@@ -246,6 +249,11 @@ export function DockPanel() {
                   <span>Dock: {f.claimsUsed ?? 0}/{f.maxClaims ?? 1}</span>
                   {(f.revenue ?? 0) > 0 && <span style={{ color: 'var(--teal)' }}>Earned: ${((f.revenue ?? 0) / 1_000_000).toFixed(2)}</span>}
                 </div>
+                {expandedId === f.castId && f.body && (
+                  <div style={{ marginTop: '10px', padding: '12px', background: 'var(--surface2)', borderRadius: 'var(--radius)', fontSize: '13px', color: 'var(--text-dim)', lineHeight: 1.7, whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
+                    {f.body}
+                  </div>
+                )}
               </div>
             ))}
           </>
