@@ -59,6 +59,7 @@ export function CastPanel({ onClose }: { onClose: () => void }) {
   const [cascadeHook, setCascadeHook] = useState('')
   const [cascadeBody, setCascadeBody] = useState('')
   const [flare,        setFlare]        = useState('')
+  const [isReply,      setIsReply]      = useState(false)
 
   // Pick up reply context from FlareReader
   React.useEffect(() => {
@@ -69,6 +70,7 @@ export function CastPanel({ onClose }: { onClose: () => void }) {
         setMode('eyes_only')
         setHook('Re: ' + (ctx.replyTo ?? ''))
         setPrice(0)  // Replies default to free read — author can override to $0.10+
+        setIsReply(true)
         sessionStorage.removeItem('conk:reply_context')
       } catch {}
     }
@@ -278,7 +280,7 @@ export function CastPanel({ onClose }: { onClose: () => void }) {
         <label className="field-label">Read Price <span className="field-cost">readers pay this to unlock</span></label>
         <div style={{display:'flex',gap:'6px',flexWrap:'wrap',marginBottom:'6px'}}>
           {[
-            {label:'Free',   value:0},
+            {label:'$0.01',  value:0},  // protocol fee only — author earns nothing
             {label:'$0.10',  value:100000},
             {label:'$0.50',  value:500000},
             {label:'$1.00',  value:1000000},
@@ -490,7 +492,7 @@ export function CastPanel({ onClose }: { onClose: () => void }) {
         <div style={{marginBottom:'14px',padding:'12px',background:'var(--surface)',border:'1px solid var(--border)',borderRadius:'var(--radius-lg)'}}>
           <div style={{marginBottom:'12px'}}>
             <div style={{fontFamily:'var(--font-mono)',fontSize:'10px',color:'var(--text-dim)'}}>
-              Recipient email <span style={{color:'var(--teal)',fontSize:'9px'}}>required · $0.01 to send</span>
+              Recipient email <span style={{color:'var(--teal)',fontSize:'9px'}}>{isReply ? 'optional · notify by email' : 'required · $0.01 to send'}</span>
             </div>
             <div style={{fontFamily:'var(--font-mono)',fontSize:'9px',color:'var(--text-off)',marginTop:'1px'}}>
               We'll send them a CONK Flare invitation. Only they can read this cast.
@@ -510,7 +512,7 @@ export function CastPanel({ onClose }: { onClose: () => void }) {
         </div>
       )}
 
-      <button data-testid="cast-review-btn" className="btn btn-primary btn-full" onClick={() => { if (!hook.trim()) return; setStep('confirm') }} disabled={!hook.trim()||lowFuel||(useSecQ&&(!secQ.trim()||!secA.trim()))||(mode==='eyes_only'&&!flare.trim())}>
+      <button data-testid="cast-review-btn" className="btn btn-primary btn-full" onClick={() => { if (!hook.trim()) return; setStep('confirm') }} disabled={!hook.trim()||lowFuel||(useSecQ&&(!secQ.trim()||!secA.trim()))||(mode==='eyes_only'&&!isReply&&!flare.trim())}>
         Review →
       </button>
     </>
