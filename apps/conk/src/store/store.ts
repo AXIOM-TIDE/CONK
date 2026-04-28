@@ -170,6 +170,7 @@ export interface AppState {
   fuelVessel:       (cents: number) => void
   toggleDrawFuel:   () => void
   addCast:          (c: Cast) => void
+  setDriftCasts:    (casts: Cast[]) => void
   markCastRead:     (id: string, body: string) => void
   burnCast:         (id: string) => void
   burnFromVessel:   (id: string, vesselId: string) => void
@@ -408,6 +409,7 @@ export const useStore = create<AppState>()(
       }),
 
       addCast: (c) => set((s) => ({ driftCasts: [c, ...s.driftCasts] })),
+      setDriftCasts: (casts) => set({ driftCasts: casts }),
 
       markCastRead: (id, body) => set((s) => ({
         driftCasts: s.driftCasts.map(c => c.id === id ? {

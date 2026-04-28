@@ -365,6 +365,55 @@ export async function fetchCastById(castId: string): Promise<OnChainCastView | n
   }
 }
 
+// ── Fetch Open casts for the Drift feed ───────────────────────
+// Queries CastSounded events where mode = 0 (Open), hydrates each via fetchCastById.
+// Flares (mode=2) are NEVER returned — privacy rule enforced at query level.
+export async function fetchDriftCasts(): Promise<Array<{
+  id: string; hook: string; body: string; mode: 'open';
+  createdAt: number; expiresAt: number; readCount: number;
+  feePaid: number; author: string; isLighthouse: boolean;
+  maxClaims: number; claimsUsed: number;
+}>> {
+  try {
+    const events = await rpc('suix_queryEvents', [
+      { MoveEventType: `${PACKAGE}::cast::CastSounded` },
+      null, 50, true,
+    ])
+    if (!events?.data) return []
+
+    // Filter to Open casts only (mode=0) — NEVER include Flares
+    const openEvents = events.data.filter((e: any) => e.parsedJson?.mode === 0)
+
+    const casts = []
+    for (const ev of openEvents) {
+      const castId = ev.parsedJson?.cast_id
+      if (!castId) continue
+      const cast = await fetchCastById(castId)
+      if (!cast || cast.burned) continue
+      // Skip expired non-lighthouse casts
+      if (!cast.isLighthouse && cast.expiresAt < Date.now()) continue
+      casts.push({
+        id:           cast.id,
+        hook:         cast.hook,
+        body:         cast.body,
+        mode:         'open' as const,
+        createdAt:    cast.createdAt,
+        expiresAt:    cast.expiresAt,
+        readCount:    cast.readCount,
+        feePaid:      cast.feePaid,
+        author:       cast.author,
+        isLighthouse: cast.isLighthouse,
+        maxClaims:    cast.maxClaims,
+        claimsUsed:   cast.claimsUsed,
+      })
+    }
+    return casts
+  } catch (err) {
+    console.error('[fetchDriftCasts] failed:', err)
+    return []
+  }
+}
+
 // ── Query Flares sent by an author ─────────────────────────────
 // Returns CastSounded events where sender = authorAddress and mode = EYES_ONLY (2)
 export async function fetchSentFlares(authorAddress: string): Promise<Array<{

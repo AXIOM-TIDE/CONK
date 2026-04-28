@@ -1,3 +1,4 @@
+import { fetchDriftCasts } from '../sui/client'
 import { useState, useEffect, useRef } from 'react'
 import { useStore, type Cast, type CastMode } from '../store/store'
 import { use402, useSoundCast } from '../hooks/use402'
@@ -24,6 +25,28 @@ const MODE_FILTERS: { id: 'all'|CastMode; label: string }[] = [
 
 export function DriftFeed() {
   const casts        = useStore((s) => s.driftCasts)
+  const setDriftCasts = useStore((s) => s.setDriftCasts)
+
+  // Fetch Open casts from Sui on mount — populates Drift with real on-chain data
+  React.useEffect(() => {
+    fetchDriftCasts().then(onChain => {
+      if (onChain.length === 0) return
+      // Merge on-chain casts with local casts, deduplicate by id
+      const existing = new Set(useStore.getState().driftCasts.map(c => c.id))
+      const newCasts = onChain
+        .filter(c => !existing.has(c.id))
+        .map(c => ({
+          ...c,
+          duration: '24h' as const,
+          lastInteractionAt: c.createdAt,
+          tideCount: c.readCount,
+          tideReads: [],
+        }))
+      if (newCasts.length > 0) {
+        setDriftCasts([...newCasts, ...useStore.getState().driftCasts])
+      }
+    }).catch(err => console.warn('[Drift] on-chain fetch failed:', err))
+  }, [])
   const filter       = useStore((s) => s.driftFilter)
   const searchQuery  = useStore((s) => s.driftSearch)
   const setFilter    = useStore((s) => s.setDriftFilter)
