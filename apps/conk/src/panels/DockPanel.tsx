@@ -36,9 +36,11 @@ interface ClaimedDock {
   claimsUsed: number
   maxClaims: number
   claimedAt: number
-  // Enriched from fetchCastById
+  // Enriched from fetchCastById or localStorage
   hook?: string
+  body?: string
   feePaid?: number
+  author?: string
 }
 
 type DockTab = 'sent' | 'claimed'
@@ -48,6 +50,7 @@ export function DockPanel() {
   const [sent, setSent]           = useState<SentFlare[]>([])
   const [claimed, setClaimed]     = useState<ClaimedDock[]>([])
   const [loading, setLoading]     = useState(true)
+  const [expandedId, setExpandedId] = useState<string|null>(null)
 
   useEffect(() => {
     loadDockData()
@@ -105,18 +108,50 @@ export function DockPanel() {
     }
     setSent(enrichedSent)
 
-    // Fetch claimed docks from on-chain events
+    // Merge on-chain DockClaimed events with localStorage received flares
     const claimedEvents = await fetchClaimedDocks(addr)
-    const enrichedClaimed: ClaimedDock[] = []
+    const localReceived: Record<string, any> = {}
+    try {
+      const raw = JSON.parse(localStorage.getItem('conk:received_flares') || '[]')
+      for (const r of raw) {
+        if (r.castId) localReceived[r.castId] = r
+      }
+    } catch {}
 
+    // Start with localStorage received flares (they have the body)
+    const enrichedClaimed: ClaimedDock[] = []
+    const seen = new Set<string>()
+
+    // localStorage entries first — they have saved body content
+    for (const [castId, r] of Object.entries(localReceived) as [string, any][]) {
+      seen.add(castId)
+      enrichedClaimed.push({
+        castId,
+        claimsUsed: 1,
+        maxClaims:  1,
+        claimedAt:  r.readAt ?? 0,
+        hook:       r.hook ?? '(no hook)',
+        body:       r.body ?? '',
+        feePaid:    r.feePaid ?? 0,
+        author:     r.author ?? '',
+      })
+    }
+
+    // Then on-chain events not already in localStorage
     for (const ev of claimedEvents) {
+      if (seen.has(ev.castId)) continue
       const cast = await fetchCastById(ev.castId)
       enrichedClaimed.push({
         ...ev,
         hook:    cast?.hook ?? '(burned)',
+        body:    cast?.body ?? '',
         feePaid: cast?.feePaid ?? 0,
+        author:  cast?.author ?? '',
       })
     }
+
+    // Sort by most recent first
+    enrichedClaimed.sort((a, b) => (b.claimedAt || 0) - (a.claimedAt || 0))
     setClaimed(enrichedClaimed)
     setLoading(false)
   }
@@ -231,10 +266,11 @@ export function DockPanel() {
               </div>
             )}
             {claimed.map(d => (
-              <div key={d.castId} style={{
+              <div key={d.castId} onClick={() => setExpandedId(expandedId === d.castId ? null : d.castId)} style={{
                 padding: '12px', marginBottom: '8px',
-                background: 'var(--surface)', border: '1px solid var(--border2)',
-                borderRadius: 'var(--radius-lg)',
+                background: 'var(--surface)', border: expandedId === d.castId ? '1px solid var(--eyes)' : '1px solid var(--border2)',
+                borderRadius: 'var(--radius-lg)', cursor: 'pointer',
+                transition: 'border-color 0.2s',
               }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
                   <span style={{
@@ -256,6 +292,11 @@ export function DockPanel() {
                   <span>Paid: ${((d.feePaid ?? 0) / 1_000_000).toFixed(2)}</span>
                   <span>Dock: {d.claimsUsed}/{d.maxClaims}</span>
                 </div>
+                {expandedId === d.castId && d.body && (
+                  <div style={{ marginTop: '10px', padding: '12px', background: 'var(--surface2)', borderRadius: 'var(--radius)', fontSize: '13px', color: 'var(--text-dim)', lineHeight: 1.7, whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
+                    {d.body}
+                  </div>
+                )}
               </div>
             ))}
           </>
