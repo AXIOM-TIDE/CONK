@@ -50,10 +50,15 @@ export function VesselHome({ onBack }: { onBack: () => void }) {
     : lowFuel   ? 'fading'
     : 'stable'
 
+  const receivedCount = (() => {
+    try { return JSON.parse(localStorage.getItem('conk:received_flares') || '[]').length }
+    catch { return 0 }
+  })()
+
   const TABS: { id:VesselTab; icon:React.ReactNode; label:string; locked:boolean }[] = [
     { id:'drift',  icon:<IconCast size={16} color="currentColor"/>,       label:'Drift',  locked:false },
     { id:'cast',   icon:<IconCast size={16} color="currentColor"/>,       label:'Cast',   locked:noFuel },
-    { id:'dock',   icon:<IconDock size={16} color="currentColor"/>,       label:'Dock',   locked:noFuel },
+    { id:'dock',   icon:<IconDock size={16} color="currentColor"/>,       label:receivedCount > 0 ? `Dock (${receivedCount})` : 'Dock',   locked:noFuel },
     { id:'stored', icon:<span style={{fontSize:'13px'}}>⊕</span>,         label:'Stored', locked:false },
   ]
 

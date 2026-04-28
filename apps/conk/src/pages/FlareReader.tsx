@@ -75,6 +75,19 @@ export function FlareReader({ castId, onClose }: Props) {
       await readCast({ castId: cast.id, amountUsdc: payAmount })
       // Use pre-read body since contract burns content when Dock fills
       setBody(preReadBody)
+
+      // Save received Flare for Dock inbox
+      const received = JSON.parse(localStorage.getItem('conk:received_flares') || '[]')
+      received.push({
+        castId: cast.id,
+        hook: cast.hook,
+        body: preReadBody,
+        author: cast.author,
+        feePaid: cast.feePaid,
+        readAt: Date.now(),
+      })
+      localStorage.setItem('conk:received_flares', JSON.stringify(received))
+
       setState('revealed')
     } catch (err: any) {
       console.error('[FlareReader] read failed:', err)
