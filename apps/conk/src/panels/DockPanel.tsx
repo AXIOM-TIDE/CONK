@@ -59,6 +59,29 @@ export function DockPanel() {
 
   async function loadDockData() {
     setLoading(true)
+
+    // Always load localStorage received flares — even without zkLogin session
+    const localReceived: Record<string, any> = {}
+    try {
+      const raw = JSON.parse(localStorage.getItem('conk:received_flares') || '[]')
+      for (const r of raw) {
+        if (r.castId) localReceived[r.castId] = r
+      }
+      // Immediately populate claimed tab from localStorage
+      const localClaimed: ClaimedDock[] = Object.entries(localReceived).map(([castId, r]: [string, any]) => ({
+        castId,
+        claimsUsed: 1,
+        maxClaims: 1,
+        claimedAt: r.readAt ?? 0,
+        hook: r.hook ?? '(no hook)',
+        body: r.body ?? '',
+        feePaid: r.feePaid ?? 0,
+        author: r.author ?? '',
+      }))
+      localClaimed.sort((a, b) => (b.claimedAt || 0) - (a.claimedAt || 0))
+      setClaimed(localClaimed)
+    } catch {}
+
     const addr = getAddress()
     if (!addr) { setLoading(false); return }
 
@@ -110,36 +133,14 @@ export function DockPanel() {
     }
     setSent(enrichedSent)
 
-    // Merge on-chain DockClaimed events with localStorage received flares
+    // Enrich claimed tab with on-chain DockClaimed events
     const claimedEvents = await fetchClaimedDocks(addr)
-    const localReceived: Record<string, any> = {}
-    try {
-      const raw = JSON.parse(localStorage.getItem('conk:received_flares') || '[]')
-      for (const r of raw) {
-        if (r.castId) localReceived[r.castId] = r
-      }
-    } catch {}
 
-    // Start with localStorage received flares (they have the body)
-    const enrichedClaimed: ClaimedDock[] = []
-    const seen = new Set<string>()
+    // Merge on-chain events into already-loaded localStorage claims
+    const enrichedClaimed: ClaimedDock[] = [...claimed]  // start with localStorage entries already set
+    const seen = new Set<string>(enrichedClaimed.map(c => c.castId))
 
-    // localStorage entries first — they have saved body content
-    for (const [castId, r] of Object.entries(localReceived) as [string, any][]) {
-      seen.add(castId)
-      enrichedClaimed.push({
-        castId,
-        claimsUsed: 1,
-        maxClaims:  1,
-        claimedAt:  r.readAt ?? 0,
-        hook:       r.hook ?? '(no hook)',
-        body:       r.body ?? '',
-        feePaid:    r.feePaid ?? 0,
-        author:     r.author ?? '',
-      })
-    }
-
-    // Then on-chain events not already in localStorage
+    // Add on-chain events not already loaded from localStorage
     for (const ev of claimedEvents) {
       if (seen.has(ev.castId)) continue
       const cast = await fetchCastById(ev.castId)
