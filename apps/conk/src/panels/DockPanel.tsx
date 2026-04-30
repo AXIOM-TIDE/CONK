@@ -136,8 +136,17 @@ export function DockPanel() {
     // Enrich claimed tab with on-chain DockClaimed events
     const claimedEvents = await fetchClaimedDocks(addr)
 
-    // Merge on-chain events into already-loaded localStorage claims
-    const enrichedClaimed: ClaimedDock[] = [...claimed]  // start with localStorage entries already set
+    // Rebuild from localStorage (state may not have updated yet)
+    const enrichedClaimed: ClaimedDock[] = Object.entries(localReceived).map(([castId, r]: [string, any]) => ({
+      castId,
+      claimsUsed: 1,
+      maxClaims: 1,
+      claimedAt: r.readAt ?? 0,
+      hook: r.hook ?? '(no hook)',
+      body: r.body ?? '',
+      feePaid: r.feePaid ?? 0,
+      author: r.author ?? '',
+    }))
     const seen = new Set<string>(enrichedClaimed.map(c => c.castId))
 
     // Add on-chain events not already loaded from localStorage
