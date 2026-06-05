@@ -10,9 +10,9 @@ import { isWalletSession, signWithWallet } from './walletSession'
 
 export const NETWORK   = 'mainnet'
 export const USDC_TYPE = '0xdba34672e30cb065b1f93e3ab55318768fd6fef66c15942c9f7cb846e2f900e7::usdc::USDC'
-// Tatum enterprise Sui RPC — Tatum × Walrus Hackathon requirement
+// Tatum enterprise Sui RPC — requests proxied through zkProxy (key never exposed client-side)
 export const SUI_RPC   = 'https://sui-mainnet.gateway.tatum.io'
-const TATUM_API_KEY    = 't-6a148cf82a008398a3ef2ed0-68d0fa83c0b74fbe9c9550ba'
+// TATUM_API_KEY is a Cloudflare secret on zkProxy — do not hardcode here
 
 const PROXY   = RPC.PROXY
 const PACKAGE = PACKAGES.CONK
@@ -47,7 +47,7 @@ export async function getSuiClient() {
   _client = new SuiClient({
     transport: new SuiHTTPTransport({
       url: SUI_RPC,
-      rpc: { headers: { 'x-api-key': TATUM_API_KEY } },
+      // No API key here: client.ts calls are browser-side; Tatum key stays on zkProxy
     }),
   })
   return _client as InstanceType<typeof import('@mysten/sui/client').SuiClient>

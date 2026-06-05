@@ -5,9 +5,9 @@ import { Ed25519Keypair } from '@mysten/sui/keypairs/ed25519'
 import { Secp256k1Keypair } from '@mysten/sui/keypairs/secp256k1'
 import { Secp256r1Keypair } from '@mysten/sui/keypairs/secp256r1'
 
-// Tatum enterprise Sui RPC — Tatum × Walrus Hackathon requirement
+// Tatum enterprise Sui RPC — key MUST come from Railway env var TATUM_API_KEY (no hardcoded fallback)
 const SUI_RPC = process.env.CONK_SUI_RPC || 'https://sui-mainnet.gateway.tatum.io'
-const TATUM_API_KEY = process.env.TATUM_API_KEY || 't-6a148cf82a008398a3ef2ed0-68d0fa83c0b74fbe9c9550ba'
+const TATUM_API_KEY = process.env.TATUM_API_KEY || ''
 const PACKAGE = process.env.CONK_PACKAGE_ID || '0x23a10fe5bd4a7b78087d6e716a1e810168e0b3332ff022637606a02d001fc9f1'
 const ABYSS = process.env.CONK_ABYSS_ID || '0x392d5f46b5f02fb34cc0cb06c27e89b6e4dacc4cafd41e3b9ac1bc9f02dd1598'
 const CLOCK = '0x6'

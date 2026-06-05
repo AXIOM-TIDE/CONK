@@ -15,9 +15,9 @@
 import { Ed25519Keypair } from '@mysten/sui/keypairs/ed25519'
 import { Transaction }    from '@mysten/sui/transactions'
 
-// Tatum enterprise Sui RPC — Tatum × Walrus Hackathon requirement
-const SUI_RPC      = 'https://sui-mainnet.gateway.tatum.io'
-const TATUM_API_KEY = 't-6a148cf82a008398a3ef2ed0-68d0fa83c0b74fbe9c9550ba'
+// Tatum enterprise Sui RPC — key loaded from Cloudflare secret TATUM_API_KEY at runtime
+const SUI_RPC = 'https://sui-mainnet.gateway.tatum.io'
+let _tatumKey = '' // set on first request from env.TATUM_API_KEY
 const ENOKI_URL = 'https://api.enoki.mystenlabs.com/v1/zklogin/zkp'
 const CONK_TREASURY = '0xe0117fba317d2267b8d90adca1fe79eceeec756bcf54edf04cc29ee5306ab32e'
 const CONK_USDC_TYPE = '0xdba34672e30cb065b1f93e3ab55318768fd6fef66c15942c9f7cb846e2f900e7::usdc::USDC'
@@ -112,7 +112,8 @@ async function checkRateLimit(kv, key, max) {
 async function rpc(method, params) {
   const resp = await fetch(SUI_RPC, {
     method:  'POST',
-    headers: { 'Content-Type': 'application/json', 'x-api-key': TATUM_API_KEY },
+    headers: { 'Content-Type': 'application/json', 'x-api-key': _tatumKey },
+
     body:    JSON.stringify({ jsonrpc: '2.0', id: 1, method, params }),
   })
   const json = await resp.json()
@@ -271,6 +272,7 @@ async function checkGasBalance(keypair) {
 
 export default {
   async fetch(request, env) {
+    _tatumKey = env.TATUM_API_KEY || ''
     const origin = request.headers.get('Origin') || 'https://conk.app'
     const ip     = request.headers.get('CF-Connecting-IP') || 'unknown'
     const url    = new URL(request.url)
@@ -429,7 +431,7 @@ export default {
 
         const resp = await fetch(SUI_RPC, {
           method:  'POST',
-          headers: { 'Content-Type': 'application/json', 'x-api-key': TATUM_API_KEY },
+          headers: { 'Content-Type': 'application/json', 'x-api-key': _tatumKey },
           body:    rawBody,
         })
         const text = await resp.text()
