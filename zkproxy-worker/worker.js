@@ -170,11 +170,17 @@ async function verifyReadCastTx(castId, txDigest, readerAddress, kv) {
     return { ok: false, error: 'Transaction did not succeed' }
   }
 
-  // Verify tx sender matches the claimed reader address
-  const txSender = tx?.transaction?.data?.sender ?? ''
+  // Verify tx sender matches the claimed reader address.
+  // Primary path: showInput:true makes transaction.data.sender available.
+  // Fallback: events[0].sender (emitter address = tx sender for user-signed txs).
+  const txSender = (
+    tx?.transaction?.data?.sender ??    // primary (requires showInput:true)
+    tx?.events?.[0]?.sender ??          // fallback: event emitter = tx sender
+    ''
+  )
   const normSender = txSender.toLowerCase()
   const normReader = readerAddress.toLowerCase()
-  if (normSender !== normReader) {
+  if (!normSender || normSender !== normReader) {
     return { ok: false, error: 'Transaction sender does not match reader address' }
   }
 
