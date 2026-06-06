@@ -158,6 +158,7 @@ async function verifyReadCastTx(castId, txDigest, readerAddress, kv) {
   try {
     tx = await rpc('sui_getTransactionBlock', [txDigest, {
       showEffects:        true,
+      showInput:          true,   // required to get tx.transaction.data.sender
       showEvents:         true,
       showObjectChanges:  false,
     }])
