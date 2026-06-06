@@ -664,14 +664,16 @@ export default {
         if (!/^[0-9a-fA-F]{64}$/.test(key))      return errResponse('Invalid key format — expected 64 hex chars (32 bytes)', 400, origin)
         if (!/^[0-9a-fA-F]{24}$/.test(iv))        return errResponse('Invalid iv format — expected 24 hex chars (12 bytes)', 400, origin)
 
-        // Store key in KV. TTL: 8 days (longest cast duration is 7 days + 1 day buffer).
-        // For lighthouse casts the key persists because lighthouse duration is ~100 years
-        // but casts only become lighthouses after 1M reads — we'll extend TTL on first access.
+        // Store key in KV.
+        // v14 TTL: 45 days — covers 7-day max cast + 30-day abandon window + 8-day buffer.
+        // v13 used 8 days (cast expired = unreadable). In v14 expired-but-not-wrecked casts
+        // are still readable up to 30 days post-expiry (abandon window), so the key must
+        // survive the full window. Lighthouse casts get TTL refreshed to 365 days on access.
         const kvKey = 'seal-key:' + castId.toLowerCase()
         await env.RATE_LIMITER.put(
           kvKey,
-          JSON.stringify({ key, iv, blobId }),
-          { expirationTtl: 60 * 60 * 24 * 8 }
+          JSON.stringify({ key, iv, blobId, registeredAt: Date.now() }),
+          { expirationTtl: 60 * 60 * 24 * 45 }
         )
 
         return jsonResponse({ ok: true }, 200, origin)
@@ -707,10 +709,14 @@ export default {
           return errResponse('Key store corrupted', 500, origin)
         }
 
-        // Extend TTL if this cast has survived (lighthouse) — heuristic: if key accessed after 7 days, refresh to 30 days
-        const age = Date.now() - (keyData.registeredAt ?? 0)
-        if (age > 7 * 24 * 60 * 60 * 1000) {
-          await env.RATE_LIMITER.put(kvKey, stored, { expirationTtl: 60 * 60 * 24 * 30 }).catch(() => {})
+        // Extend TTL on access.
+        // If registeredAt is present and key is older than 40 days (approaching 45-day expiry),
+        // refresh to 365 days — this cast is still being read well past the abandon window,
+        // which means it's either a lighthouse or has very persistent demand. Either way, keep it.
+        const registeredAt = keyData.registeredAt ?? (Date.now() - 60 * 60 * 24 * 40 * 1000) // default: assume old
+        const age = Date.now() - registeredAt
+        if (age > 40 * 24 * 60 * 60 * 1000) {
+          await env.RATE_LIMITER.put(kvKey, stored, { expirationTtl: 60 * 60 * 24 * 365 }).catch(() => {})
         }
 
         return jsonResponse({ key: keyData.key, iv: keyData.iv, blobId: keyData.blobId }, 200, origin)
