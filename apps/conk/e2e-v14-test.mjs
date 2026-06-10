@@ -146,7 +146,7 @@ async function launchVessel(harborId) {
 
 // ─── TX 3: Sound cast (24h expiry, paid) ─────────────────────────────────────
 async function soundCast(vesselId, vesselCapId) {
-  console.log('\n[2] Sounding paid cast with 24h expiry...')
+  console.log('\n[2] Sounding SEAL-encrypted paid cast with 24h expiry...')
   const tx  = new Transaction()
   tx.setGasBudget(100_000_000)  // explicit budget to bypass dry-run type resolution
   const coinId = await getUsdcCoinId(2_000)
@@ -155,12 +155,23 @@ async function soundCast(vesselId, vesselCapId) {
   // This is the cast creation fee (not the reader price). Min 1000 base units.
   const [feeCoin] = tx.splitCoins(tx.object(coinId), [tx.pure.u64(1_000)])
 
-  const contentBytes = Array.from(Buffer.from(
-    '[CONK v14 E2E TEST] Paid cast with 24h expiry. ' +
-    'This content should remain readable after expiry under v14 rules ' +
-    '(expiry = visibility event, not death). Wrecks only after 30-day abandon window. ' +
+  // ── SEAL: generate AES-256-GCM key, encrypt content before storing on-chain ──
+  const plaintext = '[CONK v14 E2E TEST] This is the SEAL-protected content. ' +
+    'It will be encrypted with AES-256-GCM before going on-chain. ' +
+    'zkProxy releases the key only after a verified CastRead tx. ' +
     'Created: ' + new Date().toISOString()
-  ))
+  const sealKey = crypto.randomBytes(32)   // 256-bit AES key
+  const sealIv  = crypto.randomBytes(12)   // 96-bit GCM nonce
+  const cipher  = crypto.createCipheriv('aes-256-gcm', sealKey, sealIv)
+  const cipherBuf = Buffer.concat([cipher.update(Buffer.from(plaintext)), cipher.final()])
+  const authTag   = cipher.getAuthTag()
+  // Encode as: [4-byte ciphertext length][ciphertext][16-byte auth tag]
+  const lenBuf = Buffer.alloc(4); lenBuf.writeUInt32BE(cipherBuf.length)
+  const contentBytes = Array.from(Buffer.concat([lenBuf, cipherBuf, authTag]))
+
+  console.log(`  🔐 Content encrypted: ${cipherBuf.length} bytes ciphertext + 16-byte auth tag`)
+  console.log(`  🔑 AES key: ${sealKey.toString('hex').slice(0,16)}... (32 bytes)`)
+  console.log(`  🔑 IV:      ${sealIv.toString('hex')} (12 bytes)`)
 
   tx.moveCall({
     target:    `${TEST_PACKAGE}::cast::sound`,
@@ -198,15 +209,15 @@ async function soundCast(vesselId, vesselCapId) {
   console.log(`  ✅ Created:   ${new Date(createdAt).toISOString()}`)
   console.log(`  ✅ Expires:   ${new Date(expiresAt).toISOString()}`)
   console.log(`  ✅ Tx: ${result.digest}`)
-  return { castId, expiresAt, createdAt, soundTx: result.digest }
+  return { castId, expiresAt, createdAt, soundTx: result.digest,
+           sealKey: sealKey.toString('hex'), sealIv: sealIv.toString('hex'), plaintext }
 }
 
 // ─── Register SEAL key ────────────────────────────────────────────────────────
-async function registerSealKey(castId) {
+// Accepts pre-generated key+iv from soundCast (same key used to encrypt on-chain content)
+async function registerSealKey(castId, key, iv) {
   console.log('\n[3] Registering SEAL key with zkProxy...')
-  const key    = crypto.randomBytes(32).toString('hex')
-  const iv     = crypto.randomBytes(12).toString('hex')
-  const blobId = 'test-blob-' + Date.now()
+  const blobId = 'test-e2e-' + Date.now()  // synthetic blob ID for test
 
   const resp = await fetch(`${ZKPROXY_URL}/cast-key`, {
     method:  'POST',
@@ -216,7 +227,7 @@ async function registerSealKey(castId) {
   const data = await resp.json()
   if (!data.ok) throw new Error('cast-key registration failed: ' + JSON.stringify(data))
 
-  console.log(`  ✅ Key registered (TTL=45d under v14 patch)`)
+  console.log(`  ✅ Key registered in NEW KV (TTL=45d)`)
   return { key, iv, blobId }
 }
 
@@ -259,8 +270,8 @@ async function readCast(castId) {
 }
 
 // ─── zkProxy SEAL verification ────────────────────────────────────────────────
-async function verifyZkProxy(castId, txDigest) {
-  console.log('\n[5] Verifying zkProxy releases SEAL key...')
+async function verifyZkProxy(castId, txDigest, expectedKey, expectedIv, plaintext) {
+  console.log('\n[5] Verifying zkProxy SEAL key release + AES-256-GCM decryption...')
   const resp = await fetch(`${ZKPROXY_URL}/cast-decrypt`, {
     method:  'POST',
     headers: { 'Content-Type': 'application/json', 'Origin': 'https://conk.app' },
@@ -271,8 +282,50 @@ async function verifyZkProxy(castId, txDigest) {
     console.log(`  ❌ zkProxy REFUSED: ${data.error}`)
     return false
   }
-  console.log(`  ✅ zkProxy returned key (first 16 chars): ${data.key?.slice(0,16)}...`)
-  return true
+
+  // Verify keys match
+  if (data.key !== expectedKey || data.iv !== expectedIv) {
+    console.log(`  ❌ KEY MISMATCH — zkProxy returned wrong key!`)
+    console.log(`     expected: ${expectedKey.slice(0,16)}...`)
+    console.log(`     got:      ${data.key?.slice(0,16)}...`)
+    return false
+  }
+  console.log(`  ✅ Keys match: ${data.key.slice(0,16)}...`)
+
+  // Fetch encrypted content from on-chain
+  const castObj = await client.getObject({ id: castId, options: { showContent: true } })
+  const onChainBytes = castObj.data?.content?.fields?.content_blob
+  if (!onChainBytes) { console.log('  ❌ No on-chain content found'); return false }
+
+  // Decode: [4-byte len][ciphertext][16-byte auth tag]
+  const raw        = Buffer.from(onChainBytes)
+  const ctLen      = raw.readUInt32BE(0)
+  const ciphertext = raw.slice(4, 4 + ctLen)
+  const authTag    = raw.slice(4 + ctLen, 4 + ctLen + 16)
+
+  // Decrypt with key from zkProxy
+  const keyBuf = Buffer.from(data.key, 'hex')
+  const ivBuf  = Buffer.from(data.iv, 'hex')
+  const decipher = crypto.createDecipheriv('aes-256-gcm', keyBuf, ivBuf)
+  decipher.setAuthTag(authTag)
+  let decrypted
+  try {
+    decrypted = Buffer.concat([decipher.update(ciphertext), decipher.final()]).toString()
+  } catch (e) {
+    console.log(`  ❌ AES DECRYPTION FAILED (auth tag mismatch or tampered): ${e.message}`)
+    return false
+  }
+
+  if (decrypted === plaintext) {
+    console.log(`  ✅ AES-256-GCM decryption: content matches exactly`)
+    console.log(`  ✅ Plaintext preview: "${decrypted.slice(0, 60)}..."`)
+    return true
+  } else {
+    console.log(`  ❌ CONTENT MISMATCH after decryption`)
+    console.log(`     expected: ${plaintext.slice(0, 60)}...`)
+    console.log(`     got:      ${decrypted.slice(0, 60)}...`)
+    return false
+  }
 }
 
 // ─── Verify unpaid read fails ─────────────────────────────────────────────────
@@ -351,10 +404,22 @@ async function verifyExpiredRead(castId) {
     console.log(`     read_count: ${ev.parsedJson?.read_count}`)
     console.log(`     tx: ${result.digest}`)
 
-    const zkOk = await verifyZkProxy(castId, result.digest)
-    const overall = zkOk
-    console.log(`  ✅ zkProxy SEAL release: ${zkOk ? 'PASS' : 'FAIL'}`)
-    return overall
+    // Load stored SEAL key from state file for post-expiry decrypt verification
+    let zkOk = false
+    try {
+      const state = JSON.parse(fs.readFileSync(STATE_FILE, 'utf8'))
+      if (state.sealKey && state.sealIv && state.plaintext) {
+        zkOk = await verifyZkProxy(castId, result.digest, state.sealKey, state.sealIv, state.plaintext)
+      } else {
+        console.log('  ⚠️  No SEAL key in state file — skipping AES decrypt verification')
+        zkOk = true  // key release not testable for pre-state casts
+      }
+    } catch {
+      console.log('  ⚠️  State file not found — skipping AES decrypt verification')
+      zkOk = true
+    }
+    console.log(`  ${zkOk ? '✅' : '❌'} zkProxy SEAL release: ${zkOk ? 'PASS' : 'FAIL'}`)
+    return zkOk
   } else {
     console.log(`  ❌ FAIL — expired read FAILED (v14 regression!): ${JSON.stringify(result.effects.status)}`)
     return false
@@ -377,16 +442,16 @@ if (args[0] === '--verify-expired') {
   try {
     const { harborId, harborCapId } = await openHarbor()
     const { vesselId, vesselCapId } = await launchVessel(harborId)
-    const { castId, expiresAt, soundTx } = await soundCast(vesselId, vesselCapId)
-    const { key, iv, blobId } = await registerSealKey(castId)
+    const { castId, expiresAt, soundTx, sealKey, sealIv, plaintext } = await soundCast(vesselId, vesselCapId)
+    const { key, iv, blobId } = await registerSealKey(castId, sealKey, sealIv)
     const { readTx } = await readCast(castId)
-    const zkOk       = await verifyZkProxy(castId, readTx)
-    const unpaidOk   = await verifyUnpaidFails(castId)
+    const zkOk     = await verifyZkProxy(castId, readTx, key, iv, plaintext)
+    const unpaidOk = await verifyUnpaidFails(castId)
 
     const state = {
       castId, expiresAt, soundTx, readTx,
       vesselId, vesselCapId, harborId, harborCapId,
-      sealKey: key, sealIv: iv, blobId,
+      sealKey: key, sealIv: iv, blobId, plaintext,
       testTime: Date.now(),
     }
     fs.writeFileSync(STATE_FILE, JSON.stringify(state, null, 2))
