@@ -2,7 +2,7 @@ name = "conk-zkproxy-v2"
 main = "worker.js"
 compatibility_date = "2024-01-01"
 compatibility_flags = ["nodejs_compat"]
-account_id = "a48e9ca0770bceffe40239697f2edc63"
+account_id = "49eacdb17d3716275f23b560bf6cc04a"  # italktonumbers account
 
 # TATUM_API_KEY is a Cloudflare secret — set via: wrangler secret put TATUM_API_KEY
 # Do NOT add API keys to [vars] (plain-text in git)
@@ -10,4 +10,4 @@ account_id = "a48e9ca0770bceffe40239697f2edc63"
 
 [[kv_namespaces]]
 binding = "RATE_LIMITER"
-id = "66387b5b47734693807124859367fc1d"
+id = "817f17b792204259969f917a7360b109"

@@ -16,8 +16,10 @@ import { Ed25519Keypair } from '@mysten/sui/keypairs/ed25519'
 import { Transaction }    from '@mysten/sui/transactions'
 
 // Tatum enterprise Sui RPC — key loaded from Cloudflare secret TATUM_API_KEY at runtime
-const SUI_RPC = 'https://sui-mainnet.gateway.tatum.io'
+const SUI_RPC_TATUM  = 'https://sui-mainnet.gateway.tatum.io'
+const SUI_RPC_PUBLIC = 'https://fullnode.mainnet.sui.io:443'
 let _tatumKey = '' // set on first request from env.TATUM_API_KEY
+let SUI_RPC   = SUI_RPC_PUBLIC // overridden to Tatum when key is available
 const ENOKI_URL = 'https://api.enoki.mystenlabs.com/v1/zklogin/zkp'
 const CONK_TREASURY = '0xe0117fba317d2267b8d90adca1fe79eceeec756bcf54edf04cc29ee5306ab32e'
 const CONK_USDC_TYPE = '0xdba34672e30cb065b1f93e3ab55318768fd6fef66c15942c9f7cb846e2f900e7::usdc::USDC'
@@ -110,10 +112,11 @@ async function checkRateLimit(kv, key, max) {
 // ─── RPC helper ───────────────────────────────────────────────────────────────
 
 async function rpc(method, params) {
+  const headers = { 'Content-Type': 'application/json' }
+  if (_tatumKey) headers['x-api-key'] = _tatumKey
   const resp = await fetch(SUI_RPC, {
     method:  'POST',
-    headers: { 'Content-Type': 'application/json', 'x-api-key': _tatumKey },
-
+    headers,
     body:    JSON.stringify({ jsonrpc: '2.0', id: 1, method, params }),
   })
   const json = await resp.json()
@@ -280,6 +283,7 @@ async function checkGasBalance(keypair) {
 export default {
   async fetch(request, env) {
     _tatumKey = env.TATUM_API_KEY || ''
+    SUI_RPC   = _tatumKey ? SUI_RPC_TATUM : SUI_RPC_PUBLIC
     const origin = request.headers.get('Origin') || 'https://conk.app'
     const ip     = request.headers.get('CF-Connecting-IP') || 'unknown'
     const url    = new URL(request.url)
@@ -436,9 +440,11 @@ export default {
           return errResponse('RPC rate limit exceeded', 429, origin)
         }
 
+        const rpcHeaders = { 'Content-Type': 'application/json' }
+        if (_tatumKey) rpcHeaders['x-api-key'] = _tatumKey
         const resp = await fetch(SUI_RPC, {
           method:  'POST',
-          headers: { 'Content-Type': 'application/json', 'x-api-key': _tatumKey },
+          headers: rpcHeaders,
           body:    rawBody,
         })
         const text = await resp.text()

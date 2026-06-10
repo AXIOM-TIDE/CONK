@@ -365,8 +365,7 @@ async function verifyExpiredRead(castId) {
 const args = process.argv.slice(2)
 
 if (args[0] === '--verify-expired') {
-  const state = JSON.parse(fs.readFileSync(STATE_FILE, 'utf8'))
-  const castId = args[1] ?? state.castId
+  const castId = args[1] ?? JSON.parse(fs.readFileSync(STATE_FILE, 'utf8')).castId
   const result = await verifyExpiredRead(castId)
   console.log('\n=== EXPIRY VERIFICATION RESULT:', result === true ? '✅ ALL PASS' : result === null ? '⏳ NOT YET EXPIRED' : '❌ FAILED')
 } else {
