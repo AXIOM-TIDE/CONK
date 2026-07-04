@@ -1,0 +1,39 @@
+{
+  "name": "conk",
+  "version": "0.7.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "lint": "eslint src --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
+    "test": "playwright test",
+    "test:ui": "playwright test --ui",
+    "test:report": "playwright show-report"
+  },
+  "dependencies": {
+    "@mysten/sui": "^1.19.0",
+    "@mysten/wallet-standard": "^0.20.1",
+    "@mysten/zklogin": "^0.7.7",
+    "@types/qrcode": "^1.5.6",
+    "clsx": "^2.1.1",
+    "dayjs": "^1.11.13",
+    "framer-motion": "^11.18.2",
+    "lucide-react": "^0.483.0",
+    "qrcode": "^1.5.4",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "zustand": "^5.0.2"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.44.0",
+    "@types/node": "^25.5.0",
+    "@types/react": "^18.3.12",
+    "@types/react-dom": "^18.3.1",
+    "@vercel/node": "^5.6.22",
+    "@vitejs/plugin-react": "^4.3.4",
+    "typescript": "^5.6.3",
+    "vite": "^6.0.7"
+  }
+}
