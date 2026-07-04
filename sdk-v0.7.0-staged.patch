@@ -1,0 +1,70 @@
+--- apps/conk/src/sui/index.ts	2026-05-25 13:00:53
++++ sdk-v0.7.0-staging/index.ts	2026-06-06 16:35:19
+@@ -21,7 +21,9 @@
+ }
+ 
+ export const PACKAGES = {
+-  CONK:  '0x6eca0063f930674f26a4a4593a7ef5ed487e21f31caafe74290ab5df88478cc6', // v13 — two-payment read() (2026-05-21)
++  // v0.7.0-staging: points to v14 test package (fresh publish, NOT the production upgrade)
++  // DO NOT use in production until founder approves DEPLOY-v14-PROD.sh
++  CONK:  '0x214302d985fac734bd93a8ae74abeb51e010ad42e52864dc87f9af43ac3d5c9d', // v14-test — expiry-as-visibility staging (2026-06-06)
+   RELAY: '0xb4220c9faa4e6be4b557d3c81772f96ef90d5688009887a1c73ef9b7eaa6917c',
+ }
+ 
+--- apps/conk/src/sui/client.ts	2026-06-05 07:30:07
++++ sdk-v0.7.0-staging/client.ts	2026-06-06 16:35:32
+@@ -809,3 +809,44 @@
+ export function isReady(): boolean {
+   return !!PACKAGES.CONK
+ }
++
++// ── v14: Set on-chain synapse references for a cast ──────────────────────────
++// Declares explicit Cast→Cast references via dynamic field (weight=2.0 each).
++// Only callable by the author (vessel cap holder). Idempotent — replaces previous refs.
++// Brain indexer picks up CastReferenced events and writes explicit synapse edges.
++//
++// @param castId     - Cast object ID to annotate
++// @param refs       - Array of Cast object IDs (as addresses) that this cast references
++// @param vesselId   - Vessel object ID (must match cast.vessel_id)
++// @param vesselCapId - VesselCap object ID (proves authorship)
++// @param clockId    - Sui clock (default: 0x6)
++export async function setReferences(opts: {
++  castId:      string
++  refs:        string[]
++  vesselId:    string
++  vesselCapId: string
++  clockId?:    string
++}): Promise<string> {
++  const session = getSession()
++  if (!session) throw new Error('No session')
++  if (opts.refs.length === 0) throw new Error('refs must be non-empty')
++
++  const { Transaction } = await import('@mysten/sui/transactions')
++  const tx = new Transaction()
++  const clock = opts.clockId ?? CLOCK
++
++  tx.moveCall({
++    target:    `${PACKAGE}::cast::set_references`,
++    arguments: [
++      tx.object(opts.castId),      // &mut Cast
++      tx.object(opts.vesselId),    // &Vessel
++      tx.object(opts.vesselCapId), // &VesselCap
++      tx.pure.vector('address', opts.refs),  // refs: vector<address>
++      tx.object(clock),            // &Clock
++    ],
++  })
++
++  tx.setSender(session.address)
++  const result = await executeTx(tx, session.address)
++  return result.digest
++}
+--- apps/conk/package.json	2026-05-11 22:14:46
++++ sdk-v0.7.0-staging/package.json	2026-06-06 16:35:35
+@@ -1,6 +1,6 @@
+ {
+   "name": "conk",
+-  "version": "0.1.0",
++  "version": "0.7.0",
+   "private": true,
+   "type": "module",
+   "scripts": {

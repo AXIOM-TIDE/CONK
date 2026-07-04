@@ -110,4 +110,37 @@ module axiom_tide::config {
     public fun tide_threshold(c: &ProtocolConfig): u64 {
         c.lighthouse_threshold / 2
     }
+
+    #[test_only]
+    public fun create_with_threshold_for_testing(
+        lighthouse_threshold: u64,
+        ctx: &mut TxContext,
+    ): ProtocolConfig {
+        ProtocolConfig {
+            id:                   object::new(ctx),
+            lighthouse_threshold,
+            min_threshold:        lighthouse_threshold,
+            scarcity_multiplier:  SCARCITY_MULTIPLIER,
+            vessel_age_gate_ms:   AGE_GATE_DISABLED,
+            last_recalibrated:    0,
+        }
+    }
+
+    #[test_only]
+    public fun create_for_testing(ctx: &mut TxContext): ProtocolConfig {
+        ProtocolConfig {
+            id:                   object::new(ctx),
+            lighthouse_threshold: MIN_THRESHOLD,
+            min_threshold:        MIN_THRESHOLD,
+            scarcity_multiplier:  SCARCITY_MULTIPLIER,
+            vessel_age_gate_ms:   AGE_GATE_DISABLED,
+            last_recalibrated:    0,
+        }
+    }
+
+    #[test_only]
+    public fun destroy_for_testing(c: ProtocolConfig) {
+        let ProtocolConfig { id, lighthouse_threshold: _, min_threshold: _, scarcity_multiplier: _, vessel_age_gate_ms: _, last_recalibrated: _ } = c;
+        object::delete(id);
+    }
 }

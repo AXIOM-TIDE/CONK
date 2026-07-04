@@ -16,14 +16,16 @@ import { Ed25519Keypair } from '@mysten/sui/keypairs/ed25519'
 import { Transaction }    from '@mysten/sui/transactions'
 
 // Tatum enterprise Sui RPC — key loaded from Cloudflare secret TATUM_API_KEY at runtime
-const SUI_RPC = 'https://sui-mainnet.gateway.tatum.io'
+const SUI_RPC_TATUM  = 'https://sui-mainnet.gateway.tatum.io'
+const SUI_RPC_PUBLIC = 'https://fullnode.mainnet.sui.io:443'
 let _tatumKey = '' // set on first request from env.TATUM_API_KEY
+let SUI_RPC   = SUI_RPC_PUBLIC // overridden to Tatum when key is available
 const ENOKI_URL = 'https://api.enoki.mystenlabs.com/v1/zklogin/zkp'
 const CONK_TREASURY = '0xe0117fba317d2267b8d90adca1fe79eceeec756bcf54edf04cc29ee5306ab32e'
 const CONK_USDC_TYPE = '0xdba34672e30cb065b1f93e3ab55318768fd6fef66c15942c9f7cb846e2f900e7::usdc::USDC'
 const RETURN_FLARE_FEE_USDC = 50_000
 
-const CONK_PACKAGE = '0x6eca0063f930674f26a4a4593a7ef5ed487e21f31caafe74290ab5df88478cc6' // v13 — two-payment read() (2026-05-21)
+const CONK_PACKAGE = '0x265ec216d95c6109f92d90e310da4cfb0c123efa1c00540d8ced4e0d37392297' // v14 — expiry-as-visibility (2026-06-30)
 
 const GAS_FLOOR_MIST               = 500_000_000n  // 0.5 SUI
 const MAX_GAS_PER_IP_PER_HOUR      = 50
@@ -39,6 +41,8 @@ const ALLOWED_ORIGINS = new Set([
   'https://conk.app',
   'https://www.conk.app',
   'https://staging.conk.app',
+  'https://deddrop.app',
+  'https://www.deddrop.app',
   'http://localhost:5173',
   'http://localhost:3000',
 ])
@@ -110,10 +114,11 @@ async function checkRateLimit(kv, key, max) {
 // ─── RPC helper ───────────────────────────────────────────────────────────────
 
 async function rpc(method, params) {
+  const headers = { 'Content-Type': 'application/json' }
+  if (_tatumKey) headers['x-api-key'] = _tatumKey
   const resp = await fetch(SUI_RPC, {
     method:  'POST',
-    headers: { 'Content-Type': 'application/json', 'x-api-key': _tatumKey },
-
+    headers,
     body:    JSON.stringify({ jsonrpc: '2.0', id: 1, method, params }),
   })
   const json = await resp.json()
@@ -158,6 +163,7 @@ async function verifyReadCastTx(castId, txDigest, readerAddress, kv) {
   try {
     tx = await rpc('sui_getTransactionBlock', [txDigest, {
       showEffects:        true,
+      showInput:          true,   // required to get tx.transaction.data.sender
       showEvents:         true,
       showObjectChanges:  false,
     }])
@@ -169,11 +175,17 @@ async function verifyReadCastTx(castId, txDigest, readerAddress, kv) {
     return { ok: false, error: 'Transaction did not succeed' }
   }
 
-  // Verify tx sender matches the claimed reader address
-  const txSender = tx?.transaction?.data?.sender ?? ''
+  // Verify tx sender matches the claimed reader address.
+  // Primary path: showInput:true makes transaction.data.sender available.
+  // Fallback: events[0].sender (emitter address = tx sender for user-signed txs).
+  const txSender = (
+    tx?.transaction?.data?.sender ??    // primary (requires showInput:true)
+    tx?.events?.[0]?.sender ??          // fallback: event emitter = tx sender
+    ''
+  )
   const normSender = txSender.toLowerCase()
   const normReader = readerAddress.toLowerCase()
-  if (normSender !== normReader) {
+  if (!normSender || normSender !== normReader) {
     return { ok: false, error: 'Transaction sender does not match reader address' }
   }
 
@@ -273,6 +285,7 @@ async function checkGasBalance(keypair) {
 export default {
   async fetch(request, env) {
     _tatumKey = env.TATUM_API_KEY || ''
+    SUI_RPC   = _tatumKey ? SUI_RPC_TATUM : SUI_RPC_PUBLIC
     const origin = request.headers.get('Origin') || 'https://conk.app'
     const ip     = request.headers.get('CF-Connecting-IP') || 'unknown'
     const url    = new URL(request.url)
@@ -429,9 +442,11 @@ export default {
           return errResponse('RPC rate limit exceeded', 429, origin)
         }
 
+        const rpcHeaders = { 'Content-Type': 'application/json' }
+        if (_tatumKey) rpcHeaders['x-api-key'] = _tatumKey
         const resp = await fetch(SUI_RPC, {
           method:  'POST',
-          headers: { 'Content-Type': 'application/json', 'x-api-key': _tatumKey },
+          headers: rpcHeaders,
           body:    rawBody,
         })
         const text = await resp.text()
@@ -664,14 +679,16 @@ export default {
         if (!/^[0-9a-fA-F]{64}$/.test(key))      return errResponse('Invalid key format — expected 64 hex chars (32 bytes)', 400, origin)
         if (!/^[0-9a-fA-F]{24}$/.test(iv))        return errResponse('Invalid iv format — expected 24 hex chars (12 bytes)', 400, origin)
 
-        // Store key in KV. TTL: 8 days (longest cast duration is 7 days + 1 day buffer).
-        // For lighthouse casts the key persists because lighthouse duration is ~100 years
-        // but casts only become lighthouses after 1M reads — we'll extend TTL on first access.
+        // Store key in KV.
+        // v14 TTL: 45 days — covers 7-day max cast + 30-day abandon window + 8-day buffer.
+        // v13 used 8 days (cast expired = unreadable). In v14 expired-but-not-wrecked casts
+        // are still readable up to 30 days post-expiry (abandon window), so the key must
+        // survive the full window. Lighthouse casts get TTL refreshed to 365 days on access.
         const kvKey = 'seal-key:' + castId.toLowerCase()
         await env.RATE_LIMITER.put(
           kvKey,
-          JSON.stringify({ key, iv, blobId }),
-          { expirationTtl: 60 * 60 * 24 * 8 }
+          JSON.stringify({ key, iv, blobId, registeredAt: Date.now() }),
+          { expirationTtl: 60 * 60 * 24 * 45 }
         )
 
         return jsonResponse({ ok: true }, 200, origin)
@@ -707,10 +724,14 @@ export default {
           return errResponse('Key store corrupted', 500, origin)
         }
 
-        // Extend TTL if this cast has survived (lighthouse) — heuristic: if key accessed after 7 days, refresh to 30 days
-        const age = Date.now() - (keyData.registeredAt ?? 0)
-        if (age > 7 * 24 * 60 * 60 * 1000) {
-          await env.RATE_LIMITER.put(kvKey, stored, { expirationTtl: 60 * 60 * 24 * 30 }).catch(() => {})
+        // Extend TTL on access.
+        // If registeredAt is present and key is older than 40 days (approaching 45-day expiry),
+        // refresh to 365 days — this cast is still being read well past the abandon window,
+        // which means it's either a lighthouse or has very persistent demand. Either way, keep it.
+        const registeredAt = keyData.registeredAt ?? (Date.now() - 60 * 60 * 24 * 40 * 1000) // default: assume old
+        const age = Date.now() - registeredAt
+        if (age > 40 * 24 * 60 * 60 * 1000) {
+          await env.RATE_LIMITER.put(kvKey, stored, { expirationTtl: 60 * 60 * 24 * 365 }).catch(() => {})
         }
 
         return jsonResponse({ key: keyData.key, iv: keyData.iv, blobId: keyData.blobId }, 200, origin)

@@ -149,4 +149,20 @@ module axiom_tide::abyss {
     public fun fee_chest_burn():          u64 { FEE_CHEST_BURN          }
     public fun fee_chest_extend():        u64 { FEE_CHEST_EXTEND        }
     public fun fee_stream_create():        u64 { FEE_STREAM_CREATE       }
+
+    // ─── Test helpers ─────────────────────────────────────────────────────────
+    #[test_only]
+    public fun create_for_testing(ctx: &mut TxContext): Abyss {
+        Abyss {
+            id:             object::new(ctx),
+            total_received: 0,
+            total_actions:  0,
+        }
+    }
+
+    #[test_only]
+    public fun destroy_for_testing(a: Abyss) {
+        let Abyss { id, total_received: _, total_actions: _ } = a;
+        object::delete(id);
+    }
 }

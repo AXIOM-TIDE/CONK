@@ -1,4 +1,4 @@
-/// AXIOM TIDE PROTOCOL · v11.0.0
+/// AXIOM TIDE PROTOCOL · v14.0.0
 /// PRIMITIVE 3 OF 7 · CAST
 /// The communication primitive. Everything is a cast.
 /// Open · Sealed · Eyes Only · Ghost.
@@ -11,6 +11,12 @@
 /// v11: lighthouse_path added to Cast struct; set in become_lighthouse().
 /// v11: vessel_id added to CastSounded event for indexer attribution.
 /// v11: read() accepts &ProtocolConfig for dynamic Lighthouse threshold.
+/// v14: Expiration is visibility, not death.
+///      Expired casts leave Drift but remain readable — reads still accumulate toward Lighthouse.
+///      wreck() only fires on truly abandoned casts: expired + 30-day neglect window.
+///      check_tide() is now cumulative (no 24h velocity gate) — tides are phases, not races.
+///      Native synapse references via dynamic field: cast::set_references().
+///      STATE_WRECKED (2) added to distinguish keeper-wrecked from author-burned casts.
 /// Copyright © 2026 Axiom Tide LLC · axiomtide.com
 module axiom_tide::cast {
     use sui::object::{Self, UID, ID};
@@ -19,20 +25,26 @@ module axiom_tide::cast {
     use sui::event;
     use sui::clock::{Self, Clock};
     use sui::coin::{Self, Coin};
+    use sui::dynamic_field;
     use 0xdba34672e30cb065b1f93e3ab55318768fd6fef66c15942c9f7cb846e2f900e7::usdc::USDC;
     use axiom_tide::abyss::{Self, Abyss};
     use axiom_tide::vessel::{Self, Vessel, VesselCap};
     use axiom_tide::config::{Self, ProtocolConfig};
 
-    const E_CAST_EXPIRED:             u64 = 1;
+    // ─── Errors ───────────────────────────────────────────────────────────────
+    const E_CAST_EXPIRED:             u64 = 1;   // kept for ABI compat; no longer used in read()
     const E_WRONG_RECIPIENT:          u64 = 2;
-    const E_ALREADY_BURNED:           u64 = 3;
+    const E_ALREADY_BURNED:           u64 = 3;   // state != STATE_LIVE (burned or wrecked)
     const E_PRICE_TOO_LOW:            u64 = 4;
     const E_DOCK_FULL:                u64 = 5;
     const E_INVALID_MAX_CLAIMS:       u64 = 6;
     const E_INSUFFICIENT_UPGRADE_FEE: u64 = 7;
     const E_INSUFFICIENT_FLARE_FEE:   u64 = 8;
+    const E_NOT_EXPIRED:              u64 = 9;   // wreck(): not yet past abandon window
+    const E_IS_LIGHTHOUSE:            u64 = 10;  // wreck(): lighthouses cannot be wrecked
+    const E_NOT_CAST_AUTHOR:          u64 = 11;  // set_references(): cap doesn't match cast vessel
 
+    // ─── Constants ────────────────────────────────────────────────────────────
     const MIN_PAID_PRICE:   u64 = 1_000;
     const DOCK_SLOT_PRICE:  u64 = 10_000;
     const MIN_FLARE_PUBLISH_FEE: u64 = 50_000;
@@ -44,8 +56,11 @@ module axiom_tide::cast {
     const MODE_EYES_ONLY: u8 = 2;
     const MODE_GHOST:     u8 = 3;
 
-    const STATE_LIVE:   u8 = 0;
-    const STATE_BURNED: u8 = 1;
+    /// v14: STATE_WRECKED (2) distinguishes keeper-wrecked casts from
+    /// author-burned (GHOST/EYES_ONLY) casts. Both are permanently inert.
+    const STATE_LIVE:    u8 = 0;
+    const STATE_BURNED:  u8 = 1;  // auto-burned by mode (GHOST / EYES_ONLY full)
+    const STATE_WRECKED: u8 = 2;  // v14: keeper-wrecked after abandon window
 
     const DUR_24H: u8 = 1;
     const DUR_48H: u8 = 2;
@@ -53,10 +68,18 @@ module axiom_tide::cast {
     const DUR_7D:  u8 = 4;
     const MS_24H:  u64 = 24 * 60 * 60 * 1000;
 
-    /// v11: birth paths for Lighthouse (mirrors lighthouse.move constants)
     const LH_PATH_MILLION: u8 = 1;
     const LH_PATH_TIDES:   u8 = 2;
 
+    /// v14: 30-day abandon window after expiry before wreck() is callable.
+    /// Gives active casts time to accumulate reads toward Lighthouse
+    /// even after they've left the active Drift feed.
+    const ABANDON_WINDOW_MS: u64 = 30 * 24 * 60 * 60 * 1000;
+
+    /// v14: dynamic_field key for native synapse references.
+    const REFS_KEY: vector<u8> = b"refs";
+
+    // ─── Struct ───────────────────────────────────────────────────────────────
     public struct Cast has key, store {
         id:                    UID,
         vessel_id:             ID,
@@ -81,18 +104,13 @@ module axiom_tide::cast {
         claims_used:           u64,
         dock_upgrade_fee_paid: u64,
         dock_description:      vector<u8>,
-        /// v11: which path earned Lighthouse status.
-        /// LH_PATH_MILLION (1) = 1M reads in 24h.
-        /// LH_PATH_TIDES   (2) = 3 × tide_threshold reads.
-        /// 0 = not a Lighthouse.
         lighthouse_path:       u8,
     }
 
     // ─── Events ───────────────────────────────────────────────────────────────
-
     public struct CastSounded has copy, drop {
         cast_id:    address,
-        vessel_id:  address,   // v11: added for indexer attribution without object reads
+        vessel_id:  address,
         hook:       vector<u8>,
         mode:       u8,
         duration:   u8,
@@ -121,7 +139,7 @@ module axiom_tide::cast {
 
     public struct LighthouseBorn has copy, drop {
         cast_id:     address,
-        birth_path:  u8,        // v11: included in event
+        birth_path:  u8,
         read_count:  u64,
         born_at:     u64,
     }
@@ -141,18 +159,25 @@ module axiom_tide::cast {
         claimed_at:  u64,
     }
 
-    // ─── sound() — BUG-4 FIX ──────────────────────────────────────────────────
-    //
-    // v11 breaking change: `vessel_id: ID` and `vessel_tier: u8` removed.
-    // Caller must pass the actual Vessel and VesselCap objects.
-    // vessel::touch() is called internally — cast_count is now protocol-enforced.
-    // vessel_id and vessel_tier are derived from the Vessel object, not trusted input.
+    public struct CastWrecked has copy, drop {
+        cast_id:    address,
+        wrecked_at: u64,
+    }
 
+    /// v14: emitted when a cast author declares on-chain synapse references.
+    /// brain indexer picks this up and writes explicit edges (weight=2.0).
+    public struct CastReferenced has copy, drop {
+        cast_id:    address,
+        references: vector<address>,
+        updated_at: u64,
+    }
+
+    // ─── sound() ──────────────────────────────────────────────────────────────
     public fun sound(
         fee_coin:         Coin<USDC>,
         abyss:            &mut Abyss,
-        vessel:           &mut Vessel,      // v11: was vessel_id: ID
-        vessel_cap:       &VesselCap,       // v11: new — for ownership + touch()
+        vessel:           &mut Vessel,
+        vessel_cap:       &VesselCap,
         hook:             vector<u8>,
         content_blob:     vector<u8>,
         media_blob:       Option<vector<u8>>,
@@ -175,15 +200,11 @@ module axiom_tide::cast {
             assert!(paid_amount >= MIN_FLARE_PUBLISH_FEE + dock_upgrade_fee, E_INSUFFICIENT_FLARE_FEE);
         };
 
-        // v11: enforce cast_count via protocol — not caller-trust.
-        // touch() asserts VesselCap ownership, Vessel liveness, and increments cast_count.
-        // Returns burn_after_cast — caller (SDK) sinks Vessel after PTB if true.
         let _burn_after_cast = vessel::touch(vessel, vessel_cap, clock, ctx);
 
-        // Derive vessel_id and tier from object — not trusted from caller.
         let vessel_id   = object::id(vessel);
         let vessel_tier = vessel::tier(vessel);
-        let author_addr = vessel::owner(vessel);   // author = vessel owner, not tx sender
+        let author_addr = vessel::owner(vessel);
 
         let now     = clock::timestamp_ms(clock);
         let life_ms = if (duration == DUR_24H)      { MS_24H }
@@ -217,13 +238,13 @@ module axiom_tide::cast {
             claims_used:           0,
             dock_upgrade_fee_paid: dock_upgrade_fee,
             dock_description,
-            lighthouse_path:       0,   // v11
+            lighthouse_path:       0,
         };
         let cast_id = object::id_to_address(&object::id(&cast));
 
         event::emit(CastSounded {
             cast_id,
-            vessel_id: object::id_to_address(&vessel_id),   // v11
+            vessel_id: object::id_to_address(&vessel_id),
             hook: cast.hook,
             mode,
             duration,
@@ -243,20 +264,33 @@ module axiom_tide::cast {
         transfer::share_object(cast);
     }
 
-    // ─── read() — v11: adds &ProtocolConfig for dynamic threshold ─────────────
+    // ─── read() — v14: expiry no longer blocks reads ──────────────────────────
+    //
+    // v14 change: the E_CAST_EXPIRED guard is removed.
+    //
+    // Rationale: expiry is now a visibility event (cast leaves Drift) not a death
+    // event. Expired casts are still readable; reads still accumulate toward
+    // Lighthouse. Only truly abandoned casts (state = STATE_WRECKED) are dead.
+    //
+    // Payment flow is identical: PROTOCOL_READ_FEE + cast.fee_paid.
+    // SEAL decryption path is identical: zkProxy verifies CastRead event on-chain.
+    // The only change is the removed assert.
 
     public fun read(
         cast:     &mut Cast,
         fee_coin: Coin<USDC>,
         abyss:    &mut Abyss,
-        config:   &ProtocolConfig,   // v11: dynamic Lighthouse threshold
+        config:   &ProtocolConfig,
         reader:   address,
         clock:    &Clock,
         ctx:      &mut TxContext,
     ) {
         let now = clock::timestamp_ms(clock);
+
+        // v14: state check covers STATE_BURNED (GHOST/EYES_ONLY auto-burn)
+        // and STATE_WRECKED (keeper-wrecked after 30-day abandon).
+        // Removed: E_CAST_EXPIRED — expired casts are still readable.
         assert!(cast.state == STATE_LIVE, E_ALREADY_BURNED);
-        assert!(cast.is_lighthouse || now < cast.expires_at, E_CAST_EXPIRED);
 
         if (cast.mode == MODE_EYES_ONLY) {
             assert!(cast.claims_used < cast.max_claims, E_DOCK_FULL);
@@ -272,22 +306,7 @@ module axiom_tide::cast {
             assert!(reader == cast.recipient, E_WRONG_RECIPIENT);
         };
 
-        // v13: Two-payment model.
-        //
-        // Reader sends: PROTOCOL_READ_FEE + cast.fee_paid (total).
-        //
-        //   Free cast (fee_paid = 0):
-        //     Abyss receives: PROTOCOL_READ_FEE ($0.001)
-        //     Author receives: nothing
-        //
-        //   Paid cast (fee_paid > 0):
-        //     Author receives: fee_paid * 97%
-        //     Abyss receives:  PROTOCOL_READ_FEE + fee_paid * 3%
-        //                      (always ≥ PROTOCOL_READ_FEE, satisfies receive_read minimum)
-        //
-        // The flat PROTOCOL_READ_FEE is the Abyss floor that funds protocol operations
-        // regardless of whether the author charges for content.
-
+        // v13 two-payment model — unchanged in v14.
         let paid_amount = coin::value(&fee_coin);
         let total_required = abyss::fee_read() + cast.fee_paid;
         assert!(paid_amount >= total_required, E_PRICE_TOO_LOW);
@@ -295,13 +314,11 @@ module axiom_tide::cast {
         let mut coin_mut = fee_coin;
 
         if (cast.fee_paid > 0) {
-            // Split author’s 97% share and send directly to author
             let author_amount = (cast.fee_paid * 97) / 100;
             let author_payment = coin::split(&mut coin_mut, author_amount, ctx);
             transfer::public_transfer(author_payment, cast.author);
         };
 
-        // Remaining = PROTOCOL_READ_FEE + fee_paid * 3%  (≥ fee_read minimum ✓)
         abyss::receive_read(abyss, coin_mut, clock, ctx);
 
         cast.read_count = cast.read_count + 1;
@@ -325,31 +342,131 @@ module axiom_tide::cast {
             return
         };
 
-        // Tide/Lighthouse check: only OPEN Casts qualify.
+        // Tide/Lighthouse check: OPEN casts only.
         if (cast.mode == MODE_OPEN) { check_tide(cast, config, clock); };
     }
 
-    // ─── Internal ─────────────────────────────────────────────────────────────
+    // ─── set_references() — v14: native on-chain synapse declarations ─────────
+    //
+    // Declares explicit Cast→Cast references on-chain via dynamic field.
+    // Only callable by the vessel that authored this cast (verified via VesselCap).
+    // Overwrites any previous references (idempotent).
+    //
+    // Brain indexer picks up CastReferenced events and writes explicit synapse
+    // edges with weight=2.0 (strongest signal).
+    //
+    // refs: vector of Cast object IDs (as address) that this cast references.
+    // The brain validates each ref exists before writing a synapse edge.
+
+    public fun set_references(
+        cast:  &mut Cast,
+        refs:  vector<address>,
+        cap:   &VesselCap,
+        clock: &Clock,
+        _ctx:  &mut TxContext,
+    ) {
+        // Verify the cap belongs to the vessel that authored this cast.
+        assert!(vessel::cap_vessel_id(cap) == cast.vessel_id, E_NOT_CAST_AUTHOR);
+
+        let now = clock::timestamp_ms(clock);
+
+        // Overwrite any existing refs dynamic field.
+        if (dynamic_field::exists_(&cast.id, REFS_KEY)) {
+            let _old: vector<address> = dynamic_field::remove(&mut cast.id, REFS_KEY);
+        };
+        dynamic_field::add(&mut cast.id, REFS_KEY, refs);
+
+        event::emit(CastReferenced {
+            cast_id:    object::id_to_address(&object::id(cast)),
+            references: refs,
+            updated_at: now,
+        });
+    }
+
+    // ─── wreck() — v14: 30-day abandon window ────────────────────────────────
+    //
+    // Callable by anyone (keeper daemon) after a cast is both:
+    //   (a) expired (now >= expires_at), AND
+    //   (b) abandoned for ABANDON_WINDOW_MS (30 days) past expiry
+    //       (now >= expires_at + ABANDON_WINDOW_MS)
+    //
+    // This gives every cast a 30-day window after expiry to keep accumulating
+    // reads toward Lighthouse before content is zeroed. A cast that's being
+    // actively read will become a Lighthouse before day 37; only truly neglected
+    // casts get wrecked.
+    //
+    // v14: sets STATE_WRECKED (2) rather than STATE_BURNED (1), allowing
+    // indexers to distinguish author-burned from keeper-wrecked.
+    //
+    // The "not referenced by graph" condition is enforced by the drift-keeper
+    // daemon (off-chain, DB check) before calling this function.
+
+    public fun wreck(
+        cast:  &mut Cast,
+        clock: &Clock,
+    ) {
+        let now = clock::timestamp_ms(clock);
+        assert!(cast.state == STATE_LIVE,            E_ALREADY_BURNED);
+        assert!(!cast.is_lighthouse,                  E_IS_LIGHTHOUSE);
+        // v14: must be past the 30-day abandon window, not just past expires_at.
+        assert!(now >= cast.expires_at + ABANDON_WINDOW_MS, E_NOT_EXPIRED);
+
+        cast.state        = STATE_WRECKED;
+        cast.content_blob = vector::empty();
+        cast.media_blob   = option::none();
+
+        event::emit(CastWrecked {
+            cast_id:    object::id_to_address(&object::id(cast)),
+            wrecked_at: now,
+        });
+
+        event::emit(CastBurned {
+            cast_id:   object::id_to_address(&object::id(cast)),
+            mode:      cast.mode,
+            burned_at: now,
+        });
+    }
+
+    // ─── Internal: check_tide() — v14: cumulative phases, no velocity gate ────
+    //
+    // v14 change: removed age_ms ≤ MS_24H constraints.
+    //
+    // Tides are now cumulative read segments, not velocity races:
+    //   Tide 1: first tide_threshold reads total → TideSurvived(1)
+    //   Tide 2: next tide_threshold reads total  → TideSurvived(2)
+    //   Tide 3: next tide_threshold reads total  → LighthouseBorn (LH_PATH_TIDES)
+    //
+    // Direct path (unchanged): if read_count reaches lighthouse_threshold, the cast
+    // becomes a Lighthouse immediately via LH_PATH_MILLION. Since threshold=1000
+    // and each tide_threshold=500, the direct path (1000 reads) fires before
+    // tidal path (1500 reads) if read velocity is consistent.
+    //
+    // v14: expires_at extension on tide transitions removed — expiry is a
+    // visibility gate (leaves Drift), not a lifecycle gate (blocks reads).
+    // Tides advance purely on read_count, independent of time.
 
     fun check_tide(cast: &mut Cast, config: &ProtocolConfig, clock: &Clock) {
         if (cast.is_lighthouse) return;
 
         let now            = clock::timestamp_ms(clock);
-        let age_ms         = now - cast.created_at;
         let threshold      = config::lighthouse_threshold(config);
-        let tide_threshold = config::tide_threshold(config);  // threshold / 2
+        let tide_threshold = config::tide_threshold(config);
 
-        // Direct path: threshold reads within 24h
-        if (age_ms <= MS_24H && cast.read_count >= threshold) {
+        // Direct path: lighthouse_threshold reads total → instant Lighthouse.
+        // No time constraint in v14.
+        if (cast.read_count >= threshold) {
             become_lighthouse(cast, LH_PATH_MILLION, now);
             return
         };
 
+        // Tidal path: cumulative read segments.
+        // Tide 1 → Tide 2 → Tide 3 → Lighthouse.
+        // No age_ms check — reads accumulate regardless of cast age or expiry status.
         if (cast.current_tide == 1) {
-            if (cast.read_count >= tide_threshold && age_ms <= MS_24H) {
+            if (cast.read_count >= tide_threshold) {
                 cast.tide_1_count = cast.read_count;
                 cast.current_tide = 2;
-                cast.expires_at   = cast.created_at + (MS_24H * 2);
+                // v14: no expires_at extension — expiry is visibility, not lifecycle.
                 event::emit(TideSurvived {
                     cast_id:     object::id_to_address(&object::id(cast)),
                     tide:        1,
@@ -362,7 +479,6 @@ module axiom_tide::cast {
             if (tide_2 >= tide_threshold) {
                 cast.tide_2_count = tide_2;
                 cast.current_tide = 3;
-                cast.expires_at   = cast.created_at + (MS_24H * 3);
                 event::emit(TideSurvived {
                     cast_id:     object::id_to_address(&object::id(cast)),
                     tide:        2,
@@ -381,60 +497,13 @@ module axiom_tide::cast {
 
     fun become_lighthouse(cast: &mut Cast, path: u8, now: u64) {
         cast.is_lighthouse   = true;
-        cast.lighthouse_path = path;   // v11: record the path
+        cast.lighthouse_path = path;
         cast.expires_at      = now + (100 * 365 * 24 * 60 * 60 * 1000);
         event::emit(LighthouseBorn {
             cast_id:    object::id_to_address(&object::id(cast)),
-            birth_path: path,      // v11: included in event
+            birth_path: path,
             read_count: cast.read_count,
             born_at:    now,
-        });
-    }
-
-    // ─── Wreck: zero expired cast content on-chain ───────────────────────────
-    // Callable by anyone after a Cast expires. Zeroes content_blob and marks
-    // STATE_BURNED so the Cast is permanently inert. Enables keeper daemons
-    // to clean up Drift without needing the author's key.
-    //
-    // Rules:
-    //   • Cast must be STATE_LIVE (not already burned)
-    //   • Cast must not be a Lighthouse (Lighthouses never expire)
-    //   • Current time must be ≥ expires_at
-    //
-    // Emits CastBurned so indexers and clients can remove it from feeds.
-
-    const E_NOT_EXPIRED:   u64 = 8;
-    const E_IS_LIGHTHOUSE: u64 = 9;
-
-    public struct CastWrecked has copy, drop {
-        cast_id:    address,
-        wrecked_at: u64,
-    }
-
-    public fun wreck(
-        cast:  &mut Cast,
-        clock: &Clock,
-    ) {
-        let now = clock::timestamp_ms(clock);
-        assert!(cast.state != STATE_BURNED,  E_ALREADY_BURNED);
-        assert!(!cast.is_lighthouse,         E_IS_LIGHTHOUSE);
-        assert!(now >= cast.expires_at,       E_NOT_EXPIRED);
-
-        cast.state        = STATE_BURNED;
-        cast.content_blob = vector::empty();
-        cast.media_blob   = option::none();
-
-        event::emit(CastWrecked {
-            cast_id:    object::id_to_address(&object::id(cast)),
-            wrecked_at: now,
-        });
-
-        // Also emit CastBurned so existing clients that listen for burns
-        // remove this cast from their feed automatically.
-        event::emit(CastBurned {
-            cast_id:   object::id_to_address(&object::id(cast)),
-            mode:      cast.mode,
-            burned_at: now,
         });
     }
 
@@ -451,20 +520,97 @@ module axiom_tide::cast {
     public fun author(c: &Cast):           address    { c.author }
     public fun max_claims(c: &Cast):       u64        { c.max_claims }
     public fun claims_used(c: &Cast):      u64        { c.claims_used }
-    public fun lighthouse_path(c: &Cast):  u8         { c.lighthouse_path }   // v11
-    public fun content_blob(c: &Cast):     vector<u8> { c.content_blob }      // v11
+    public fun lighthouse_path(c: &Cast):  u8         { c.lighthouse_path }
+    public fun content_blob(c: &Cast):     vector<u8> { c.content_blob }
     public fun claims_remaining(c: &Cast): u64 {
         if (c.claims_used >= c.max_claims) 0
         else c.max_claims - c.claims_used
     }
-    public fun is_dock_full(c: &Cast):          bool       { c.claims_used >= c.max_claims }
+    public fun fee_paid(c: &Cast):              u64  { c.fee_paid }  // v14: needed by tests + SDK
+    public fun is_dock_full(c: &Cast):          bool { c.claims_used >= c.max_claims }
     public fun dock_description(c: &Cast):      vector<u8> { c.dock_description }
-    public fun dock_upgrade_fee_paid(c: &Cast): u64        { c.dock_upgrade_fee_paid }
+    public fun dock_upgrade_fee_paid(c: &Cast): u64  { c.dock_upgrade_fee_paid }
 
-    public fun mode_open():      u8 { MODE_OPEN }
-    public fun mode_sealed():    u8 { MODE_SEALED }
-    public fun mode_eyes_only(): u8 { MODE_EYES_ONLY }
-    public fun mode_ghost():     u8 { MODE_GHOST }
+    /// v14: read on-chain synapse references (returns empty if never set).
+    public fun references(cast: &Cast): vector<address> {
+        if (dynamic_field::exists_(&cast.id, REFS_KEY)) {
+            *dynamic_field::borrow<vector<u8>, vector<address>>(&cast.id, REFS_KEY)
+        } else {
+            vector::empty()
+        }
+    }
+
+    /// v14: true if cast has been keeper-wrecked (state = STATE_WRECKED).
+    public fun is_wrecked(c: &Cast): bool { c.state == STATE_WRECKED }
+
+    /// v14: true if cast is past expires_at but not yet wrecked.
+    /// These casts are still readable; they've just left the active Drift feed.
+    public fun is_expired_not_wrecked(c: &Cast, clock: &Clock): bool {
+        let now = clock::timestamp_ms(clock);
+        !c.is_lighthouse && now >= c.expires_at && c.state == STATE_LIVE
+    }
+
+    // ─── Test helpers ─────────────────────────────────────────────────────────
+
+    /// Create a Cast directly for unit testing, bypassing sound().
+    /// Allows setting expires_at and fee_paid explicitly.
+    #[test_only]
+    public fun create_for_testing(
+        vessel_id:  ID,
+        author:     address,
+        hook:       vector<u8>,
+        mode:       u8,
+        fee_paid:   u64,
+        expires_at: u64,
+        ctx:        &mut TxContext,
+    ): Cast {
+        Cast {
+            id:                    object::new(ctx),
+            vessel_id,
+            vessel_tier:           0,
+            hook,
+            content_blob:          b"secret content",
+            media_blob:            option::none(),
+            mode,
+            recipient:             author,
+            state:                 STATE_LIVE,
+            created_at:            0,
+            expires_at,
+            read_count:            0,
+            tide_1_count:          0,
+            tide_2_count:          0,
+            tide_3_count:          0,
+            current_tide:          1,
+            is_lighthouse:         false,
+            fee_paid,
+            author,
+            max_claims:            1,
+            claims_used:           0,
+            dock_upgrade_fee_paid: 0,
+            dock_description:      b"",
+            lighthouse_path:       0,
+        }
+    }
+
+    #[test_only]
+    public fun destroy_for_testing(cast: Cast) {
+        let Cast {
+            id, vessel_id: _, vessel_tier: _, hook: _, content_blob: _, media_blob: _,
+            mode: _, recipient: _, state: _, created_at: _, expires_at: _, read_count: _,
+            tide_1_count: _, tide_2_count: _, tide_3_count: _, current_tide: _,
+            is_lighthouse: _, fee_paid: _, author: _, max_claims: _, claims_used: _,
+            dock_upgrade_fee_paid: _, dock_description: _, lighthouse_path: _,
+        } = cast;
+        object::delete(id);
+    }
+
+    public fun mode_open():       u8 { MODE_OPEN }
+    public fun mode_sealed():     u8 { MODE_SEALED }
+    public fun mode_eyes_only():  u8 { MODE_EYES_ONLY }
+    public fun mode_ghost():      u8 { MODE_GHOST }
     public fun lh_path_million(): u8 { LH_PATH_MILLION }
     public fun lh_path_tides():   u8 { LH_PATH_TIDES }
+    public fun state_live():      u8 { STATE_LIVE }
+    public fun state_burned():    u8 { STATE_BURNED }
+    public fun state_wrecked():   u8 { STATE_WRECKED }   // v14
 }

@@ -254,4 +254,29 @@ module axiom_tide::vessel {
     public fun ghost():  u8 { GHOST }
     public fun shadow(): u8 { SHADOW }
     public fun open():   u8 { OPEN }
+
+    /// v14: expose VesselCap.vessel_id so cast.move can verify cap ownership
+    /// without requiring the caller to present the Vessel object itself.
+    public fun cap_vessel_id(cap: &VesselCap): ID { cap.vessel_id }
+
+    #[test_only]
+    public fun create_cap_for_testing(
+        vessel_id: ID,
+        owner:     address,
+        ctx:       &mut TxContext,
+    ): VesselCap {
+        VesselCap {
+            id:        object::new(ctx),
+            vessel_id,
+            harbor_id: object::id_from_address(@0x0),
+            owner,
+            tier:      OPEN,
+        }
+    }
+
+    #[test_only]
+    public fun destroy_cap_for_testing(cap: VesselCap) {
+        let VesselCap { id, vessel_id: _, harbor_id: _, owner: _, tier: _ } = cap;
+        object::delete(id);
+    }
 }
