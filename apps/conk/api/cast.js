@@ -114,6 +114,9 @@ export default async function handler(req, res) {
   const vesselId = process.env.CONK_API_VESSEL_ID || process.env.CONK_VESSEL_ID
   if (!vesselId) return fail(res, 503, 'not_configured', 'CONK_API_VESSEL_ID is not configured')
 
+  const vesselCapId = process.env.CONK_API_VESSEL_CAP_ID || process.env.CONK_VESSEL_CAP_ID
+  if (!vesselCapId) return fail(res, 503, 'not_configured', 'CONK_API_VESSEL_CAP_ID is not configured')
+
   try {
     const input = normalizeCast(readBody(req))
     const keypair = keypairFromEnv()
@@ -131,7 +134,7 @@ export default async function handler(req, res) {
         feeCoin,
         tx.object(ABYSS),
         tx.object(vesselId),
-        tx.pure.u8(0),
+        tx.object(vesselCapId),
         tx.pure.vector('u8', Array.from(new TextEncoder().encode(input.hook))),
         tx.pure.vector('u8', Array.from(new TextEncoder().encode(input.body))),
         tx.pure.option('vector<u8>', null),
